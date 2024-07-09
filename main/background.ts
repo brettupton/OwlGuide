@@ -186,8 +186,12 @@ ipcMain.on('decision-upload', async (event, data) => {
     dialog.showErrorBox("Decision", "Something went wrong creating new buying decision.\n\nTry again later.")
   }
 
-  const book = await salesService.searchISBN(isbn)
-  salesWindow.webContents.send('isbn-data', { isbn, BDTerm, book })
+  try {
+    const book = await salesService.searchISBN(isbn)
+    salesWindow.webContents.send('isbn-data', { isbn, BDTerm, book })
+  } catch (err) {
+    console.error(err)
+  }
 
 })
 

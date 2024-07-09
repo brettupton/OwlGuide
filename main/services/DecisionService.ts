@@ -29,6 +29,7 @@ export class DecisionService {
                 fs.readFile(prevSalesPath, 'utf8', (err, prevSales) => {
                     if (err) {
                         reject(`Something went wrong reading past sales for store ${global.store}`)
+                        return
                     }
                     const allPrevSales: Sales = JSON.parse(prevSales)
                     fileData.forEach(line => {
