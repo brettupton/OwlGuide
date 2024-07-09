@@ -309,8 +309,8 @@ ipcMain.on('template-submit', (event, { templateCourses, term, campus }: { templ
 })
 
 // ** ENROLLMENT **
-ipcMain.on('enrollment-file-loaded', async (event, filePath: string) => {
-  const enrollmentService = new EnrollmentService(filePath)
+ipcMain.on('enrollment-file-loaded', async (event, { filePath, term, year }: { filePath: string, term: string, year: string }) => {
+  const enrollmentService = new EnrollmentService(filePath, term, year)
   try {
     const { prevCourses, fileName } = await enrollmentService.getPrevEnrollment()
     event.reply('enrollment-file-found', fileName)
@@ -324,8 +324,8 @@ ipcMain.on('enrollment-file-loaded', async (event, filePath: string) => {
   }
 })
 
-ipcMain.on('enrollment-upload', async (event, { filePath, prevFilePath }: { filePath: string, prevFilePath: string }) => {
-  const enrollmentService = new EnrollmentService(filePath)
+ipcMain.on('enrollment-upload', async (event, { filePath, term, year, prevFilePath }: { filePath: string, term: string, year: string, prevFilePath: string }) => {
+  const enrollmentService = new EnrollmentService(filePath, term, year)
   try {
     if (prevFilePath !== "") {
       await enrollmentService.createPrevEnrollment(prevFilePath)
@@ -337,8 +337,8 @@ ipcMain.on('enrollment-upload', async (event, { filePath, prevFilePath }: { file
   }
 })
 
-ipcMain.on('offerings-submit', async (event, { filePath, needOfferings }: { filePath: string, needOfferings: XLSXCourse[] }) => {
-  const enrollmentService = new EnrollmentService(filePath)
+ipcMain.on('offerings-submit', async (event, { filePath, term, year, needOfferings }: { filePath: string, term: string, year: string, needOfferings: XLSXCourse[] }) => {
+  const enrollmentService = new EnrollmentService(filePath, term, year)
   try {
     const { csv, json } = await enrollmentService.createCourseCSV(needOfferings)
     dialog.showSaveDialog({

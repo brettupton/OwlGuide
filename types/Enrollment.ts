@@ -2,7 +2,7 @@ export type XLSXCourse = {
     COLLEGE: string
     DEPARTMENT: string
     SUBJECT: string
-    'COURSE NUMBER': number
+    'COURSE NUMBER': string
     TITLE: string
     'OFFERING NUMBER'?: string
     'PRIMARY INSTRUCTOR LAST NAME'?: string

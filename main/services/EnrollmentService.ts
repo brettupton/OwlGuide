@@ -12,14 +12,16 @@ interface PrevFileData {
 export class EnrollmentService {
     private readonly filePath: string
     private term: string
+    private year: string
     public fileName: string
     public enrollPath: string
 
-    constructor(filePath: string) {
+    constructor(filePath: string, term: string, year: string) {
         this.filePath = filePath
-        this.term = this.getFullTerm(filePath)
+        this.term = term
+        this.year = year
         this.fileName = this.getFileName(filePath)
-        this.enrollPath = path.join(__dirname, '..', 'resources', 'stores', `${global.store}`, 'enrollment', `${this.term[0]}`)
+        this.enrollPath = path.join(__dirname, '..', 'resources', 'stores', `${global.store}`, 'enrollment', `${this.term}`)
     }
 
     private readXLSXFile(): XLSXCourse[] {
@@ -29,12 +31,6 @@ export class EnrollmentService {
         const data: XLSXCourse[] = XLSX.utils.sheet_to_json(ws)
 
         return data
-    }
-
-    private getFullTerm(filePath: string) {
-        const splitPath = filePath.split("\\")
-        const term = splitPath[splitPath.length - 1].split("_")[1]
-        return term
     }
 
     private getFileName(filePath: string) {
@@ -57,8 +53,11 @@ export class EnrollmentService {
 
     public async matchPrevOfferings() {
         const courses = this.readXLSXFile()
-        const noOfferings = this.getNoOfferings(courses)
+        courses.forEach(course => {
+            course["COURSE NUMBER"] = course["COURSE NUMBER"].padStart(3, "0")
+        })
 
+        const noOfferings = this.getNoOfferings(courses)
         try {
             const { prevCourses, fileName } = await this.getPrevEnrollment()
             const csvCourseMap = new Map<string, CSVCourse>()
@@ -73,7 +72,6 @@ export class EnrollmentService {
                     course['OFFERING NUMBER'] = matchingCSVCourse.SectionNumber
                 }
             })
-
         } finally {
             const noCanc = noOfferings.filter((course) => course.TITLE !== "CANCELLED")
 
@@ -196,10 +194,10 @@ export class EnrollmentService {
                 if (course.TITLE !== "CANCELLED") {
                     const newCourse: CSVCourse = {
                         "UnitNumber": course.CAMPUS === "MPC" ? "1" : "2",
-                        "Term": this.term[0],
-                        "Year": this.term.slice(-2),
+                        "Term": this.term,
+                        "Year": this.year,
                         "DepartmentName": course.SUBJECT,
-                        "CourseNumber": course['COURSE NUMBER'].toString(),
+                        "CourseNumber": course['COURSE NUMBER'].toString().padStart(3, "0"),
                         "SectionNumber": course['OFFERING NUMBER'].toString().padStart(3, "0"),
                         "ProfessorName": course['PRIMARY INSTRUCTOR LAST NAME'] ? course['PRIMARY INSTRUCTOR LAST NAME'].toUpperCase() : "TBD",
                         "MaximumCapacity": course['MAXIMUM ENROLLMENT'].toString(),
@@ -233,7 +231,7 @@ export class EnrollmentService {
                 COLLEGE: "",
                 DEPARTMENT: "",
                 SUBJECT: course.DepartmentName,
-                'COURSE NUMBER': parseInt(course.CourseNumber, 10),
+                'COURSE NUMBER': course.CourseNumber,
                 TITLE: course.CourseTitle,
                 'OFFERING NUMBER': course.SectionNumber,
                 'PRIMARY INSTRUCTOR LAST NAME': course.ProfessorName,

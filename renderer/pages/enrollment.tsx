@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation"
 
 export default function EnrollmentHome() {
     const [filePath, setFilePath] = useState<string>("")
+    const [term, setTerm] = useState<string>("")
+    const [year, setYear] = useState<string>("")
     const [prevFilePath, setPrevFilePath] = useState<string>("")
     const [prevFileName, setPrevFileName] = useState<string>("")
     const [prevFileDate, setPrevFileDate] = useState<string>("")
@@ -27,7 +29,7 @@ export default function EnrollmentHome() {
                     if (course1.SUBJECT !== course2.SUBJECT) {
                         return course1.SUBJECT.localeCompare(course2.SUBJECT)
                     } else {
-                        return course1["COURSE NUMBER"] - course2["COURSE NUMBER"]
+                        return course1["COURSE NUMBER"].localeCompare(course2["COURSE NUMBER"])
                     }
                 })
                 setNeedOfferings([...sorted])
@@ -38,6 +40,12 @@ export default function EnrollmentHome() {
             })
         }
     }, [])
+
+    useEffect(() => {
+        if (filePath !== "" && term !== "" && year !== "") {
+            window.ipc.send('enrollment-file-loaded', { filePath, term, year })
+        }
+    }, [filePath, term, year])
 
     useEffect(() => {
         // Format date from file name in MMMMDDYYYY
@@ -63,16 +71,27 @@ export default function EnrollmentHome() {
         if (files) {
             if (id === "xlsx") {
                 setFilePath(files[0].path)
-                window.ipc.send('enrollment-file-loaded', files[0].path)
             } else {
                 setPrevFilePath(files[0].path)
             }
         }
     }
 
+    const handleTermChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.currentTarget
+
+        setTerm(value)
+    }
+
+    const handleYearChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.currentTarget
+
+        setYear(value)
+    }
+
     const handleSubmit = () => {
-        if (filePath !== "") {
-            window.ipc.send('enrollment-upload', { filePath, prevFilePath })
+        if (term !== "" && year !== "" && filePath !== "") {
+            window.ipc.send('enrollment-upload', { filePath, term, year, prevFilePath })
         }
     }
 
@@ -90,7 +109,7 @@ export default function EnrollmentHome() {
     }
 
     const handleNoOffSubmit = () => {
-        window.ipc.send('offerings-submit', ({ filePath, needOfferings }))
+        window.ipc.send('offerings-submit', ({ filePath, term, year, needOfferings }))
     }
 
     return (
@@ -106,51 +125,65 @@ export default function EnrollmentHome() {
                 </Link>
             </div>
             {needOfferings.length <= 0 ? (
-                <div className="mt-3 ml-3">
-                    <div className="flex items-center space-x-2">
-                        <div className="w-auto">
-                            <input
-                                type="file"
-                                id="xlsx"
-                                accept=".xlsx"
-                                onChange={handleFileChange}
-                                className="block text-md text-white border border-gray-600 rounded-lg cursor-pointer bg-gray-700 focus:outline-none placeholder-gray-400" />
+                <>
+                    <div className="flex items-center">
+                        <div className="mt-3 ml-3">
+                            <input type="text" placeholder="Term" maxLength={1} onChange={handleTermChange}
+                                className="rounded px-2 py-1 w-16 bg-gray-700 text-white"
+                            />
                         </div>
-                        <div className="w-auto">
-                            <button
-                                onClick={handleSubmit}
-                                className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 active:scale-95 transition-transform duration-75">
-                                Submit
-                            </button>
+                        <div className="mt-3 ml-3">
+                            <input type="text" placeholder="Year" maxLength={2} onChange={handleYearChange}
+                                className="rounded px-2 py-1 w-16 bg-gray-700 text-white"
+                            />
                         </div>
                     </div>
-                    <label htmlFor="file" className="block mt-1 text-sm font-medium text-white">
-                        Enrollment File
-                    </label>
-                    {prevChecked && (
-                        prevFileName.length > 0 ? (
-                            <div className="mt-3">
-                                Last <span className="font-semibold">{`${prevFileName.split("_")[1].split(/(\d+)/)[0]} ${prevFileName.split("_")[1].split(/(\d+)/)[1]}`}</span> Upload: {prevFileDate}
+                    <div className="mt-5 ml-3">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-auto">
+                                <input
+                                    type="file"
+                                    id="xlsx"
+                                    accept=".xlsx"
+                                    onChange={handleFileChange}
+                                    className="block text-md text-white border border-gray-600 rounded-lg cursor-pointer bg-gray-700 focus:outline-none placeholder-gray-400" />
                             </div>
-                        ) : (
-                            <div className="mt-3">
-                                <div className="flex items-center space-x-2">
-                                    <div className="w-auto">
-                                        <input
-                                            type="file"
-                                            id="csv"
-                                            accept=".csv"
-                                            onChange={handleFileChange}
-                                            className="block text-md text-white border border-gray-600 rounded-lg cursor-pointer bg-gray-700 focus:outline-none placeholder-gray-400" />
-                                    </div>
+                            <div className="w-auto">
+                                <button
+                                    onClick={handleSubmit}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 active:scale-95 transition-transform duration-75">
+                                    Submit
+                                </button>
+                            </div>
+                        </div>
+                        <label htmlFor="file" className="block mt-1 text-sm font-medium text-white">
+                            Enrollment File
+                        </label>
+                        {prevChecked && (
+                            prevFileName.length > 0 ? (
+                                <div className="mt-3">
+                                    Last <span className="font-semibold">{`${prevFileName.split("_")[1].split(/(\d+)/)[0]} ${prevFileName.split("_")[1].split(/(\d+)/)[1]}`}</span> Upload: {prevFileDate}
                                 </div>
-                                <label htmlFor="file" className="block mt-1 text-sm font-medium text-white">
-                                    Previous File
-                                </label>
-                            </div>
-                        )
-                    )}
-                </div>
+                            ) : (
+                                <div className="mt-3">
+                                    <div className="flex items-center space-x-2">
+                                        <div className="w-auto">
+                                            <input
+                                                type="file"
+                                                id="csv"
+                                                accept=".csv"
+                                                onChange={handleFileChange}
+                                                className="block text-md text-white border border-gray-600 rounded-lg cursor-pointer bg-gray-700 focus:outline-none placeholder-gray-400" />
+                                        </div>
+                                    </div>
+                                    <label htmlFor="file" className="block mt-1 text-sm font-medium text-white">
+                                        Previous File
+                                    </label>
+                                </div>
+                            )
+                        )}
+                    </div>
+                </>
             ) : (
                 <MatchTable needOfferings={needOfferings} handleOfferingChange={handleOfferingChange} handleNoOffSubmit={handleNoOffSubmit} />
             )}
