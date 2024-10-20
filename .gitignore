@@ -1,15 +1,72 @@
-# dependencies
-node_modules
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+package-lock.json
+yarn.lock
 
-# logs
+# Next.js
+.next/
+out/
+*.next/
+*.log
+.DS_Store
+
+# Electron
+dist/
+electron-builder.yml
+release/
+*.exe
+*.app
+*.dmg
+*.tar.gz
+*.zip
+app/
+
+# Build directories
+build/
+coverage/
+public/static/
+
+# Miscellaneous
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+*.swp
+*.swo
+*.lock
+*.tgz
+
+# Log files
 *.log
 
-# next.js
-.next
-next-env.d.ts
+# System files
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
+*.bak
+*.tmp
 
-# build
-/app
-dist
+# IDE files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
 
-resources/stores/*
+# MacOS
+*.DS_Store
+
+# Tailwind CSS
+tailwind.config.js
+
+# Other files
+package.json.lock
+
+resources/
+tmp/

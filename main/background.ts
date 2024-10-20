@@ -3,10 +3,12 @@ import fs from 'fs'
 import { app, ipcMain, dialog, BrowserWindow, Menu, shell, MenuItem, Tray, nativeImage } from 'electron'
 import serve from 'electron-serve'
 import { v4 as uuidv4 } from 'uuid'
-import { createWindow, updateSidebarPosition, updateBottomBarPosition, menuTemplate } from './helpers'
-import { DevService, SalesService, DecisionService, AdoptionService, EnrollmentService } from './services'
+import { createWindow, updateSidebarPosition, updateBottomBarPosition } from './electron-utils'
+import { DevService, SalesService, DecisionService, AdoptionService, EnrollmentService } from './utils'
 import { TemplateAdoption } from '../types/TemplateAdoption'
 import { XLSXCourse } from '../types/Enrollment'
+import { matchEnrollment, submitEnrollment } from './processes/enrollment'
+import fileSys from './utils/fileSys'
 
 const isProd = process.env.NODE_ENV === 'production'
 const storesPath = path.join(__dirname, '..', 'resources', 'stores')
@@ -39,10 +41,6 @@ let tray: Tray
         preload: path.join(__dirname, 'preload.js')
       },
     })
-
-    // Application Menu
-    const menu = Menu.buildFromTemplate(menuTemplate)
-    Menu.setApplicationMenu(menu)
 
     // Tray
     const icon = nativeImage.createFromPath(iconPath)
@@ -122,6 +120,47 @@ ipcMain.on('store-change', async (event, data) => {
 // On app initialization, check for mode and store
 ipcMain.on('init-check', async (event) => {
   event.reply('init-reply', { isDev: !isProd, store: global.store | 0 })
+})
+
+ipcMain.on('enrollment', async (event, { method, data }: { method: string, data: (string | XLSXCourse)[] }) => {
+  switch (method) {
+    case 'file-upload':
+      try {
+        const enrollment = await matchEnrollment(data as string[])
+        event.reply('enrollment-data', enrollment)
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance or try again.`)
+      }
+      break
+
+    case 'file-download':
+      try {
+        const { fileName, csv } = await submitEnrollment(data as XLSXCourse[])
+        const [match, term, year] = fileName.match(/([A-Za-z]+)(\d+)/)
+
+        dialog.showSaveDialog({
+          defaultPath: path.join(app.getPath('downloads'), `${fileName}_Formatted`),
+          filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+        })
+          .then(async (result) => {
+            if (!result.canceled && result.filePath) {
+              // Write csv to resources directory under proper term
+              await fileSys.resources.write('enrollment', `${term} ${year}`, fileName, csv)
+              // Write csv to user selected file path
+              fs.writeFile(result.filePath, csv, (err) => {
+                if (err) {
+                  throw Error("Couldn't write CSV to selected path.")
+                }
+                event.reply('enrl-success')
+              })
+            }
+          })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance or try again.`)
+      }
+  }
 })
 
 // ** BUYING DECISION **
@@ -308,118 +347,37 @@ ipcMain.on('template-submit', (event, { templateCourses, term, campus }: { templ
   }
 })
 
-// ** ENROLLMENT **
-ipcMain.on('enrollment-file-loaded', async (event, filePath: string) => {
-  const enrollmentService = new EnrollmentService(filePath)
-  try {
-    const { prevCourses, fileName } = await enrollmentService.getPrevEnrollment()
-    event.reply('enrollment-file-found', fileName)
-  } catch (err) {
-    dialog.showMessageBox(mainWindow, {
-      type: "warning",
-      title: "Enrollment",
-      message: "No previous enrollment file found.\n\nTry again or continue without one."
-    })
-    event.reply('enrollment-file-found', "")
-  }
-})
+// ** DEV **
+// ipcMain.on('new-sales', async (event, data) => {
+//   const store: number = data.store
+//   const term: string = data.term
+//   const filePath: string = data.filePath
 
-ipcMain.on('enrollment-upload', async (event, { filePath, prevFilePath }: { filePath: string, prevFilePath: string }) => {
-  const enrollmentService = new EnrollmentService(filePath)
-  try {
-    if (prevFilePath !== "") {
-      await enrollmentService.createPrevEnrollment(prevFilePath)
-    }
-    const { courses, noMatch } = await enrollmentService.matchPrevOfferings()
-    event.reply('need-offering', noMatch)
-  } catch (err) {
-    console.error(err)
-  }
-})
+//   const storePath = path.join(storesPath, `${store}`)
+//   const termPath = path.join(storePath, 'sales', `${term}.json`)
 
-ipcMain.on('offerings-submit', async (event, { filePath, needOfferings }: { filePath: string, needOfferings: XLSXCourse[] }) => {
-  const enrollmentService = new EnrollmentService(filePath)
-  try {
-    const { csv, json } = await enrollmentService.createCourseCSV(needOfferings)
-    dialog.showSaveDialog({
-      defaultPath: path.join(app.getPath('downloads'), `${enrollmentService.fileName}_Formatted`),
-      filters: [{ name: 'CSV Files', extensions: ['csv'] }]
-    })
-      .then(result => {
-        if (!result.canceled && result.filePath) {
-          // Create directory, if doesn't exist, and write new CSV file to JSON for next enrollment
-          if (fs.existsSync(enrollmentService.enrollPath)) {
-            fs.readdir(enrollmentService.enrollPath, (err, files) => {
-              fs.unlink(path.join(enrollmentService.enrollPath, files[0]), (err) => {
-                if (err) {
-                  throw new Error("Something went wrong deleting old JSON file.")
-                }
-                fs.writeFile(path.join(enrollmentService.enrollPath, `${enrollmentService.fileName}.json`), JSON.stringify(json, null, 4), 'utf8', (err) => {
-                  if (err) {
-                    throw new Error("Something went wrong creating new JSON file.")
-                  }
-                })
-              })
+//   if (!fs.existsSync(storePath)) {
+//     fs.mkdir(path.join(storePath, 'sales'), { recursive: true }, (err) => {
+//       if (err) {
+//         console.error(err)
+//         return
+//       }
+//     })
+//   }
 
-            })
-          } else {
-            fs.mkdir(enrollmentService.enrollPath, { recursive: true }, (err) => {
-              if (err) {
-                throw new Error("Something went wrong creating the CSV directory.")
-              }
-              fs.writeFile(path.join(enrollmentService.enrollPath, `${enrollmentService.fileName}.json`), JSON.stringify(json, null, 4), 'utf8', (err) => {
-                if (err) {
-                  throw new Error("Something went wrong with creating the JSON file after creating the directory.")
-                }
-              })
-            })
-          }
-          // Write csv file to user selected filepath
-          fs.writeFile(result.filePath, csv, 'utf8', (err) => {
-            if (err) {
-              throw new Error()
-            }
-            mainWindow.webContents.send('download-success')
-          })
-        }
-      })
-  } catch (err) {
-    console.error(err)
-    dialog.showErrorBox("Error", "Something went wrong with creating the new CSV.\n\nTry again later.")
-  }
-})
+//   const devService = new DevService(filePath)
 
-// ** DEV ** 
-ipcMain.on('new-sales', async (event, data) => {
-  const store: number = data.store
-  const term: string = data.term
-  const filePath: string = data.filePath
-
-  const storePath = path.join(storesPath, `${store}`)
-  const termPath = path.join(storePath, 'sales', `${term}.json`)
-
-  if (!fs.existsSync(storePath)) {
-    fs.mkdir(path.join(storePath, 'sales'), { recursive: true }, (err) => {
-      if (err) {
-        console.error(err)
-        return
-      }
-    })
-  }
-
-  const devService = new DevService(filePath)
-
-  try {
-    const newSales = await devService.addNewSales(devService.fileData, devService.headerIndices, event)
-    fs.writeFile(termPath, JSON.stringify(newSales, null, 4), 'utf8', () => {
-      dialog.showMessageBox(mainWindow,
-        {
-          type: "info",
-          title: "OwlGuide",
-          message: `Success\n Store: ${data.store}\n Term: ${data.term}\n Total Titles: ${Object.keys(newSales).length}`
-        })
-    })
-  } catch (err) {
-    console.error(err)
-  }
-})
+//   try {
+//     const newSales = await devService.addNewSales(devService.fileData, devService.headerIndices, event)
+//     fs.writeFile(termPath, JSON.stringify(newSales, null, 4), 'utf8', () => {
+//       dialog.showMessageBox(mainWindow,
+//         {
+//           type: "info",
+//           title: "OwlGuide",
+//           message: `Success\n Store: ${data.store}\n Term: ${data.term}\n Total Titles: ${Object.keys(newSales).length}`
+//         })
+//     })
+//   } catch (err) {
+//     console.error(err)
+//   }
+// })

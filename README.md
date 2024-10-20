@@ -1,10 +1,16 @@
-<p align="center"><img height="100%" width="200px" src="renderer/public/images/owl.png"></p>
+# OwlGuide
 
-<h1 align="center">OwlGuide</h1>
+<img src="renderer/public/images/owl.png" alt="Logo" width="100" />
 
-<p align="center">Application created to help with various aspects of mananging textbooks at Barnes & Noble</p>
-<p align="center">Includes enhanced buying decision, adoption assistance, and enrollment file conversion</p>
-<br>
+## Overview
 
-<p align="center">Powered by NextJS and Electron</p>
+A user-friendly application designed to simplify various aspects of managing textbooks at Barnes & Noble Education.
 
+## Features
+
+- Enhanced buying insights to inform decisions
+- Support for adoption processes
+- Easy enrollment file conversion
+
+## Installation
+Download the latest release from the link above and run the setup executable to install the application.

@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { TXTService } from "./"
+import { TXTService } from "."
 import Sales from '../../types/Sales'
 import Decision from '../../types/Decision'
 

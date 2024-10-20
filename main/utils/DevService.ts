@@ -1,6 +1,6 @@
 import { IpcMainEvent } from 'electron'
 import { TXTService } from './'
-import { convertTitleCase, fetchBookData } from "../helpers/dev"
+import { convertTitleCase, fetchBookData } from "../electron-utils/dev"
 import Sales from '../../types/Sales'
 import { Book, Semester } from "../../types/Book"
 
@@ -10,7 +10,7 @@ export class DevService {
 
     constructor(filePath?: string) {
         const txtService = new TXTService(filePath)
-        this.fileData = txtService.finalData
+        this.fileData = txtService.readFileData()
         this.headerIndices = txtService.headerIndices
     }
 

@@ -60,8 +60,8 @@ export default function HomePage() {
             className="ml-auto mr-auto"
             src="/images/owl.png"
             alt="Owl logo"
-            width={140}
-            height={140}
+            width={110}
+            height={110}
           />
         </div>
         <span className="courgette-regular">OwlGuide</span>
