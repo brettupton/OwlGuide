@@ -1,23 +1,18 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { MutableRefObject, useEffect } from 'react'
-import { useStoreContext } from '../contexts/StoreContext'
+import { MutableRefObject } from 'react'
 
 interface HeaderProps {
     isMenuOpen: boolean
-    isChildWindow: boolean
     handleMenuToggle: () => void
+    isChildWindow: boolean
+    isHelpMenuOpen: boolean
+    handleHelpMenuToggle: () => void
+    appVer: string
     HeaderMenuRef: MutableRefObject<any>
 }
 
-export default function Header({ isMenuOpen, isChildWindow, handleMenuToggle, HeaderMenuRef }: HeaderProps) {
-    const { store, setStore } = useStoreContext()
-
-    const handleResetStoreClick = () => {
-        setStore(0)
-        handleMenuToggle()
-    }
-
+export default function Header({ isMenuOpen, handleMenuToggle, isChildWindow, isHelpMenuOpen, handleHelpMenuToggle, appVer, HeaderMenuRef }: HeaderProps) {
     const handleMinimize = () => {
         window.ipc.send('minimize-app')
     }
@@ -26,8 +21,8 @@ export default function Header({ isMenuOpen, isChildWindow, handleMenuToggle, He
         window.ipc.send('close-app')
     }
 
-    const handleHelp = () => {
-
+    const openGithubLink = () => {
+        window.ipc.send('open-github')
     }
 
     return (
@@ -41,16 +36,14 @@ export default function Header({ isMenuOpen, isChildWindow, handleMenuToggle, He
                         width={30}
                         height={30}
                     />
-                    {store > 0 &&
-                        <button onClick={handleMenuToggle}>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-7">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                            </svg>
-                        </button>
-                    }
+                    <button onClick={handleMenuToggle}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-7">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                        </svg>
+                    </button>
                 </div>
                 <div className="flex items-center space-x-2 window-controls">
-                    <button onClick={handleHelp}>
+                    <button onClick={handleHelpMenuToggle}>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                         </svg>
@@ -82,7 +75,19 @@ export default function Header({ isMenuOpen, isChildWindow, handleMenuToggle, He
                         <div className="p-2 cursor-pointer hover:bg-gray-100">Enrollment</div>
                     </Link>
                     <div className="border-t border-gray-300"></div>
-                    <div className="p-1 text-sm text-center cursor-pointer hover:bg-gray-100" onClick={handleResetStoreClick}>Store: {store}</div>
+                </div>
+                <div className={`flex flex-col absolute text-black text-sm top-full right-20 mt-2 bg-white border border-gray-300 shadow-lg rounded-md ${isHelpMenuOpen ? 'block' : 'hidden'}`}>
+                    <div className="flex px-2">
+                        Version {appVer}
+                    </div>
+                    <div className="flex px-2">
+                        Canari 2024
+                    </div>
+                    <div className="flex px-2">
+                        <button onClick={openGithubLink} className="text-blue-600 underline" rel="noopener noreferrer">
+                            GitHub
+                        </button>
+                    </div>
                 </div>
             </header>
             :

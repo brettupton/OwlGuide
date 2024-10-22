@@ -2,8 +2,8 @@ export type TemplateAdoption = {
     Course: string
     Title: string
     ISBN: string
-    noText: boolean
     ID: string
+    noText: boolean
 }
 
 export type AdoptionCSV = {

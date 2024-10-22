@@ -4,14 +4,13 @@ import { app, ipcMain, dialog, BrowserWindow, Menu, shell, MenuItem, Tray, nativ
 import serve from 'electron-serve'
 import { v4 as uuidv4 } from 'uuid'
 import { createWindow, updateSidebarPosition, updateBottomBarPosition } from './electron-utils'
-import { DevService, SalesService, DecisionService, AdoptionService, EnrollmentService } from './utils'
+import { DevService, SalesService, DecisionService, AdoptionService } from './utils'
 import { TemplateAdoption } from '../types/TemplateAdoption'
 import { XLSXCourse } from '../types/Enrollment'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
 import fileSys from './utils/fileSys'
 
 const isProd = process.env.NODE_ENV === 'production'
-const storesPath = path.join(__dirname, '..', 'resources', 'stores')
 const iconPath = path.join(__dirname, '..', 'renderer', 'public', 'images', 'owl.ico')
 const appHomeURL = isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`
 const childWindowURL = isProd ? 'app://./child' : `http://localhost:${process.argv[2]}/child`
@@ -62,7 +61,12 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-ipcMain.on('close-bars', () => {
+// On app initialization, check for mode
+ipcMain.on('initialize', async (event) => {
+  event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion() })
+})
+
+ipcMain.on('close-child', () => {
   if (salesWindow) {
     salesWindow.close()
   }
@@ -71,6 +75,7 @@ ipcMain.on('close-bars', () => {
   }
 })
 
+// Header Processes
 ipcMain.on('minimize-app', (event) => {
   const window = BrowserWindow.getFocusedWindow()
   if (window) window.minimize()
@@ -79,6 +84,10 @@ ipcMain.on('minimize-app', (event) => {
 ipcMain.on('close-app', (event) => {
   const window = BrowserWindow.getFocusedWindow()
   if (window) window.close()
+})
+
+ipcMain.on('open-github', (event) => {
+  shell.openExternal("https://github.com/brettupton/owlguide")
 })
 
 // Right Mouse Click Menu
@@ -110,16 +119,6 @@ ipcMain.on('context-menu', (event, { x, y, query }: { x: number, y: number, quer
     contextMenu.append(searchGoogle)
   }
   contextMenu.popup({ window: mainWindow })
-})
-
-ipcMain.on('store-change', async (event, data) => {
-  const store: number = data.store
-  global.store = store
-})
-
-// On app initialization, check for mode and store
-ipcMain.on('init-check', async (event) => {
-  event.reply('init-reply', { isDev: !isProd, store: global.store | 0 })
 })
 
 ipcMain.on('enrollment', async (event, { method, data }: { method: string, data: (string | XLSXCourse)[] }) => {

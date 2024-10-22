@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { TXTService } from "."
-import Sales from '../../types/Sales'
+import { Sales } from '../../types/Book'
 import Decision from '../../types/Decision'
 
 interface BDReturn {
