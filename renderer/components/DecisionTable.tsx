@@ -1,79 +1,53 @@
-import { MutableRefObject } from "react"
-import Decision from "../../types/Decision"
+import { Decision } from "../../types/Decision"
 
 interface DecisionTableProps {
-    BDData: Decision[]
-    activeTab: string
-    handleISBNClick: (isbn: string) => void
-    SalesTableRef: MutableRefObject<any>
+    data: Decision[]
+    term: string
+    handleRowClick: (isbn: string, title: string) => void
+    activeBook: { ISBN: string, Title: string }
 }
 
-export default function DecisionTable({ BDData, activeTab, handleISBNClick, SalesTableRef }: DecisionTableProps) {
-    const filteredBDData = BDData.filter(({ Difference }) => {
-        if (activeTab === 'All') return true
-        if (activeTab === 'QT5' && Difference > 5) return true
-        if (activeTab === 'LT5' && Difference > 0 && Difference < 5) return true
-        if (activeTab === 'EQ0' && Difference === 0) return true
-        return false
-    })
-
-    const rowClass = (diff: number) =>
-        `border-b border-white text-gray-200 font-semibold ${diff === 0
-            ? "bg-gradient-to-r from-green-200 to-green-300 text-green-800 hover:text-green-600"
-            : diff < 5
-                ? "bg-gradient-to-r from-yellow-200 to-yellow-300 text-yellow-800 hover:text-yellow-600"
-                : "bg-gradient-to-r from-red-200 to-red-300 text-red-800 hover:text-red-600"
-        }`
-
+export default function DecisionTable({ data, term, handleRowClick, activeBook }: DecisionTableProps) {
+    const fields = Object.keys(data[0])
     return (
-        <>
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-9.6rem)]">
-                <table className="w-full sm:text-sm lg:text-md text-left rtl:text-right" ref={SalesTableRef}>
-                    <thead className="text-gray-200 uppercase border-b bg-gray-600 sticky top-0">
+        <div className="flex flex-col">
+            <div className="flex mx-3 my-1 gap-1 text-sm">
+                Term: {term}
+            </div>
+            <div className="mx-2 relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-7.5rem)]">
+                <table className="w-full text-sm text-left rtl:text-right text-white">
+                    <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                         <tr>
-                            <th scope="col" className="px-6 py-3">
-                                ISBN
-                            </th>
-                            <th scope="col" className="px-6 py-3">
-                                Title
-                            </th>
-                            <th scope="col" className="px-6 py-3">
-                                Enrl
-                            </th>
-                            <th scope="col" className="px-6 py-3 ">
-                                Old
-                            </th>
-                            <th scope="col" className="px-6 py-3">
-                                New
-                            </th>
+                            {fields.map((header, index) => {
+                                return (
+                                    <th scope="col" className="p-2" key={index}>
+                                        {header}
+                                    </th>
+                                )
+                            })}
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredBDData.map((book, key) => {
+                        {data.map((row, index) => {
                             return (
-                                <tr className={rowClass(book.Difference)} key={key} onClick={() => handleISBNClick(book.ISBN)}>
-                                    <td className="px-4 py-4 whitespace-nowrap">
-                                        {book.ISBN}
-                                    </td>
-                                    <td className="px-6 py-4 truncate">
-                                        {book.Title}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        {book.Enrollment}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        {book.oldDecision}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        {book.newDecision}
-                                    </td>
+                                <tr
+                                    className={`${activeBook && activeBook.ISBN === row["ISBN"] && activeBook.Title === row["Title"] ? 'bg-gray-400' : 'bg-gray-800'} border-b border-gray-700 hover:bg-gray-600`}
+                                    key={index}
+                                    onClick={() => handleRowClick(row["ISBN"], row["Title"])}
+                                >
+                                    {fields.map((field) => {
+                                        return (
+                                            <td className={`p-2 ${typeof (row[field]) === "number" && field !== "ISBN" ? "text-center" : ""}`}>
+                                                {row[field].length > 34 ? row[field].slice(0, 33) + "..." : row[field]}
+                                            </td>
+                                        )
+                                    })}
                                 </tr>
                             )
                         })}
                     </tbody>
                 </table>
             </div>
-            <div className="flex justify-end px-2 py-1 sm:text-sm lg:text-lg">{filteredBDData.length} / {Object.keys(BDData).length}</div>
-        </>
+        </div>
     )
 }

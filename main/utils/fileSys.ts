@@ -3,6 +3,7 @@ import path from 'path'
 import XLSX from 'xlsx'
 import Papa from 'papaparse'
 import { CSVCourse, XLSXCourse } from '../../types/Enrollment'
+import { XLSXDecision } from '../../types/Decision'
 
 const tempPath = path.join(__dirname, '..', 'main', 'tmp')
 const resourcesPath = path.join(__dirname, '..', 'main', 'resources')
@@ -30,17 +31,17 @@ const readCSVFile = (filePath: string): Promise<CSVCourse[]> => {
     })
 }
 
-const readXLSXFile = (filePath: string): Promise<{ term: string, data: XLSXCourse[] }> => {
+const readXLSXFile = (filePath: string, process: "enrollment" | "decision"): Promise<any[]> => {
     return new Promise(async (resolve, reject) => {
         try {
-            const term = await getTermFromPath(filePath)
             const wb = XLSX.readFile(filePath)
-
             const wsname = wb.SheetNames[0]
-            const ws = wb.Sheets[wsname]
-            const data: XLSXCourse[] = XLSX.utils.sheet_to_json(ws)
+            let ws = wb.Sheets[wsname]
+            // Decision XLSX has four unncessary rows at beginning of sheet
+            const startingRow = process === "decision" ? 4 : 0
+            let data: (XLSXCourse | XLSXDecision)[] = XLSX.utils.sheet_to_json(ws, { range: startingRow })
 
-            resolve({ term, data })
+            resolve(data)
         } catch (error) {
             reject(`Error reading XLSX file: ${error}`)
         }
@@ -170,18 +171,7 @@ const readResourcesDir = (resource: string, term: string): Promise<CSVCourse[]> 
     })
 }
 
-const getTermFromPath = (filePath: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const match = filePath.match(/([A-Za-z]+)(\d+)/)
-
-        if (!match || !match[1] || !match[2]) {
-            reject("Term Regex Not Found ([A-Za-z]+)(\d+)")
-        }
-        resolve(`${match[1]} ${match[2]}`)
-    })
-}
-
-const fileSys = {
+export const fileSys = {
     temp: {
         read: readTempDir,
         write: writeTempDir
@@ -189,11 +179,11 @@ const fileSys = {
     csv: {
         read: readCSVFile
     },
+    xlsx: {
+        read: readXLSXFile
+    },
     resources: {
         read: readResourcesDir,
         write: writeResourcesDir
-    },
-    readXLSXFile
+    }
 }
-
-export default fileSys

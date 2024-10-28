@@ -1,5 +1,5 @@
 import { CSVCourse, XLSXCourse } from "../../types/Enrollment"
-import fileSys from "../utils/fileSys"
+import { fileSys } from "../utils"
 import Papa from 'papaparse'
 
 const matchEnrollment = async (filePaths: string[]) => {
@@ -7,7 +7,15 @@ const matchEnrollment = async (filePaths: string[]) => {
         // Multiple files, search for XLSX and CSV paths in array
         const xlsxFilePath = filePaths.find((filePath) => filePath.search(/xlsx/) > -1)
         const csvFilePath = filePaths.find((filePath) => filePath.search(/csv/) > -1)
-        const { term, data } = await fileSys.readXLSXFile(xlsxFilePath)
+        const data = await fileSys.xlsx.read(xlsxFilePath, 'enrollment')
+
+        const match = xlsxFilePath.match(/([A-Za-z]+)(\d+)/)
+        let term = ""
+        if (!match || !match[1] || !match[2]) {
+            throw new Error("Term Regex Not Found ([A-Za-z]+)(\d+)")
+        }
+        term = `${match[1]} ${match[2]}`
+
         let csvFile = await fileSys.resources.read("enrollment", term)
 
         // Check if user submitted CSV file to use for matching

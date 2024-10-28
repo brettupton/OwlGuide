@@ -1,19 +1,19 @@
 import path from 'path'
 import fs from 'fs'
-import { app, ipcMain, dialog, BrowserWindow, Menu, shell, MenuItem, Tray, nativeImage } from 'electron'
+import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'electron'
 import serve from 'electron-serve'
 import { v4 as uuidv4 } from 'uuid'
-import { createWindow, updateSidebarPosition, updateBottomBarPosition } from './electron-utils'
-import { DevService, SalesService, DecisionService, AdoptionService } from './utils'
+import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
+import { AdoptionService } from './utils'
 import { TemplateAdoption } from '../types/TemplateAdoption'
 import { XLSXCourse } from '../types/Enrollment'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
-import fileSys from './utils/fileSys'
+import { getTermDecisions, getFileDecisions } from './processes/decision'
+import { sqlDB, fileSys } from './utils'
 
 const isProd = process.env.NODE_ENV === 'production'
 const iconPath = path.join(__dirname, '..', 'renderer', 'public', 'images', 'owl.ico')
 const appHomeURL = isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`
-const childWindowURL = isProd ? 'app://./child' : `http://localhost:${process.argv[2]}/child`
 
 if (isProd) {
   serve({ directory: 'app' })
@@ -22,9 +22,8 @@ if (isProd) {
 }
 
 let mainWindow: BrowserWindow | undefined
-let salesWindow: BrowserWindow | undefined
+let childWindow: BrowserWindow | undefined
 let adoptionWindow: BrowserWindow | undefined
-let contextMenu: Menu
 let tray: Tray
 
   ; (async () => {
@@ -61,18 +60,9 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-// On app initialization, check for mode
+// On app initialization, check for mode and version
 ipcMain.on('initialize', async (event) => {
   event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion() })
-})
-
-ipcMain.on('close-child', () => {
-  if (salesWindow) {
-    salesWindow.close()
-  }
-  if (adoptionWindow) {
-    adoptionWindow.close()
-  }
 })
 
 // Header Processes
@@ -92,33 +82,15 @@ ipcMain.on('open-github', (event) => {
 
 // Right Mouse Click Menu
 ipcMain.on('context-menu', (event, { x, y, query }: { x: number, y: number, query: string }) => {
-  contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Cut',
-      role: 'cut'
-    },
-    {
-      label: 'Copy',
-      role: 'copy'
-    },
-  ])
-  const inspect = new MenuItem({
-    label: 'Inspect Element',
-    click: () => {
-      mainWindow.webContents.inspectElement(x, y)
-    }
-  })
-  const searchGoogle = new MenuItem({
-    label: 'Search Google',
-    click: () => {
-      shell.openExternal(`https://www.google.com/search?q=${encodeURIComponent(query)}`)
-    }
-  })
-  contextMenu.append(inspect)
-  if (query) {
-    contextMenu.append(searchGoogle)
-  }
+  const contextMenu = rightClickMenu(x, y, query, mainWindow)
   contextMenu.popup({ window: mainWindow })
+})
+
+ipcMain.on('close-child', () => {
+  if (childWindow) {
+    childWindow.close()
+    childWindow = null
+  }
 })
 
 ipcMain.on('enrollment', async (event, { method, data }: { method: string, data: (string | XLSXCourse)[] }) => {
@@ -159,86 +131,63 @@ ipcMain.on('enrollment', async (event, { method, data }: { method: string, data:
         console.error(error)
         dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance or try again.`)
       }
+      break
   }
 })
 
-// ** BUYING DECISION **
-ipcMain.on('decision-upload', async (event, data) => {
-  const filePath: string = data.filePath
-  const buyingService = new DecisionService(filePath)
-  let salesService: SalesService
-  let BDTerm: string
-  let isbn: string
-
-  try {
-    const { newBD, term } = await buyingService.getNewBD()
-    salesService = new SalesService(term)
-    BDTerm = term
-    isbn = newBD[0].ISBN
-
-    salesWindow = new BrowserWindow({
-      width: mainWindow.getBounds().width / 2,
-      height: mainWindow.getContentBounds().height,
-      frame: false,
-      parent: mainWindow,
-      webPreferences: {
-        preload: path.join(__dirname, 'preload.js')
+ipcMain.on('sql', async (event, { method, data }) => {
+  switch (method) {
+    case "get-table-page":
+      try {
+        const { rows, total } = await sqlDB.getTablePage(data.name, data.offset, data.limit)
+        event.reply('table-page', { rows, total })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("SQL", `Check the console.`)
       }
-    })
-
-    await salesWindow.loadURL(path.join(childWindowURL, 'decision-sales'))
-
-    // Move sidebar to position on first load
-    updateSidebarPosition(mainWindow, salesWindow)
-
-    // Update sidebar location on move or resize of main window
-    mainWindow.on('move', () => {
-      if (salesWindow) {
-        updateSidebarPosition(mainWindow, salesWindow)
-      }
-    })
-
-    mainWindow.on('resize', () => {
-      if (salesWindow) {
-        updateSidebarPosition(mainWindow, salesWindow)
-      }
-    })
-
-    // Clean up sidebar event listeners when closed
-    salesWindow.on('closed', () => {
-      salesWindow = null
-      mainWindow.removeListener('move', () => {
-        if (salesWindow) {
-          updateSidebarPosition(mainWindow, salesWindow)
-        }
-      })
-      mainWindow.removeListener('resize', () => {
-        if (salesWindow) {
-          updateSidebarPosition(mainWindow, salesWindow)
-        }
-      })
-    })
-    event.reply('new-decision', { newBD: newBD, term: term })
-  } catch (err) {
-    console.error(err)
-    dialog.showErrorBox("Decision", "Something went wrong creating new buying decision.\n\nTry again later.")
   }
-
-  try {
-    const book = await salesService.searchISBN(isbn)
-    salesWindow.webContents.send('isbn-data', { isbn, BDTerm, book })
-  } catch (err) {
-    console.error(err)
-  }
-
 })
 
-ipcMain.on('isbn-lookup', async (event, { isbn, term }) => {
-  const BDTerm = term
-  const salesService = new SalesService(term)
-  const book = await salesService.searchISBN(isbn)
+ipcMain.on('decision', async (event, { method, data }) => {
+  switch (method) {
+    case 'file-upload':
+      try {
+        const { decisions, term } = await getFileDecisions(data[0])
+        event.reply('decision-data', { decisions, term })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance or try again later.`)
+        event.reply('file-error')
+      }
+      break
 
-  salesWindow.webContents.send('isbn-data', { isbn, BDTerm, book })
+    case "get-term-decision":
+      try {
+        const decisions = await getTermDecisions(data.term)
+        event.reply('decision-data', decisions)
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance or try again later.`)
+        event.reply('decision-data', [])
+      }
+      break
+
+    case "child-decision":
+      try {
+        if (!childWindow) {
+          childWindow = await createChildWindow(mainWindow, "decision-history", "right")
+        }
+
+        const [term, year] = data.term.match(/[a-zA-z]|\d+/g)
+        const salesHistory = await sqlDB.getAllPrevSalesByBook(term, year, data.isbn, data.title)
+
+        childWindow.webContents.send('history', salesHistory)
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance or try again later.`)
+      }
+      break
+  }
 })
 
 // ** ADOPTIONS **
@@ -254,62 +203,6 @@ ipcMain.on('adoption-upload', async (event, filePath: string) => {
   } catch (err) {
     console.error(err)
     dialog.showErrorBox("Adoption Error", "There was an error parsing adoption data.\n\n Please try again.")
-  }
-})
-
-ipcMain.on('create-template-window', async (event) => {
-  if (adoptionWindow) {
-    adoptionWindow.close()
-  }
-
-  try {
-    adoptionWindow = new BrowserWindow({
-      width: mainWindow.getContentBounds().width - 9,
-      height: mainWindow.getContentBounds().height * (1 / 3),
-      frame: false,
-      movable: false,
-      resizable: false,
-      parent: mainWindow,
-      webPreferences: {
-        preload: path.join(__dirname, 'preload.js')
-      }
-    })
-
-    const port = process.argv[2]
-    await adoptionWindow.loadURL(`http://localhost:${port}/adoption/new-template`)
-
-    // Move sidebar to position on first load
-    updateBottomBarPosition(mainWindow, adoptionWindow)
-
-    // Update sidebar location on move or resize of main window
-    mainWindow.on('move', () => {
-      if (adoptionWindow) {
-        updateBottomBarPosition(mainWindow, adoptionWindow)
-      }
-    })
-
-    mainWindow.on('resize', () => {
-      if (adoptionWindow) {
-        updateBottomBarPosition(mainWindow, adoptionWindow)
-      }
-    })
-
-    // Clean up sidebar event listeners when closed
-    adoptionWindow.on('closed', () => {
-      adoptionWindow = null
-      mainWindow.removeListener('move', () => {
-        if (adoptionWindow) {
-          updateBottomBarPosition(mainWindow, adoptionWindow)
-        }
-      })
-      mainWindow.removeListener('resize', () => {
-        if (adoptionWindow) {
-          updateBottomBarPosition(mainWindow, adoptionWindow)
-        }
-      })
-    })
-  } catch (err) {
-    console.error('Error opening sidebar: ', err)
   }
 })
 
@@ -345,38 +238,3 @@ ipcMain.on('template-submit', (event, { templateCourses, term, campus }: { templ
     dialog.showErrorBox("Error", "Error downloading template.\n\nPlease try again.")
   }
 })
-
-// ** DEV **
-// ipcMain.on('new-sales', async (event, data) => {
-//   const store: number = data.store
-//   const term: string = data.term
-//   const filePath: string = data.filePath
-
-//   const storePath = path.join(storesPath, `${store}`)
-//   const termPath = path.join(storePath, 'sales', `${term}.json`)
-
-//   if (!fs.existsSync(storePath)) {
-//     fs.mkdir(path.join(storePath, 'sales'), { recursive: true }, (err) => {
-//       if (err) {
-//         console.error(err)
-//         return
-//       }
-//     })
-//   }
-
-//   const devService = new DevService(filePath)
-
-//   try {
-//     const newSales = await devService.addNewSales(devService.fileData, devService.headerIndices, event)
-//     fs.writeFile(termPath, JSON.stringify(newSales, null, 4), 'utf8', () => {
-//       dialog.showMessageBox(mainWindow,
-//         {
-//           type: "info",
-//           title: "OwlGuide",
-//           message: `Success\n Store: ${data.store}\n Term: ${data.term}\n Total Titles: ${Object.keys(newSales).length}`
-//         })
-//     })
-//   } catch (err) {
-//     console.error(err)
-//   }
-// })

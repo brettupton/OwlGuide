@@ -1,3 +1,3 @@
 export * from './create-window'
-export * from './sidebar-pos'
-export * from './menu-template'
+export * from './child-window'
+export * from './right-click-menu'

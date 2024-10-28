@@ -71,7 +71,7 @@ function App({ Component, pageProps }: AppProps) {
   }, [router])
 
   return (
-    <>
+    <div className="flex flex-col h-screen">
       <Header
         isMenuOpen={isMenuOpen}
         handleMenuToggle={handleMenuToggle}
@@ -82,7 +82,7 @@ function App({ Component, pageProps }: AppProps) {
         HeaderMenuRef={HeaderMenuRef} />
       <Component {...pageProps}
         isDev={isDev} />
-    </>
+    </div>
   )
 }
 
