@@ -6,7 +6,6 @@ import { CSVCourse, XLSXCourse } from '../../types/Enrollment'
 import { XLSXDecision } from '../../types/Decision'
 
 const tempPath = path.join(__dirname, '..', 'main', 'tmp')
-const resourcesPath = path.join(__dirname, '..', 'main', 'resources')
 
 const readCSVFile = (filePath: string): Promise<CSVCourse[]> => {
     return new Promise((resolve, reject) => {
@@ -110,67 +109,6 @@ const readTempDir = (): Promise<string> => {
     })
 }
 
-const writeResourcesDir = (resource: string, term: string, fileName: string, data: string | NodeJS.ArrayBufferView): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        const writePath = path.join(resourcesPath, resource, term)
-
-        if (fs.existsSync(resourcesPath)) {
-            // Create directory if doesn't already exist
-            if (!fs.existsSync(writePath)) {
-                fs.mkdir(writePath, { recursive: true }, (err) => {
-                    if (err) {
-                        reject(`Error creating ${resource} directory.`)
-                    }
-                    // Write file to to newly created directory
-                    fs.writeFile(path.join(writePath, `${fileName}_Formatted.csv`), data, (err) => {
-                        if (err) {
-                            reject("Couldn't write CSV to resources directory.")
-                        }
-                        resolve()
-                    })
-                })
-            } else {
-                // Directory exists and needs to be empty before writing new resource
-                fs.readdir(writePath, (err, files) => {
-                    if (err) {
-                        reject(`Couldn't read directory ${writePath}`)
-                    }
-                    files.forEach((file) => {
-                        fs.unlinkSync(path.join(writePath, file))
-                    })
-                    // After unlinking all files, write file to path
-                    fs.writeFile(path.join(writePath, `${fileName}_Formatted.csv`), data, (err) => {
-                        if (err) {
-                            reject("Couldn't write CSV to resources directory.")
-                        }
-                        resolve()
-                    })
-                })
-            }
-        } else {
-            reject("Resources directory missing.")
-        }
-    })
-}
-
-const readResourcesDir = (resource: string, term: string): Promise<CSVCourse[]> => {
-    const readPath = path.join(resourcesPath, resource, term)
-
-    return new Promise((resolve, reject) => {
-        if (fs.existsSync(readPath)) {
-            fs.readdir(readPath, async (err, files) => {
-                if (err) {
-                    reject(`Couldn't read ${resource} directory.`)
-                }
-                const result = await readCSVFile(path.join(readPath, files[0]))
-                resolve(result)
-            })
-        } else {
-            resolve([])
-        }
-    })
-}
-
 export const fileSys = {
     temp: {
         read: readTempDir,
@@ -181,9 +119,5 @@ export const fileSys = {
     },
     xlsx: {
         read: readXLSXFile
-    },
-    resources: {
-        read: readResourcesDir,
-        write: writeResourcesDir
     }
 }

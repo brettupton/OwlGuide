@@ -1,33 +1,33 @@
 import { ChangeEvent } from "react"
-import { XLSXCourse } from "../../types/Enrollment"
+
 
 interface MatchTableProps {
     dataLength: number
-    needOfferings: XLSXCourse[]
-    handleOfferingChange: (event: ChangeEvent<HTMLInputElement>, course: XLSXCourse) => void
+    needOfferings: string[][]
+    handleOfferingChange: (e: ChangeEvent<HTMLInputElement>, course: string[]) => void
     handleSubmit: () => void
 }
 
 export default function MatchTable({ dataLength, needOfferings, handleOfferingChange, handleSubmit }: MatchTableProps) {
     return (
-        <div className="flex flex-col w-full px-3">
+        <div className="flex flex-col w-full p-2">
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-8rem)]">
-                <table className="w-full text-sm text-left rtl:text-right text-black">
-                    <thead className="text-xs text-white uppercase bg-gray-700 sticky top-0">
+                <table className="w-full text-sm text-left rtl:text-right text-white">
+                    <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                         <tr>
-                            <th scope="col" className="px-6 py-3">
+                            <th scope="col" className="p-2">
                                 CRN
                             </th>
-                            <th scope="col" className="py-3">
+                            <th scope="col" className="p-2">
                                 Course
                             </th>
-                            <th scope="col" className="py-3">
+                            <th scope="col" className="p-2">
                                 Section
                             </th>
-                            <th scope="col" className="px-4 py-3">
+                            <th scope="col" className="p-2">
                                 Professor
                             </th>
-                            <th scope="col" className="px-4 py-3">
+                            <th scope="col" className="p-2">
                                 Title
                             </th>
                             <th scope="col">
@@ -48,22 +48,22 @@ export default function MatchTable({ dataLength, needOfferings, handleOfferingCh
                     <tbody>
                         {needOfferings.map((course, index) => {
                             return (
-                                <tr className="bg-gray-200 border-b text-gray-900 font-semibold border-gray-700 hover:bg-gray-50" key={index}>
-                                    <td className="px-4 py-2">
-                                        {course["COURSE REFERENCE NUMBER"]}
+                                <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={index}>
+                                    <td className="p-2">
+                                        {course[8]}
                                     </td>
-                                    <td className="py-2">
-                                        {`${course["SUBJECT"]} ${course["COURSE NUMBER"]}`}
+                                    <td className="p-2">
+                                        {`${course[1]} ${course[2]}`}
                                     </td>
-                                    <td className="py-2">
+                                    <td className="p-2">
                                         <input type="text" onChange={(e) => handleOfferingChange(e, course)} maxLength={3} minLength={3}
                                             className="block text-md text-white border border-gray-600 rounded-lg bg-gray-700 focus:outline-none placeholder-gray-400 p-1 w-12" />
                                     </td>
-                                    <td className="px-4 py-2 uppercase">
-                                        {course["PRIMARY INSTRUCTOR LAST NAME"] || "TBD"}
+                                    <td className="p-2">
+                                        {course[4]}
                                     </td>
-                                    <td className="px-4 py-2">
-                                        {course.TITLE}
+                                    <td className="p-2">
+                                        {course[7]}
                                     </td>
                                     <td>
 

@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from 'uuid'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
 import { AdoptionService } from './utils'
 import { TemplateAdoption } from '../types/TemplateAdoption'
-import { XLSXCourse } from '../types/Enrollment'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
 import { getTermDecisions, getFileDecisions } from './processes/decision'
 import { sqlDB, fileSys } from './utils'
@@ -93,22 +92,22 @@ ipcMain.on('close-child', () => {
   }
 })
 
-ipcMain.on('enrollment', async (event, { method, data }: { method: string, data: (string | XLSXCourse)[] }) => {
+ipcMain.on('enrollment', async (event, { method, data }) => {
   switch (method) {
     case 'file-upload':
       try {
-        const enrollment = await matchEnrollment(data as string[])
-        event.reply('enrollment-data', enrollment)
+        const { enrollment, filePath } = await matchEnrollment(data[0])
+        event.reply('enrollment-data', { enrollment, filePath })
       } catch (error) {
         console.error(error)
-        dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance or try again.`)
+        dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance.`)
+        event.reply('file-error')
       }
       break
 
     case 'file-download':
       try {
-        const { fileName, csv } = await submitEnrollment(data as XLSXCourse[])
-        const [match, term, year] = fileName.match(/([A-Za-z]+)(\d+)/)
+        const { fileName, csv } = await submitEnrollment(data.enrollment, data.filePath)
 
         dialog.showSaveDialog({
           defaultPath: path.join(app.getPath('downloads'), `${fileName}_Formatted`),
@@ -116,9 +115,6 @@ ipcMain.on('enrollment', async (event, { method, data }: { method: string, data:
         })
           .then(async (result) => {
             if (!result.canceled && result.filePath) {
-              // Write csv to resources directory under proper term
-              await fileSys.resources.write('enrollment', `${term} ${year}`, fileName, csv)
-              // Write csv to user selected file path
               fs.writeFile(result.filePath, csv, (err) => {
                 if (err) {
                   throw Error("Couldn't write CSV to selected path.")
@@ -129,7 +125,7 @@ ipcMain.on('enrollment', async (event, { method, data }: { method: string, data:
           })
       } catch (error) {
         console.error(error)
-        dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance or try again.`)
+        dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance.`)
       }
       break
   }
@@ -139,11 +135,19 @@ ipcMain.on('sql', async (event, { method, data }) => {
   switch (method) {
     case "get-table-page":
       try {
-        const { rows, total } = await sqlDB.getTablePage(data.name, data.offset, data.limit)
+        const { rows, total } = await sqlDB.all.getTablePage(data.name, data.offset, data.limit)
         event.reply('table-page', { rows, total })
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("SQL", `Check the console.`)
+      }
+      break
+
+    case "replace-table":
+      try {
+        await sqlDB.tables.replaceTable(data)
+      } catch (error) {
+        console.error(error)
       }
   }
 })
@@ -156,7 +160,7 @@ ipcMain.on('decision', async (event, { method, data }) => {
         event.reply('decision-data', { decisions, term })
       } catch (error) {
         console.error(error)
-        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance or try again later.`)
+        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)
         event.reply('file-error')
       }
       break
@@ -167,7 +171,7 @@ ipcMain.on('decision', async (event, { method, data }) => {
         event.reply('decision-data', decisions)
       } catch (error) {
         console.error(error)
-        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance or try again later.`)
+        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)
         event.reply('decision-data', [])
       }
       break
@@ -179,12 +183,12 @@ ipcMain.on('decision', async (event, { method, data }) => {
         }
 
         const [term, year] = data.term.match(/[a-zA-z]|\d+/g)
-        const salesHistory = await sqlDB.getAllPrevSalesByBook(term, year, data.isbn, data.title)
+        const salesHistory = await sqlDB.sales.getAllPrevSalesByBook(term, year, data.isbn, data.title)
 
         childWindow.webContents.send('history', salesHistory)
       } catch (error) {
         console.error(error)
-        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance or try again later.`)
+        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)
       }
       break
   }

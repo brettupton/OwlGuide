@@ -3,7 +3,7 @@ import { fileSys, sqlDB } from "../utils"
 
 const getTermDecisions = async (fullTerm: string) => {
     const [term, year] = fullTerm.match(/[a-zA-z]|\d+/g)
-    const termData = await sqlDB.getPrevSalesData(term, year)
+    const termData = await sqlDB.sales.getPrevSalesData(term, year)
     const decisions: Decision[] = []
 
     termData.forEach((book) => {
@@ -59,7 +59,7 @@ const getFileDecisions = async (filePath: string) => {
         })
 
         if (fileBooks.length > 0) {
-            const termData = await sqlDB.getPrevSalesByBookArr(term, year, fileBooks)
+            const termData = await sqlDB.sales.getPrevSalesByBookArr(term, year, fileBooks)
 
             termData.forEach((book) => {
                 const newDecision = calculateDecision(book)

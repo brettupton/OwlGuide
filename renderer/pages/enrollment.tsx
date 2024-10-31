@@ -1,27 +1,40 @@
 import { useState, useEffect, ChangeEvent } from "react"
 import { BackArrow, FileForm, MatchTable } from "../components"
-import { XLSXCourse } from "../../types/Enrollment"
+
+/* 
+Array indices for enrollment
+Campus  0
+Dept    1
+Course  2
+Section 3
+Prof    4
+EstEnrl 5
+ActEnrl 6
+Title   7
+CRN     8
+*/
 
 export default function EnrollmentHome() {
-    const [enrollment, setEnrollment] = useState<XLSXCourse[]>([])
-    const [needOfferings, setNeedOfferings] = useState<XLSXCourse[]>([])
+    const [enrollment, setEnrollment] = useState<string[][]>([])
+    const [needOfferings, setNeedOfferings] = useState<string[][]>([])
+    const [filePath, setFilePath] = useState<string>("")
 
     useEffect(() => {
         if (typeof window !== 'undefined' && window.ipc) {
-            window.ipc.on('enrollment-data', (enrollment: XLSXCourse[]) => {
-                // Get only courses with no offerings, then sort by subject and course number
-                const offerings = enrollment
-                    .filter((course) => !course["OFFERING NUMBER"] || course["OFFERING NUMBER"] === "000")
-                    .sort((a, b) => {
-                        if (a["SUBJECT"].localeCompare(b["SUBJECT"]) !== 0) {
-                            return a["SUBJECT"].localeCompare(b["SUBJECT"])
-                        }
+            window.ipc.on('enrollment-data', (data: { enrollment: string[][], filePath: string }) => {
+                // Sort by department and course number, then find courses with no offering numbers
+                const sorted = data.enrollment.sort((a, b) => {
+                    if (a[1].localeCompare(b[1]) !== 0) {
+                        return a[1].localeCompare(b[1])
+                    }
 
-                        return a["COURSE NUMBER"] - b["COURSE NUMBER"]
-                    })
+                    return a[2].localeCompare(b[2])
+                })
+                const offerings = sorted.filter((course) => course[3] === "0")
 
-                setEnrollment(enrollment)
+                setEnrollment(sorted)
                 setNeedOfferings(offerings)
+                setFilePath(data.filePath)
             })
 
             window.ipc.on('enrl-success', () => {
@@ -31,35 +44,29 @@ export default function EnrollmentHome() {
         }
     }, [])
 
-    const handleOfferingChange = (e: ChangeEvent<HTMLInputElement>, course: XLSXCourse) => {
+    const handleOfferingChange = (e: ChangeEvent<HTMLInputElement>, course: string[]) => {
         const { value } = e.currentTarget
+        const CRN = course[8]
+        const matchIndex = enrollment.findIndex((enrollCourse) => enrollCourse[8] === CRN)
 
         setEnrollment((prevCourses) => {
-            return prevCourses.map((c) => {
-                if (c["COURSE REFERENCE NUMBER"] === course["COURSE REFERENCE NUMBER"]) {
-                    return { ...c, "OFFERING NUMBER": value }
-                }
-                return c
-            })
+            prevCourses[matchIndex][3] = value
+            return [...prevCourses]
         })
     }
 
     const handleSubmit = () => {
-        window.ipc.send('enrollment', { method: 'file-download', data: enrollment })
+        window.ipc.send('enrollment', { method: 'file-download', data: { enrollment, filePath } })
     }
 
     return (
         <div className="flex flex-col h-full w-full">
-            <div className="flex">
-                <BackArrow path="home" />
-            </div>
-            <div className="flex">
-                {needOfferings.length <= 0 ?
-                    <FileForm process="enrollment" label="Enrollment File" accept=".xlsx,.csv" multiple={true} />
-                    :
-                    <MatchTable dataLength={enrollment.length} needOfferings={needOfferings} handleOfferingChange={handleOfferingChange} handleSubmit={handleSubmit} />
-                }
-            </div>
+            <BackArrow path="home" />
+            {needOfferings.length <= 0 ?
+                <FileForm process="enrollment" label="Enrollment File" accept=".xlsx" />
+                :
+                <MatchTable dataLength={enrollment.length} needOfferings={needOfferings} handleOfferingChange={handleOfferingChange} handleSubmit={handleSubmit} />
+            }
         </div>
     )
 }

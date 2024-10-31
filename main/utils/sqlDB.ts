@@ -1,5 +1,8 @@
-import { Database, OPEN_READONLY } from "sqlite3"
+import { Database, OPEN_READONLY, OPEN_READWRITE } from "sqlite3"
 import path from 'path'
+import fs from 'fs'
+import Papa from 'papaparse'
+import tables from "../db/tables"
 
 type dbRow = {
     [field: string]: string | number | null
@@ -87,7 +90,7 @@ const getAllPrevSalesByBook = (term: string, year: string, isbn: string, title: 
                     AND Courses.Year != ?4
                     AND Courses.Dept NOT IN ("SPEC", "CANC")
                 GROUP BY Sales.Year
-                ORDER BY Sales.Term;`,
+                ORDER BY Sales.Term`,
             [isbn, title, term, year], (err, rows: dbRow[]) => {
                 if (err) reject(err)
 
@@ -127,7 +130,7 @@ const getPrevSalesByBookArr = (term: string, year: string, books: (string | numb
                         WHERE Books.ISBN = ?1 AND Books.Title = ?2
                             AND Courses.Term = ?3 
                             AND Courses.Dept NOT IN ("SPEC", "CANC")
-                        GROUP BY Books.ISBN;`)
+                        GROUP BY Books.ISBN`)
 
         for (const [isbn, title, decision] of books) {
             stmt.each([isbn, title, term, year], (err, row: dbRow) => {
@@ -142,12 +145,12 @@ const getPrevSalesByBookArr = (term: string, year: string, books: (string | numb
 
         stmt.finalize((err) => {
             if (err) {
-                reject(`Error finalizing statement: ${err.message}`)
+                reject(`Error finalizing statement: ${err}`)
             }
         })
 
         db.close((err) => {
-            if (err) reject(`Error closing database: ${err.message}`)
+            if (err) reject(`Error closing database: ${err}`)
 
             resolve(rows)
         })
@@ -187,7 +190,7 @@ const getPrevSalesData = (term: string, year: string): Promise<dbRow[]> => {
                         AND Courses.Dept NOT IN ("SPEC", "CANC")
                 )
                 GROUP BY Books.ID, Books.ISBN, Books.Title
-                ORDER BY Books.Title;`,
+                ORDER BY Books.Title`,
             [term, year], (err, rows: dbRow[]) => {
                 if (err) {
                     reject(err)
@@ -203,4 +206,125 @@ const getPrevSalesData = (term: string, year: string): Promise<dbRow[]> => {
     })
 }
 
-export const sqlDB = { getTablePage, getPrevSalesData, getPrevSalesByBookArr, getAllPrevSalesByBook }
+const getCourseDataByTerm = async (term: string, year: string): Promise<dbRow[]> => {
+    const db = new Database(dbPath, OPEN_READONLY, (err) => {
+        if (err) throw (err)
+    })
+
+    return new Promise((resolve, reject) => {
+        try {
+            db.all(`SELECT Courses.ID, Courses.CRN, Courses.Dept, Courses.SectionNum AS Section 
+                FROM Courses
+                WHERE Courses.Term = ? 
+                    AND Courses.Year = ?
+                    AND Courses.Dept NOT IN ("SPEC", "CANC")`,
+                [term, year], (err, rows: dbRow[]) => {
+                    if (err) reject(err)
+                    resolve(rows)
+                })
+        } finally {
+            db.close((err) => {
+                if (err) reject(`Error closing database: ${err}`)
+            })
+        }
+    })
+}
+
+const buildTableSchema = (sqlHeader) => {
+    const keys = Object.keys(sqlHeader)
+    const columns = keys.map((key, i) => `${key} ${sqlHeader[key].type}`).join(", ")
+    const foreignKeys = keys
+        .map((key, i) => {
+            const foreignKey = sqlHeader[key].foreignKey
+            return foreignKey
+                ? `FOREIGN KEY (${key}) REFERENCES ${foreignKey.references} ${foreignKey.onDelete ? `ON DELETE ${foreignKey.onDelete}` : ""} ${foreignKey.onUpdate ? `ON UPDATE ${foreignKey.onUpdate}` : ""}`
+                : null
+        })
+        .filter(Boolean)
+        .join(", ")
+    return `(${columns}${foreignKeys ? `, ${foreignKeys}` : ""})`
+}
+
+const replaceTable = (filePath: string): Promise<void> => {
+    // Retrieve CSV table name from uploaded file path
+    // Find the table name that corresponds to the CSV name
+    const [match] = filePath.match(/(?<=\\)([^\\]+)(?=\.[^.]*$)/)
+    const name = Object.keys(tables).find(key => tables[key].TableName === match)
+
+    const db = new Database(dbPath, OPEN_READWRITE, (err) => { if (err) return err })
+    const tableData = tables[name]
+
+    return new Promise((resolve, reject) => {
+        const stream = fs.createReadStream(filePath)
+        const sqlHeader = tableData["TableHeaders"]
+        const tableSchema = buildTableSchema(sqlHeader)
+        const insertKeys = Object.keys(sqlHeader).filter(key => sqlHeader[key].insert)
+        const placeholders = insertKeys.map(() => "?").join(", ")
+        const insertStatement = `INSERT INTO ${name} (${insertKeys.join(", ")}) VALUES (${placeholders})`
+
+        Papa.parse(stream, {
+            beforeFirstChunk: (chunk) => {
+                const lines = chunk.split("\n")
+                const header = tableData["CSVHeaders"].join(",")
+
+                const newChunk = [header, ...lines].join("\n")
+                return newChunk
+            },
+            header: true,
+            complete: async (results) => {
+                const csvResults = results.data
+                try {
+                    db.serialize(() => {
+                        db.run(`DROP TABLE IF EXISTS ${name}`)
+                        db.run(`CREATE TABLE IF NOT EXISTS ${name} ${tableSchema}`, (err) => {
+                            if (err) return reject(`Error creating ${name} Table: ${err}`)
+                        })
+                        db.run("BEGIN TRANSACTION", (err) => {
+                            if (err) return reject(`Error starting transaction: ${err}`)
+                        })
+
+                        const stmt = db.prepare(insertStatement)
+                        csvResults.forEach(row => {
+                            const values = insertKeys.map(key => {
+                                const csvRef = sqlHeader[key].csvRef
+                                // Check if csvRef is an array and join values as strings if so
+                                if (Array.isArray(csvRef)) {
+                                    return csvRef.map(ref => row[ref] || "").join("")
+                                }
+                                return row[csvRef]
+                            })
+
+                            stmt.run(values, (err) => {
+                                if (err) return reject(`Error inserting row: ${err}`)
+                            })
+                        })
+
+                        stmt.finalize((err) => {
+                            if (err) return reject(`Error finalizing statement: ${err}`)
+
+                            db.run("COMMIT", (err) => {
+                                if (err) return reject(`Error committing transaction: ${err}`)
+                                resolve()
+                            })
+                        })
+                    })
+                } catch (err) {
+                    db.run("ROLLBACK")
+                    reject(err)
+                } finally {
+                    db.close((err) => {
+                        if (err) reject(`Error closing database: ${err}`)
+                    })
+                }
+            }
+        })
+    })
+}
+
+
+export const sqlDB = {
+    all: { getTablePage, getAllTermList },
+    sales: { getPrevSalesData, getPrevSalesByBookArr, getAllPrevSalesByBook },
+    courses: { getCourseDataByTerm },
+    tables: { replaceTable }
+}
