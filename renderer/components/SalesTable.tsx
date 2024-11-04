@@ -32,7 +32,7 @@ export default function SalesTable({ sales }: SalesTableProps) {
                     <tbody>
                         {sales.map((row, index) => {
                             return (
-                                <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={index}>
+                                <tr className={`${sales[index]["Term"] === "Avg" ? 'bg-gray-400 border border-gray-700' : 'bg-gray-800 hover:bg-gray-600 border-b border-gray-700'}`} key={index}>
                                     {fields.map((field) => {
                                         return (
                                             field !== "ISBN" && field !== "Title" &&

@@ -7,7 +7,7 @@ const matchEnrollment = async (filePath: string) => {
         const fileData: XLSXCourse[] = await fileSys.xlsx.read(filePath, 'enrollment')
         const newEnrl: string[][] = []
 
-        const [term = null, year = null] = regex.matchTermYear(filePath) || []
+        const [term = null, year = null] = regex.matchFileTermYear(filePath) || []
         if (!term) throw `Unexpected file name. Rename with term and try again.`
 
         const termData = await sqlDB.courses.getCourseDataByTerm(term, year)
@@ -25,15 +25,15 @@ const matchEnrollment = async (filePath: string) => {
 
             for (const field of requiredFields) {
                 if (course[field] === undefined) {
-                    throw new Error(`Missing value for required field: ${field}\n${JSON.stringify(course)}`);
+                    throw new Error(`Missing value for required field: ${field}\n${JSON.stringify(course)}`)
                 }
             }
 
             // Don't include cancelled courses
             if (course["TITLE"] === "CANCELLED") return
 
-            // If no offering number, find potential match from database
             const CRN = course["COURSE REFERENCE NUMBER"].toString()
+            // If no offering number, find potential match from database
             const oNum = course["OFFERING NUMBER"] ?? findSectionNum(termData, CRN)
             const prof = course["PRIMARY INSTRUCTOR LAST NAME"] ? course["PRIMARY INSTRUCTOR LAST NAME"].toString().toUpperCase() : "TBD"
 
@@ -65,7 +65,7 @@ const findSectionNum = (termData, CRN: string): string => {
 const submitEnrollment = async (enrollment: string[][], filePath: string) => {
     try {
         const fileName = regex.matchFileName(filePath)
-        const [term = null, year = null] = regex.matchTermYear(filePath) || []
+        const [term = null, year = null] = regex.matchFileTermYear(filePath) || []
         if (!fileName) throw `Unexpected file name. Rename with term and try again.`
 
         const csv = createCourseCSV(enrollment, term, year)

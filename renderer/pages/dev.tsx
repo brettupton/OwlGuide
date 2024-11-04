@@ -7,7 +7,6 @@ export default function Development() {
     const [totalRows, setTotalRows] = useState<number>(0)
     const [page, setPage] = useState<number>(1)
     const [limit, setLimit] = useState<number>(30)
-    const [filePath, setFilePath] = useState<string>("")
 
     useEffect(() => {
         if (typeof window !== 'undefined' && window.ipc) {
@@ -23,7 +22,8 @@ export default function Development() {
 
         if (value) {
             setTableName(value)
-            window.ipc.send('sql', { method: "get-table-page", data: { name: value, offset: (page - 1), limit } })
+            setPage(1)
+            window.ipc.send('sql', { method: "get-table-page", data: { name: value, offset: 0, limit } })
         }
     }
 
@@ -36,7 +36,12 @@ export default function Development() {
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.currentTarget.files) {
-            window.ipc.send('sql', { method: "replace-table", data: e.currentTarget.files[0].path })
+            const newPaths: string[] = []
+            for (const file of Array.from(e.currentTarget.files)) {
+                newPaths.push(file.path)
+            }
+
+            window.ipc.send('sql', { method: "replace-table", data: newPaths })
         }
     }
 
@@ -44,7 +49,23 @@ export default function Development() {
         <div className="flex flex-col mt-5 w-full mx-auto">
             {table.length > 0
                 ?
-                <PageTable pageData={table} totalRows={totalRows} page={page} updatePage={handlePageChange} />
+                <div className="flex flex-col">
+                    <div className="flex">
+                        <select
+                            id="tables"
+                            className="border text-sm rounded-lg block w-full p-1 bg-gray-700 border-gray-600 text-white"
+                            onChange={handleTableChoice}
+                            defaultValue={tableName}
+                        >
+                            <option value="">Select</option>
+                            <option>Courses</option>
+                            <option>Books</option>
+                            <option>Sales</option>
+                            <option>Course_Book</option>
+                        </select>
+                    </div>
+                    <PageTable pageData={table} totalRows={totalRows} page={page} updatePage={handlePageChange} />
+                </div>
                 :
                 <div className="flex">
                     <div className="flex flex-col">
@@ -59,7 +80,7 @@ export default function Development() {
                     </div>
                     <div className="flex flex-col">
                         <label htmlFor="csv" className="block mb-2 text-sm font-medium text-white">CSV</label>
-                        <input type="file" id="csv" onChange={handleFileChange} />
+                        <input type="file" id="csv" multiple onChange={handleFileChange} />
                     </div>
                 </div>
             }

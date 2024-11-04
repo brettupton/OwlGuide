@@ -32,12 +32,13 @@ export default function DecisionTable({ data, term, handleRowClick, activeBook }
                             return (
                                 <tr
                                     className={`${activeBook && activeBook.ISBN === row["ISBN"] && activeBook.Title === row["Title"] ? 'bg-gray-400' : 'bg-gray-800'} border-b border-gray-700 hover:bg-gray-600`}
-                                    key={index}
-                                    onClick={() => handleRowClick(row["ISBN"], row["Title"])}
+                                    onClick={() => handleRowClick(row["ISBN"] as string, row["Title"])}
                                 >
-                                    {fields.map((field) => {
+                                    {fields.map((field, fIndex) => {
                                         return (
-                                            <td className={`p-2 ${typeof (row[field]) === "number" && field !== "ISBN" ? "text-center" : ""}`}>
+                                            <td key={index + fIndex}
+                                                className={`p-2 ${typeof (row[field]) === "number" && field !== "ISBN" ? "text-center" : ""}`}
+                                            >
                                                 {row[field].length > 34 ? row[field].slice(0, 33) + "..." : row[field]}
                                             </td>
                                         )

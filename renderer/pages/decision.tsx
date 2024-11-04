@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import DecisionTable from '../components/DecisionTable'
 import { Decision } from '../../types/Decision'
 import { BackArrow, FileForm } from '../components'
+import TermSelect from '../components/TermSelect'
 
 export default function BuyingDecision() {
   const [decision, setDecision] = useState<Decision[]>([])
@@ -27,12 +28,15 @@ export default function BuyingDecision() {
 
   return (
     <div className="flex h-full flex-col">
-      <BackArrow path="/home" />
+      <BackArrow path="home" />
       {decision.length > 0
         ?
         <DecisionTable data={decision} term={term} handleRowClick={handleRowClick} activeBook={activeBook} />
         :
-        <FileForm process="decision" label="Decision" accept=".xlsx,.xlsb" />
+        <div className="flex flex-col items-center">
+          <FileForm process="decision" label="Decision" accept=".xlsx,.xlsb" />
+          <TermSelect process="decision" latest={true} />
+        </div>
       }
     </div>
   )

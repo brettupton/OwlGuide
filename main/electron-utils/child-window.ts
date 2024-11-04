@@ -23,15 +23,17 @@ export const createChildWindow = async (mainWindow: BrowserWindow, childPath: st
   // Move child window to position on first load
   updateChildWindowPos(mainWindow, childWindow, location)
 
-  // Update child window location on move or resize of main window
+  // Update child window location on move, resize, or unminimized of main window
   mainWindow.on('move', () => updateChildWindowPos(mainWindow, childWindow, location))
   mainWindow.on('resize', () => updateChildWindowPos(mainWindow, childWindow, location))
+  mainWindow.on('restore', () => updateChildWindowPos(mainWindow, childWindow, location))
 
   // Clean up child window event listeners when closed
   childWindow.on('closed', () => {
     childWindow = null
     mainWindow.removeAllListeners('move')
     mainWindow.removeAllListeners('resize')
+    mainWindow.removeAllListeners('restore')
   })
 
   return childWindow

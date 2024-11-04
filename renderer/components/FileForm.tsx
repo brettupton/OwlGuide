@@ -10,7 +10,6 @@ interface FileFormProps {
 
 export default function FileForm({ process, label, accept, multiple = false }: FileFormProps) {
     const [filePaths, setFilePaths] = useState<string[]>([])
-    const [fileUploaded, setFileUploaded] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
@@ -25,20 +24,11 @@ export default function FileForm({ process, label, accept, multiple = false }: F
         if (e.currentTarget.files) {
             const fileArr: string[] = []
 
-            for (let i = 0; i < e.currentTarget.files.length; i++) {
-                fileArr.push(e.currentTarget.files[i].path)
+            for (const newFile of Array.from(e.currentTarget.files)) {
+                fileArr.push(newFile.path)
             }
-            setFilePaths(fileArr)
-            setFileUploaded(true)
-        }
-    }
-
-    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-
-        if (filePaths.length > 0) {
             setIsLoading(true)
-            window.ipc.send(`${process}`, { method: "file-upload", data: filePaths })
+            window.ipc.send(`${process}`, { method: "file-upload", data: fileArr })
         }
     }
 
@@ -47,9 +37,9 @@ export default function FileForm({ process, label, accept, multiple = false }: F
             {isLoading ?
                 <Spinner />
                 :
-                <form onSubmit={handleSubmit}>
+                <form>
                     <div className="flex m-3 justify-center">
-                        <div className="flex flex-col pr-4 text-white">
+                        <div className="flex flex-col text-white">
                             <label className="block text-sm font-bold mb-2" htmlFor="file">
                                 {label}
                             </label>
@@ -62,13 +52,6 @@ export default function FileForm({ process, label, accept, multiple = false }: F
                                 onChange={handleSelectionChange}
                             />
                         </div>
-                    </div>
-                    <div className="flex text-center justify-center">
-                        <button
-                            className={`border border-white rounded px-2 py-1 ${!fileUploaded ? 'cursor-not-allowed' : 'hover:bg-white hover:text-black active:scale-95 transition-transform duration-75'}`}
-                            type="submit"
-                            disabled={!fileUploaded}
-                        >Submit</button>
                     </div>
                 </form>
             }

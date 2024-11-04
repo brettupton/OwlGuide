@@ -1,27 +1,29 @@
-import { Decision, XLSXDecision } from "../../types/Decision"
-import { fileSys, sqlDB } from "../utils"
+import { Decision, SQLDecision } from "../../types/Decision"
+import { fileSys, regex, sqlDB } from "../utils"
 
 const getTermDecisions = async (fullTerm: string) => {
-    const [term, year] = fullTerm.match(/[a-zA-z]|\d+/g)
-    const termData = await sqlDB.sales.getPrevSalesData(term, year)
-    const decisions: Decision[] = []
+    try {
+        const [term = null, year = null] = regex.splitFullTerm(fullTerm) || []
+        if (!term || !year) throw `Unexpected term or year.`
 
-    termData.forEach((book) => {
-        const avgEstSales = book.PrevSales && (book.PrevEstEnrl as number) !== 0 ? ((book.PrevSales as number) / (book.PrevEstEnrl as number)).toFixed(4) : 0.2
-        const avgActSales = book.PrevSales && (book.PrevActEnrl as number) !== 0 ? ((book.PrevSales as number) / (book.PrevActEnrl as number)).toFixed(4) : 0.2
+        const termBooks = await sqlDB.books.getBooksByTerm(term, year)
+        const books = termBooks.map((book) => {
+            return [book.ISBN as string, book.Title as string]
+        })
 
-        // const newDecision: Decision = {
-        //     ISBN: book.ISBN as string,
-        //     Title: book.Title as string,
-        //     EstEnrl: book.CurrEstEnrl as number,
-        //     ActEnrl: book.CurrActEnrl as number,
-        //     EstDecision: Math.round((book.CurrEstEnrl as number) * (avgEstSales as number)),
-        //     ActDecision: Math.round((book.CurrActEnrl as number) * (avgActSales as number))
-        // }
-        // decisions.push(newDecision)
-    })
 
-    return decisions
+        const termData = await sqlDB.sales.getPrevSalesByBookArr(term, year, books)
+        const decisions: Decision[] = []
+
+        termData.forEach((book: SQLDecision) => {
+            const decision = calculateDecision(book)
+            decisions.push(decision)
+        })
+
+        return { decisions, term: term + year }
+    } catch (error) {
+        throw error
+    }
 }
 
 const getFileDecisions = async (filePath: string) => {
@@ -30,11 +32,24 @@ const getFileDecisions = async (filePath: string) => {
 
         const fileBooks: (string | number)[][] = []
         const fileTerm = fileData[0]["Term"].toString()
-        const [term, year] = fileTerm.match(/[a-zA-z]|\d+/g)
+        const [term, year] = regex.splitFullTerm(fileTerm)
         const fileDecisions: Decision[] = []
 
         fileData.forEach((decision) => {
-            // Find only necessary values in file and force to expected type
+            // Verify all needed fields exist in decision
+            const requiredFields = [
+                "Store",
+                "EAN-13",
+                "Title",
+                "Decision"
+            ]
+
+            for (const field of requiredFields) {
+                if (decision[field] === undefined) {
+                    throw new Error(`Missing value for required field: ${field}\n${JSON.stringify(decision)}`)
+                }
+            }
+
             const store = Number(decision.Store)
             const isbn = decision["EAN-13"].toString()
             const title = decision["Title"].toString()
@@ -61,7 +76,7 @@ const getFileDecisions = async (filePath: string) => {
         if (fileBooks.length > 0) {
             const termData = await sqlDB.sales.getPrevSalesByBookArr(term, year, fileBooks)
 
-            termData.forEach((book) => {
+            termData.forEach((book: SQLDecision) => {
                 const newDecision = calculateDecision(book)
                 fileDecisions.push(newDecision)
             })
@@ -75,17 +90,17 @@ const getFileDecisions = async (filePath: string) => {
     }
 }
 
-const calculateDecision = (book) => {
+const calculateDecision = (book: SQLDecision) => {
     // Get previous semester sales over enrollment
     const salesEnrl = book.TotalSales && (book.PrevActEnrl !== 0) ? book.TotalSales / book.PrevActEnrl : 0.2
 
     // If no current Actual Enrollment, calculate based on past percent change from Estimated to Actual
     if (book.CurrActEnrl === 0 && book.CurrEstEnrl !== 0) {
         // Calculate previous percentage change as a multiplier
-        const prevPerChange = book.PrevEstEnrl ? (book.PrevActEnrl - book.PrevEstEnrl) / book.PrevEstEnrl : 0;
+        const prevPerChange = book.PrevEstEnrl ? (book.PrevActEnrl - book.PrevEstEnrl) / book.PrevEstEnrl : 0
 
         // Apply the percentage change to current estimated enrollment
-        book.CurrActEnrl = Math.round(book.CurrEstEnrl * (1 + prevPerChange));
+        book.CurrActEnrl = Math.round(book.CurrEstEnrl * (1 + prevPerChange))
     }
 
     const newDec = Math.round(book.CurrActEnrl * salesEnrl)
@@ -93,9 +108,9 @@ const calculateDecision = (book) => {
         ISBN: book.ISBN,
         Title: book.Title,
         ActEnrl: book.CurrActEnrl,
-        OldDecision: book.Decision,
-        NewDecision: newDec,
-        Diff: Math.abs(book.Decision - newDec)
+        EstSales: book.Decision ?? book.CurrEstSales,
+        Decision: newDec,
+        Diff: Math.abs((book.Decision ?? book.CurrEstSales) - newDec)
     }
 
     return newDecision

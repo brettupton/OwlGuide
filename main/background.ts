@@ -143,12 +143,27 @@ ipcMain.on('sql', async (event, { method, data }) => {
       }
       break
 
-    case "replace-table":
+    case "get-terms":
       try {
-        await sqlDB.tables.replaceTable(data)
+        const terms = await sqlDB.all.getAllTermList()
+        event.reply("term-list", { terms })
       } catch (error) {
         console.error(error)
+        dialog.showErrorBox("SQL", `Check the console.`)
       }
+      break
+
+    case "replace-table":
+      console.log("Replacing tables.")
+
+      console.time('SQL')
+      for (const filePath of data) {
+        await sqlDB.tables.replaceTable(filePath)
+        console.log(`${filePath} finished.`)
+      }
+
+      console.timeEnd('SQL')
+      break
   }
 })
 
@@ -167,8 +182,9 @@ ipcMain.on('decision', async (event, { method, data }) => {
 
     case "get-term-decision":
       try {
-        const decisions = await getTermDecisions(data.term)
-        event.reply('decision-data', decisions)
+        console.log(`Getting decisions for ${data.term}`)
+        const { decisions, term } = await getTermDecisions(data.term)
+        event.reply('decision-data', { decisions, term })
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)

@@ -5,7 +5,7 @@ const matchFileName = (path: string): string => {
     return match ? match[0] : ""
 }
 
-const matchTermYear = (path: string): string[] => {
+const matchFileTermYear = (path: string): string[] => {
     const fileName = matchFileName(path)
     // Finds term and year from file name, based on either F - Fall, W/Sp - Spring, A/Su - Summer
     const match = fileName.match(/(F|W|Sp|A|Su).*20(\d{2})/i)
@@ -17,4 +17,11 @@ const matchTermYear = (path: string): string[] => {
     return match ? match.slice(1, 3) : []
 }
 
-export const regex = { matchFileName, matchTermYear }
+const splitFullTerm = (fullTerm: string): string[] => {
+    // Ex. F24 -> F 24
+    const match = fullTerm.match(/\d{2}|\w/g)
+
+    return match ? match.slice(0, 2) : []
+}
+
+export const regex = { matchFileName, matchFileTermYear, splitFullTerm }

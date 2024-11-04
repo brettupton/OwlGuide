@@ -3,14 +3,12 @@ import path from 'path'
 import fs from 'fs'
 import Papa from 'papaparse'
 import tables from "../db/tables"
-
-type dbRow = {
-    [field: string]: string | number | null
-}
+import { regex } from "./regex"
+import { DBRow } from "../../types/Database"
 
 const dbPath = path.join(__dirname, '..', 'main', 'db', 'owlguide.db')
 
-const getTablePage = (name: string, offset: number, limit: number): Promise<{ rows: dbRow[], total: number }> => {
+const getTablePage = (name: string, offset: number, limit: number): Promise<{ rows: DBRow[], total: number }> => {
     return new Promise((resolve, reject) => {
         const db = new Database(dbPath, OPEN_READONLY, (err) => {
             if (err) {
@@ -26,7 +24,7 @@ const getTablePage = (name: string, offset: number, limit: number): Promise<{ ro
                 }
                 total = result["COUNT(ID)"]
             })
-            db.all(`SELECT * FROM ${name} LIMIT ?,?`, [(offset * limit), limit], (err, rows: dbRow[]) => {
+            db.all(`SELECT * FROM ${name} LIMIT ?,?`, [(offset * limit), limit], (err, rows: DBRow[]) => {
                 if (err) {
                     reject(err)
                 }
@@ -49,7 +47,7 @@ const getAllTermList = (): Promise<string[]> => {
             }
         })
 
-        db.all(`SELECT DISTINCT CONCAT(Term, Year) AS Term FROM Courses ORDER BY Term, Year`, (err, rows: dbRow[]) => {
+        db.all(`SELECT DISTINCT CONCAT(Term, Year) AS Term FROM Courses ORDER BY Term, Year`, (err, rows: DBRow[]) => {
             if (err) {
                 reject(err)
             }
@@ -68,7 +66,7 @@ const getAllTermList = (): Promise<string[]> => {
     })
 }
 
-const getAllPrevSalesByBook = (term: string, year: string, isbn: string, title: string): Promise<dbRow[]> => {
+const getAllPrevSalesByBook = (term: string, year: string, isbn: string, title: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
         const db = new Database(dbPath, OPEN_READONLY, (err) => {
             if (err) reject(err)
@@ -91,7 +89,7 @@ const getAllPrevSalesByBook = (term: string, year: string, isbn: string, title: 
                     AND Courses.Dept NOT IN ("SPEC", "CANC")
                 GROUP BY Sales.Year
                 ORDER BY Sales.Term`,
-            [isbn, title, term, year], (err, rows: dbRow[]) => {
+            [isbn, title, term, year], (err, rows: DBRow[]) => {
                 if (err) reject(err)
 
                 resolve(rows)
@@ -99,114 +97,106 @@ const getAllPrevSalesByBook = (term: string, year: string, isbn: string, title: 
     })
 }
 
-const getPrevSalesByBookArr = (term: string, year: string, books: (string | number)[][]): Promise<dbRow[]> => {
-    return new Promise((resolve, reject) => {
-        const db = new Database(dbPath, OPEN_READONLY, (err) => {
-            if (err) reject(err)
-        })
-
-        const rows: dbRow[] = []
-        const stmt =
-            db.prepare(`SELECT Books.ISBN, Books.Title,
-                            SUM(CASE WHEN Courses.Term = ?3 AND Courses.Year != ?4 THEN Courses.EstEnrl ELSE NULL END) AS PrevEstEnrl,
-                            SUM(CASE WHEN Courses.Term = ?3 AND Courses.Year != ?4 THEN Courses.ActEnrl ELSE NULL END) AS PrevActEnrl,
-                            SUM(CASE WHEN Courses.Term = ?3 AND Courses.Year = ?4 THEN Courses.EstEnrl ELSE 0 END) AS CurrEstEnrl,
-                            SUM(CASE WHEN Courses.Term = ?3 AND Courses.Year = ?4 THEN Courses.ActEnrl ELSE 0 END) AS CurrActEnrl,
-                            COALESCE((
-                                SELECT SUM(Sales.UsedSales + Sales.NewSales)
-                                FROM Sales
-                                JOIN Books ON Sales.BookID = Books.ID
-                                WHERE Sales.Term = ?3 
-                                    AND Sales.Year != ?4
-                                    AND Books.ISBN = ?1
-                                    AND Books.Title = ?2
-                            ), NULL) AS TotalSales
-                        FROM Books
-                        JOIN Course_Book ON Course_Book.BookID = Books.ID
-                        JOIN Courses ON Course_Book.CourseID = Courses.ID
-                        JOIN Sales ON Books.ID = Sales.BookID
-                            AND Sales.Term = Courses.Term
-                            AND Sales.Year = Courses.Year
-                        WHERE Books.ISBN = ?1 AND Books.Title = ?2
-                            AND Courses.Term = ?3 
-                            AND Courses.Dept NOT IN ("SPEC", "CANC")
-                        GROUP BY Books.ISBN`)
-
-        for (const [isbn, title, decision] of books) {
-            stmt.each([isbn, title, term, year], (err, row: dbRow) => {
-                if (err) reject(err)
-
-                if (decision !== null) {
-                    row["Decision"] = decision
-                }
-                rows.push(row)
-            })
-        }
-
-        stmt.finalize((err) => {
-            if (err) {
-                reject(`Error finalizing statement: ${err}`)
-            }
-        })
-
-        db.close((err) => {
-            if (err) reject(`Error closing database: ${err}`)
-
-            resolve(rows)
-        })
+const getPrevSalesByBookArr = (term: string, year: string, books: (string | number)[][]): Promise<DBRow[]> => {
+    const db = new Database(dbPath, OPEN_READONLY, (err) => {
+        if (err) throw (err)
     })
-}
 
-const getPrevSalesData = (term: string, year: string): Promise<dbRow[]> => {
-    return new Promise(async (resolve, reject) => {
-        const db = new Database(dbPath, OPEN_READONLY, (err) => {
-            if (err) {
-                reject(err)
-            }
-        })
-        db.all(`SELECT Books.ID AS BookID, Books.ISBN, Books.Title,
-                    -- Sum enrollments for specified term and year
+    const rows: DBRow[] = []
+    return new Promise((resolve, reject) => {
+        try {
+            const stmt = db.prepare(
+                `SELECT Books.ISBN, Books.Title,
+SUM(CASE WHEN Courses.Term = ?1 AND Courses.Year != ?2 THEN Courses.EstEnrl ELSE NULL END) AS PrevEstEnrl,
+                    SUM(CASE WHEN Courses.Term = ?1 AND Courses.Year != ?2 THEN Courses.ActEnrl ELSE NULL END) AS PrevActEnrl,
                     SUM(CASE WHEN Courses.Term = ?1 AND Courses.Year = ?2 THEN Courses.EstEnrl ELSE 0 END) AS CurrEstEnrl,
                     SUM(CASE WHEN Courses.Term = ?1 AND Courses.Year = ?2 THEN Courses.ActEnrl ELSE 0 END) AS CurrActEnrl,
-                    SUM(CASE WHEN Sales.Term = ?1 AND Sales.Year = ?2 THEN Sales.EstSales ELSE 0 END) AS CurrEstSales,
-                    -- Average enrollments and sales for historical data
-                    ROUND(AVG(CASE WHEN Courses.Term = ?1 AND Courses.Year != ?2 THEN Courses.EstEnrl ELSE NULL END), 0) AS PrevEstEnrl,
-                    ROUND(AVG(CASE WHEN Courses.Term = ?1 AND Courses.Year != ?2 THEN Courses.ActEnrl ELSE NULL END), 0) AS PrevActEnrl,
-                    ROUND(AVG(CASE WHEN Sales.Term = ?1 AND Sales.Year != ?2 THEN Sales.UsedSales + Sales.NewSales ELSE NULL END)) AS PrevSales
-                FROM Books
-                JOIN Course_Book ON Course_Book.BookID = Books.ID
-                JOIN Courses ON Course_Book.CourseID = Courses.ID
-                JOIN Sales ON Books.ID = Sales.BookID
-                    AND Sales.Term = Courses.Term
-                    AND Sales.Year = Courses.Year
-                -- Subquery to limit results to books from the specified term and year
-                WHERE Books.ID IN (
-                    SELECT DISTINCT Books.ID
-                    FROM Books
-                    JOIN Course_Book ON Course_Book.BookID = Books.ID
-                    JOIN Courses ON Course_Book.CourseID = Courses.ID
-                    WHERE Courses.Term = ?1 
-                        AND Courses.Year = ?2
-                        AND Courses.Dept NOT IN ("SPEC", "CANC")
-                )
-                GROUP BY Books.ID, Books.ISBN, Books.Title
-                ORDER BY Books.Title`,
-            [term, year], (err, rows: dbRow[]) => {
-                if (err) {
-                    reject(err)
-                }
-                resolve(rows)
-            })
+COALESCE(
+        (SELECT SUM(Sales.UsedSales + Sales.NewSales)
+         FROM Sales
+         WHERE Sales.Term = ?1 
+           AND Sales.Year != ?2
+           AND Sales.BookID = Books.ID),
+        0
+    ) AS TotalSales,
+    COALESCE(
+        (SELECT Sales.EstSales
+         FROM Sales
+         WHERE Sales.Term = ?1 
+           AND Sales.Year = ?2
+           AND Sales.BookID = Books.ID),
+        0
+    ) AS CurrEstSales
+    From Courses
+JOIN Course_Book ON Courses.ID = Course_Book.CourseID
+JOIN Books ON Course_Book.BookID = Books.ID
+JOIN Sales ON Books.ID = Sales.BookID
+WHERE Sales.Term = Courses.Term
+AND Sales.Year = Courses.Year
+AND Courses.Unit = "1"
+AND Courses.Term = ?1
+AND Courses.DEPT NOT IN ("SPEC", "CANC")
+GROUP BY Books.ISBN, Books.Title
+ORDER BY Books.Title
+            `)
 
-        db.close((err) => {
-            if (err) {
-                reject(err)
-            }
-        })
+            stmt.all([term, year], (err, resultRows: DBRow[]) => {
+                if (err) {
+                    reject(`Error executing query: ${err.message}`)
+                } else {
+                    for (const row of resultRows) {
+                        const matchedBook = books.find(([isbn, title]) => isbn === row.ISBN && title === row.Title)
+                        if (matchedBook) {
+                            if (matchedBook[2]) {
+                                row.Decision = matchedBook[2]
+                            }
+                            rows.push(row)
+                        }
+                    }
+                    stmt.finalize((err) => {
+                        if (err) {
+                            reject(`Error finalizing statement: ${err.message}`)
+                        } else {
+                            db.close((err) => {
+                                if (err) {
+                                    reject(`Error closing database: ${err.message}`)
+                                } else {
+                                    resolve(rows)
+                                }
+                            })
+                        }
+                    })
+                }
+            })
+        } catch (error) {
+            reject(error)
+        }
     })
 }
 
-const getCourseDataByTerm = async (term: string, year: string): Promise<dbRow[]> => {
+const getBooksByTerm = async (term: string, year: string): Promise<DBRow[]> => {
+    const db = new Database(dbPath, OPEN_READONLY, (err) => {
+        if (err) throw err
+    })
+
+    try {
+        return new Promise((resolve, reject) => {
+            db.all(`SELECT Books.ISBN, Books.Title FROM Books 
+                JOIN Sales on Books.ID = Sales.BookID
+                WHERE Sales.Term=? AND Sales.Year=?`,
+                [term, year], (err, rows: DBRow[]) => {
+                    if (err) reject(err)
+                    resolve(rows)
+                })
+        })
+    } catch (error) {
+        throw error
+    } finally {
+        db.close((err) => { if (err) throw err })
+    }
+}
+
+const getCourseDataByTerm = async (term: string, year: string): Promise<DBRow[]> => {
     const db = new Database(dbPath, OPEN_READONLY, (err) => {
         if (err) throw (err)
     })
@@ -218,7 +208,7 @@ const getCourseDataByTerm = async (term: string, year: string): Promise<dbRow[]>
                 WHERE Courses.Term = ? 
                     AND Courses.Year = ?
                     AND Courses.Dept NOT IN ("SPEC", "CANC")`,
-                [term, year], (err, rows: dbRow[]) => {
+                [term, year], (err, rows: DBRow[]) => {
                     if (err) reject(err)
                     resolve(rows)
                 })
@@ -248,22 +238,26 @@ const buildTableSchema = (sqlHeader) => {
 const replaceTable = (filePath: string): Promise<void> => {
     // Retrieve CSV table name from uploaded file path
     // Find the table name that corresponds to the CSV name
-    const [match] = filePath.match(/(?<=\\)([^\\]+)(?=\.[^.]*$)/)
-    const name = Object.keys(tables).find(key => tables[key].TableName === match)
+    const matchName = regex.matchFileName(filePath)
+    const name = Object.keys(tables).find(key => tables[key].TableName === matchName)
 
     const db = new Database(dbPath, OPEN_READWRITE, (err) => { if (err) return err })
     const tableData = tables[name]
 
     return new Promise((resolve, reject) => {
         const stream = fs.createReadStream(filePath)
+        // Headers that will be used for SQL Table
         const sqlHeader = tableData["TableHeaders"]
         const tableSchema = buildTableSchema(sqlHeader)
+        // Only insert values for headers that are meant to be inserted
         const insertKeys = Object.keys(sqlHeader).filter(key => sqlHeader[key].insert)
+        // Create question mark placeholders for number of inserts
         const placeholders = insertKeys.map(() => "?").join(", ")
         const insertStatement = `INSERT INTO ${name} (${insertKeys.join(", ")}) VALUES (${placeholders})`
 
         Papa.parse(stream, {
             beforeFirstChunk: (chunk) => {
+                // CSV doesn't include header so needs to be added on first chunk of data
                 const lines = chunk.split("\n")
                 const header = tableData["CSVHeaders"].join(",")
 
@@ -279,6 +273,13 @@ const replaceTable = (filePath: string): Promise<void> => {
                         db.run(`CREATE TABLE IF NOT EXISTS ${name} ${tableSchema}`, (err) => {
                             if (err) return reject(`Error creating ${name} Table: ${err}`)
                         })
+
+                        for (const index of tableData["Indexes"]) {
+                            db.run(`CREATE INDEX idx_${name.toLowerCase()}_${(index.split(", ").join("_").toLowerCase())} ON ${name}(${index})`, (err) => {
+                                if (err) console.warn(`Error creating index for table ${name}`)
+                            })
+
+                        }
                         db.run("BEGIN TRANSACTION", (err) => {
                             if (err) return reject(`Error starting transaction: ${err}`)
                         })
@@ -295,7 +296,8 @@ const replaceTable = (filePath: string): Promise<void> => {
                             })
 
                             stmt.run(values, (err) => {
-                                if (err) return reject(`Error inserting row: ${err}`)
+                                // Check if the error message contains "constraint"
+                                if (err && !/constraint/i.test(err.message)) console.warn(`Error inserting row: ${err}`)
                             })
                         })
 
@@ -324,7 +326,8 @@ const replaceTable = (filePath: string): Promise<void> => {
 
 export const sqlDB = {
     all: { getTablePage, getAllTermList },
-    sales: { getPrevSalesData, getPrevSalesByBookArr, getAllPrevSalesByBook },
+    sales: { getPrevSalesByBookArr, getAllPrevSalesByBook },
+    books: { getBooksByTerm },
     courses: { getCourseDataByTerm },
     tables: { replaceTable }
 }
