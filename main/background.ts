@@ -8,11 +8,16 @@ import { AdoptionService } from './utils'
 import { TemplateAdoption } from '../types/TemplateAdoption'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
 import { getTermDecisions, getFileDecisions } from './processes/decision'
+import { replaceTables } from './processes/sql'
 import { sqlDB, fileSys } from './utils'
+import { runBatchSpawn } from './electron-utils/run-batch'
+import bSQLDB from './utils/bSQLDB'
+import tables from './db/tables'
 
 const isProd = process.env.NODE_ENV === 'production'
 const iconPath = path.join(__dirname, '..', 'renderer', 'public', 'images', 'owl.ico')
 const appHomeURL = isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`
+const resourcePath = isProd ? path.join(app.getPath('userData'), 'resources') : path.join(__dirname, "..", "resources")
 
 if (isProd) {
   serve({ directory: 'app' })
@@ -53,6 +58,7 @@ let tray: Tray
         .then((name: string) => console.log(`Added Extension:  ${name}`))
         .catch((err: Error) => console.log('An error occurred: ', err))
     }
+
   })()
 
 app.on('window-all-closed', () => {
@@ -61,6 +67,15 @@ app.on('window-all-closed', () => {
 
 // On app initialization, check for mode and version
 ipcMain.on('initialize', async (event) => {
+  if (isProd) {
+    try {
+      await runBatchSpawn("s981157837", resourcePath)
+      const files = await fileSys.dir.paths(resourcePath)
+      await replaceTables(files)
+    } catch (error) {
+      dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `Trouble downloading new tables.\n\n${error}` })
+    }
+  }
   event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion() })
 })
 
@@ -145,8 +160,8 @@ ipcMain.on('sql', async (event, { method, data }) => {
 
     case "get-terms":
       try {
-        const terms = await sqlDB.all.getAllTermList()
-        event.reply("term-list", { terms })
+        const terms = await bSQLDB.all.getAllTerms()
+        event.reply("term-list", { terms: terms.map((term) => term.Term) })
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("SQL", `Check the console.`)
@@ -155,14 +170,24 @@ ipcMain.on('sql', async (event, { method, data }) => {
 
     case "replace-table":
       console.log("Replacing tables.")
+      const files = data as string[]
 
       console.time('SQL')
-      for (const filePath of data) {
-        await sqlDB.tables.replaceTable(filePath)
-        console.log(`${filePath} finished.`)
-      }
-
+      await replaceTables(files)
       console.timeEnd('SQL')
+      break
+
+    case "drop-table":
+      try {
+        console.log(`Recreating ${data} table`)
+        const filePath = path.join(resourcePath, `${tables[data].TableName}.csv`)
+
+        console.time('SQL')
+        await bSQLDB.all.createTable(filePath, data)
+        console.timeEnd('SQL')
+      } catch (error) {
+        console.error(error)
+      }
       break
   }
 })
@@ -182,7 +207,6 @@ ipcMain.on('decision', async (event, { method, data }) => {
 
     case "get-term-decision":
       try {
-        console.log(`Getting decisions for ${data.term}`)
         const { decisions, term } = await getTermDecisions(data.term)
         event.reply('decision-data', { decisions, term })
       } catch (error) {
@@ -199,7 +223,8 @@ ipcMain.on('decision', async (event, { method, data }) => {
         }
 
         const [term, year] = data.term.match(/[a-zA-z]|\d+/g)
-        const salesHistory = await sqlDB.sales.getAllPrevSalesByBook(term, year, data.isbn, data.title)
+        const salesHistory = await bSQLDB.sales.getPrevSalesByBook(data.isbn, data.title, term, year)
+        console.log(salesHistory)
 
         childWindow.webContents.send('history', salesHistory)
       } catch (error) {

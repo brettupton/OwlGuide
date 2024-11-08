@@ -1,22 +1,36 @@
 import { Decision, SQLDecision } from "../../types/Decision"
 import { fileSys, regex, sqlDB } from "../utils"
+import bSQLDB from "../utils/bSQLDB"
 
 const getTermDecisions = async (fullTerm: string) => {
     try {
         const [term = null, year = null] = regex.splitFullTerm(fullTerm) || []
         if (!term || !year) throw `Unexpected term or year.`
 
-        const termBooks = await sqlDB.books.getBooksByTerm(term, year)
+        const termBooks = await bSQLDB.books.getBooksByTerm(term, year)
         const books = termBooks.map((book) => {
-            return [book.ISBN as string, book.Title as string]
+            return [book.ISBN as number, book.Title as string]
         })
 
 
-        const termData = await sqlDB.sales.getPrevSalesByBookArr(term, year, books)
+        const termData = await bSQLDB.sales.getPrevSalesByTerm(term, year)
         const decisions: Decision[] = []
 
-        termData.forEach((book: SQLDecision) => {
-            const decision = calculateDecision(book)
+        books.forEach((book) => {
+            let match = termData.find((row) => row["ISBN"] === book[0] && row["Title"] === book[1])
+            if (!match) {
+                match = {
+                    ISBN: book[0],
+                    Title: book[1],
+                    PrevEstEnrl: 0,
+                    PrevActEnrl: 0,
+                    CurrEstEnrl: 0,
+                    CurrActEnrl: 0,
+                    CurrEstSales: 0,
+                    TotalSales: 0,
+                }
+            }
+            const decision = calculateDecision(match)
             decisions.push(decision)
         })
 
@@ -90,7 +104,7 @@ const getFileDecisions = async (filePath: string) => {
     }
 }
 
-const calculateDecision = (book: SQLDecision) => {
+const calculateDecision = (book) => {
     // Get previous semester sales over enrollment
     const salesEnrl = book.TotalSales && (book.PrevActEnrl !== 0) ? book.TotalSales / book.PrevActEnrl : 0.2
 
@@ -104,6 +118,7 @@ const calculateDecision = (book: SQLDecision) => {
     }
 
     const newDec = Math.round(book.CurrActEnrl * salesEnrl)
+    if (newDec === Infinity) { console.log(book) }
     const newDecision: Decision = {
         ISBN: book.ISBN,
         Title: book.Title,

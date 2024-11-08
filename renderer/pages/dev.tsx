@@ -4,6 +4,7 @@ import PageTable from '../components/PageTable'
 export default function Development() {
     const [table, setTable] = useState<{ [field: string]: string }[]>([])
     const [tableName, setTableName] = useState<string>("")
+    const [dropTable, setDropTable] = useState<string>("")
     const [totalRows, setTotalRows] = useState<number>(0)
     const [page, setPage] = useState<number>(1)
     const [limit, setLimit] = useState<number>(30)
@@ -45,8 +46,35 @@ export default function Development() {
         }
     }
 
+    const handleTableInput = (e: ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.currentTarget
+
+        setDropTable(value)
+    }
+
+    const handleTableDrop = () => {
+        window.ipc.send('sql', { method: "drop-table", data: dropTable })
+        setDropTable("")
+    }
+
+    const handleReset = () => {
+        (document.getElementById('csv') as HTMLInputElement).value = ""
+        setTable([])
+        setTableName("")
+        setDropTable("")
+        setTotalRows(0)
+        setPage(1)
+    }
+
     return (
-        <div className="flex flex-col mt-5 w-full mx-auto">
+        <div className="flex flex-col mt-5 pl-2 w-full mx-auto">
+            <div className="flex">
+                <button onClick={handleReset}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-7">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                </button>
+            </div>
             {table.length > 0
                 ?
                 <div className="flex flex-col">
@@ -67,10 +95,14 @@ export default function Development() {
                     <PageTable pageData={table} totalRows={totalRows} page={page} updatePage={handlePageChange} />
                 </div>
                 :
-                <div className="flex">
-                    <div className="flex flex-col">
+                <div className="flex p-2">
+                    <div className="flex flex-col pr-2">
                         <label htmlFor="tables" className="block mb-2 text-sm font-medium text-white">Table</label>
-                        <select id="tables" className="border text-sm rounded-lg block w-full p-1 bg-gray-700 border-gray-600 text-white" onChange={handleTableChoice}>
+                        <select
+                            id="tables"
+                            className="border text-sm rounded-lg block w-full p-1 bg-gray-700 border-gray-600 text-white"
+                            onChange={handleTableChoice}
+                        >
                             <option value="">Select</option>
                             <option>Courses</option>
                             <option>Books</option>
@@ -81,6 +113,15 @@ export default function Development() {
                     <div className="flex flex-col">
                         <label htmlFor="csv" className="block mb-2 text-sm font-medium text-white">CSV</label>
                         <input type="file" id="csv" multiple onChange={handleFileChange} />
+                    </div>
+                    <div className="flex flex-col">
+                        <div className="flex flex-col">
+                            <label htmlFor="table" className="block mb-2 text-sm font-medium text-white">Drop</label>
+                            <input type="text" id="table" className="bg-gray-700 text-sm p-1" value={dropTable} onChange={handleTableInput} />
+                        </div>
+                        <div className="flex justify-center">
+                            <button className="border border-white rounded w-1/2 mt-1 hover:bg-gray-500" onClick={handleTableDrop}>Submit</button>
+                        </div>
                     </div>
                 </div>
             }

@@ -3,7 +3,6 @@ import path from 'path'
 import XLSX from 'xlsx'
 import Papa from 'papaparse'
 import { CSVCourse, XLSXCourse } from '../../types/Enrollment'
-import { XLSXDecision } from '../../types/Decision'
 
 const tempPath = path.join(__dirname, '..', 'main', 'tmp')
 
@@ -38,7 +37,7 @@ const readXLSXFile = (filePath: string, process: "enrollment" | "decision"): Pro
             let ws = wb.Sheets[wsname]
             // Decision XLSX has four unncessary rows at beginning of sheet
             const startingRow = process === "decision" ? 4 : 0
-            let data: (XLSXCourse | XLSXDecision)[] = XLSX.utils.sheet_to_json(ws, { range: startingRow })
+            let data: any[] = XLSX.utils.sheet_to_json(ws, { range: startingRow })
 
             resolve(data)
         } catch (error) {
@@ -85,33 +84,28 @@ const writeTempDir = (data: string | NodeJS.ArrayBufferView): Promise<void> => {
     })
 }
 
-const readTempDir = (): Promise<string> => {
+const getDirFilePaths = (dir: string): Promise<string[]> => {
     return new Promise((resolve, reject) => {
-        if (fs.existsSync(tempPath)) {
-            fs.readdir(tempPath, (err, files) => {
+        const filePaths: string[] = []
+        if (fs.existsSync(dir)) {
+            fs.readdir(dir, (err, files) => {
                 if (err) {
-                    reject(`Couldn't read temp directory: ${err}`)
-                }
-                if (files.length > 1) {
-                    reject("More than one file located in temp directory.")
+                    reject(`Couldn't read directory: ${err}`)
                 }
 
-                fs.readFile(path.join(tempPath, files[0]), (err, data) => {
-                    if (err) {
-                        reject(`Error reading ${files[0]} in temp directory.`)
-                    }
-                    resolve(data.toString())
+                files.forEach((file) => {
+                    filePaths.push(path.join(dir, file))
                 })
+                resolve(filePaths)
             })
         } else {
-            reject("Temp directory missing.")
+            reject(`Directory ${dir} not found.`)
         }
     })
 }
 
 export const fileSys = {
     temp: {
-        read: readTempDir,
         write: writeTempDir
     },
     csv: {
@@ -119,5 +113,8 @@ export const fileSys = {
     },
     xlsx: {
         read: readXLSXFile
+    },
+    dir: {
+        paths: getDirFilePaths
     }
 }
