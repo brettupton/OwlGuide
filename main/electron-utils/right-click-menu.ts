@@ -18,7 +18,7 @@ export const rightClickMenu = (x: number, y: number, query: string, window: Brow
         }
     })
     const searchGoogle = new MenuItem({
-        label: 'Search Google',
+        label: `Search Google for '${query}'`,
         click: () => {
             shell.openExternal(`https://www.google.com/search?q=${encodeURIComponent(query)}`)
         }

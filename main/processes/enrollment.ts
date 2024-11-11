@@ -1,5 +1,5 @@
 import { CSVCourse, XLSXCourse } from "../../types/Enrollment"
-import { fileSys, sqlDB, regex } from "../utils"
+import { fileSys, bSQLDB, regex } from "../utils"
 import Papa from 'papaparse'
 
 const matchEnrollment = async (filePath: string) => {
@@ -10,7 +10,7 @@ const matchEnrollment = async (filePath: string) => {
         const [term = null, year = null] = regex.matchFileTermYear(filePath) || []
         if (!term) throw `Unexpected file name. Rename with term and try again.`
 
-        const termData = await sqlDB.courses.getCourseDataByTerm(term, year)
+        const { queryResult, totalRowCount } = await bSQLDB.courses.getCoursesByTerm(term, year, true)
         fileData.forEach((course) => {
             // Verify all needed fields exist in course
             const requiredFields = [
@@ -34,7 +34,7 @@ const matchEnrollment = async (filePath: string) => {
 
             const CRN = course["COURSE REFERENCE NUMBER"].toString()
             // If no offering number, find potential match from database
-            const oNum = course["OFFERING NUMBER"] ?? findSectionNum(termData, CRN)
+            const oNum = course["OFFERING NUMBER"] ?? findSectionNum(queryResult, CRN)
             const prof = course["PRIMARY INSTRUCTOR LAST NAME"] ? course["PRIMARY INSTRUCTOR LAST NAME"].toString().toUpperCase() : "TBD"
 
             newEnrl.push([

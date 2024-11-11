@@ -4,15 +4,12 @@ import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'e
 import serve from 'electron-serve'
 import { v4 as uuidv4 } from 'uuid'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
-import { AdoptionService } from './utils'
+import { AdoptionService, regex, fileSys, bSQLDB } from './utils'
 import { TemplateAdoption } from '../types/TemplateAdoption'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
 import { getTermDecisions, getFileDecisions } from './processes/decision'
-import { replaceTables } from './processes/sql'
-import { sqlDB, fileSys } from './utils'
+import { dropTables, replaceTables } from './processes/sql'
 import { runBatchSpawn } from './electron-utils/run-batch'
-import bSQLDB from './utils/bSQLDB'
-import tables from './db/tables'
 
 const isProd = process.env.NODE_ENV === 'production'
 const iconPath = path.join(__dirname, '..', 'renderer', 'public', 'images', 'owl.ico')
@@ -55,7 +52,6 @@ let tray: Tray
       // Load React DevTools only if in development
       const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer')
       installExtension(REACT_DEVELOPER_TOOLS)
-        .then((name: string) => console.log(`Added Extension:  ${name}`))
         .catch((err: Error) => console.log('An error occurred: ', err))
     }
 
@@ -150,8 +146,8 @@ ipcMain.on('sql', async (event, { method, data }) => {
   switch (method) {
     case "get-table-page":
       try {
-        const { rows, total } = await sqlDB.all.getTablePage(data.name, data.offset, data.limit)
-        event.reply('table-page', { rows, total })
+        const { queryResult, totalRowCount } = await bSQLDB.all.getTablePage(data.name, data.offset, data.limit)
+        event.reply('table-page', { rows: queryResult, total: totalRowCount })
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("SQL", `Check the console.`)
@@ -179,11 +175,10 @@ ipcMain.on('sql', async (event, { method, data }) => {
 
     case "drop-table":
       try {
-        console.log(`Recreating ${data} table`)
-        const filePath = path.join(resourcePath, `${tables[data].TableName}.csv`)
+        console.log(`Recreating tables`)
 
         console.time('SQL')
-        await bSQLDB.all.createTable(filePath, data)
+        await dropTables(resourcePath)
         console.timeEnd('SQL')
       } catch (error) {
         console.error(error)
@@ -219,17 +214,33 @@ ipcMain.on('decision', async (event, { method, data }) => {
     case "child-decision":
       try {
         if (!childWindow) {
-          childWindow = await createChildWindow(mainWindow, "decision-history", "right")
+          childWindow = await createChildWindow(mainWindow, "decision-data", "right")
         }
 
         const [term, year] = data.term.match(/[a-zA-z]|\d+/g)
         const salesHistory = await bSQLDB.sales.getPrevSalesByBook(data.isbn, data.title, term, year)
-        console.log(salesHistory)
+        const courses = await bSQLDB.courses.getCoursesByBook(data.isbn, data.title, term, year)
 
-        childWindow.webContents.send('history', salesHistory)
+        childWindow.webContents.send('data', { salesHistory, courses, isbn: data.isbn, title: data.title })
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)
+      }
+      break
+  }
+})
+
+ipcMain.on('course', async (event, { method, data }) => {
+  switch (method) {
+    case 'get-term-course':
+      try {
+        const [term, year] = regex.splitFullTerm(data.term)
+        const { queryResult, totalRowCount } = await bSQLDB.courses.getCoursesByTerm(term, year, false, data.limit, data.offset)
+
+        event.reply('course-data', { courses: queryResult, total: totalRowCount, term: term + year })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("Course", `${error}\n\nContact dev for assistance.`)
       }
       break
   }

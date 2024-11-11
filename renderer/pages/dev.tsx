@@ -1,10 +1,9 @@
 import React, { ChangeEvent, useEffect, useState } from 'react'
-import PageTable from '../components/PageTable'
+import { PageTable } from '../components'
 
 export default function Development() {
     const [table, setTable] = useState<{ [field: string]: string }[]>([])
     const [tableName, setTableName] = useState<string>("")
-    const [dropTable, setDropTable] = useState<string>("")
     const [totalRows, setTotalRows] = useState<number>(0)
     const [page, setPage] = useState<number>(1)
     const [limit, setLimit] = useState<number>(30)
@@ -46,22 +45,16 @@ export default function Development() {
         }
     }
 
-    const handleTableInput = (e: ChangeEvent<HTMLInputElement>) => {
-        const { value } = e.currentTarget
-
-        setDropTable(value)
-    }
-
     const handleTableDrop = () => {
-        window.ipc.send('sql', { method: "drop-table", data: dropTable })
-        setDropTable("")
+        window.ipc.send('sql', { method: "drop-table" })
     }
 
     const handleReset = () => {
-        (document.getElementById('csv') as HTMLInputElement).value = ""
+        if ((document.getElementById('csv') as HTMLInputElement).value) {
+            (document.getElementById('csv') as HTMLInputElement).value = ""
+        }
         setTable([])
         setTableName("")
-        setDropTable("")
         setTotalRows(0)
         setPage(1)
     }
@@ -114,14 +107,8 @@ export default function Development() {
                         <label htmlFor="csv" className="block mb-2 text-sm font-medium text-white">CSV</label>
                         <input type="file" id="csv" multiple onChange={handleFileChange} />
                     </div>
-                    <div className="flex flex-col">
-                        <div className="flex flex-col">
-                            <label htmlFor="table" className="block mb-2 text-sm font-medium text-white">Drop</label>
-                            <input type="text" id="table" className="bg-gray-700 text-sm p-1" value={dropTable} onChange={handleTableInput} />
-                        </div>
-                        <div className="flex justify-center">
-                            <button className="border border-white rounded w-1/2 mt-1 hover:bg-gray-500" onClick={handleTableDrop}>Submit</button>
-                        </div>
+                    <div className="flex w-full justify-center h-1/2">
+                        <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleTableDrop}>Drop</button>
                     </div>
                 </div>
             }

@@ -3,7 +3,7 @@ import Image from 'next/image'
 
 
 export default function HomePage({ isDev }) {
-  const routes = ['decision', 'adoption', 'enrollment']
+  const routes = ['course', 'decision', 'adoption', 'enrollment']
 
   return (
     <div className="flex flex-grow items-center justify-center">

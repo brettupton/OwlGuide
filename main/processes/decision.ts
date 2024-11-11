@@ -1,6 +1,5 @@
 import { Decision, SQLDecision } from "../../types/Decision"
-import { fileSys, regex, sqlDB } from "../utils"
-import bSQLDB from "../utils/bSQLDB"
+import { fileSys, regex, bSQLDB } from "../utils"
 
 const getTermDecisions = async (fullTerm: string) => {
     try {
@@ -14,7 +13,7 @@ const getTermDecisions = async (fullTerm: string) => {
 
 
         const termData = await bSQLDB.sales.getPrevSalesByTerm(term, year)
-        const decisions: Decision[] = []
+        let decisions: Decision[] = []
 
         books.forEach((book) => {
             let match = termData.find((row) => row["ISBN"] === book[0] && row["Title"] === book[1])
@@ -30,9 +29,11 @@ const getTermDecisions = async (fullTerm: string) => {
                     TotalSales: 0,
                 }
             }
-            const decision = calculateDecision(match)
+            const decision = calculateDecision(match as SQLDecision)
             decisions.push(decision)
         })
+
+        decisions = decisions.sort((a, b) => a.Title.localeCompare(b.Title))
 
         return { decisions, term: term + year }
     } catch (error) {
@@ -88,12 +89,12 @@ const getFileDecisions = async (filePath: string) => {
         })
 
         if (fileBooks.length > 0) {
-            const termData = await sqlDB.sales.getPrevSalesByBookArr(term, year, fileBooks)
+            // const termData = await sqlDB.sales.getPrevSalesByBookArr(term, year, fileBooks)
 
-            termData.forEach((book: SQLDecision) => {
-                const newDecision = calculateDecision(book)
-                fileDecisions.push(newDecision)
-            })
+            // termData.forEach((book: SQLDecision) => {
+            //     const newDecision = calculateDecision(book)
+            //     fileDecisions.push(newDecision)
+            // })
 
             return { decisions: fileDecisions, term: fileTerm }
         } else {
@@ -104,9 +105,11 @@ const getFileDecisions = async (filePath: string) => {
     }
 }
 
-const calculateDecision = (book) => {
+const calculateDecision = (book: SQLDecision) => {
     // Get previous semester sales over enrollment
-    const salesEnrl = book.TotalSales && (book.PrevActEnrl !== 0) ? book.TotalSales / book.PrevActEnrl : 0.2
+    const salesEnrl = book.PrevActEnrl && (book.PrevActEnrl !== 0) ? book.TotalSales / book.PrevActEnrl : 0.2
+
+    if (book.ISBN === 9781586423223) { console.log(`${JSON.stringify(book)}\n${salesEnrl}`) }
 
     // If no current Actual Enrollment, calculate based on past percent change from Estimated to Actual
     if (book.CurrActEnrl === 0 && book.CurrEstEnrl !== 0) {
@@ -118,7 +121,6 @@ const calculateDecision = (book) => {
     }
 
     const newDec = Math.round(book.CurrActEnrl * salesEnrl)
-    if (newDec === Infinity) { console.log(book) }
     const newDecision: Decision = {
         ISBN: book.ISBN,
         Title: book.Title,

@@ -4,7 +4,7 @@ import Papa from 'papaparse'
 import path from 'path'
 import tables from "../db/tables"
 import { regex } from "./regex"
-import { TableHeader, DBRow } from "../../types/Database"
+import { TableHeader } from "../../types/Database"
 
 const dbPath = path.join(__dirname, '..', 'main', 'db', 'owlguide-2.db')
 
@@ -26,9 +26,11 @@ const buildTableSchema = (sqlHeader: TableHeader, newTable: boolean) => {
     return `(${columns}${newTable && foreignKeys ? `, ${foreignKeys}` : ""})`
 }
 
-const createTable = (filePath: string, name: string): Promise<void> => {
+const createTable = (filePath: string): Promise<void> => {
     return new Promise((resolve, reject) => {
         const db = new Database(dbPath)
+        const matchName = regex.matchFileName(filePath)
+        const name = Object.keys(tables).find(key => tables[key].TableName === matchName)
         const tableData = tables[name]
         const stream = fs.createReadStream(filePath)
         const sqlHeader = tableData["TableHeaders"]
@@ -49,7 +51,6 @@ const createTable = (filePath: string, name: string): Promise<void> => {
                 })
             })
 
-            // Insert indexes and catch errors within transaction
             try {
                 insertIndexes(tableData["Indexes"])
             } catch (indexError) {
@@ -65,22 +66,20 @@ const createTable = (filePath: string, name: string): Promise<void> => {
                 complete: (results) => {
                     let csvResults = results.data as DBRow[]
 
-                    // Filter and de-duplicate rows in Books table
-                    if (name === "Books") {
-                        csvResults = csvResults.filter((obj, index) =>
-                            csvResults.findIndex(book => book["TRMSUMITMG"] === obj["TRMSUMITMG"]) === index
-                        )
+                    if (name === "Books" || name === "Courses") {
+                        // Books and Courses have missing IDs from original CSV, a placeholder is used to keep data in reference table
+                        const placeholderValues = new Array(insertKeys.length - 1).fill("")
+                        placeholderValues.unshift(placeholderID)
 
-                        // Insert placeholder row if needed
-                        db.prepare(`INSERT OR IGNORE INTO Books (ID, ISBN, Title) VALUES (?, ?, ?)`).run(placeholderID, "", "")
+                        insertStmt.run(placeholderValues)
                     }
-
-                    const bookStmt = db.prepare(`SELECT ID FROM Books WHERE ID=?`)
-                    const courseIDs = new Set(db.prepare(`SELECT ID FROM Courses`).all().map((row: DBRow) => row.ID as number))
 
                     const insertMany = db.transaction((csv: DBRow[]) => {
                         for (const row of csv) {
                             if (name === "Sales" || name === "Course_Book") {
+                                const bookStmt = db.prepare(`SELECT ID FROM Books WHERE ID=?`)
+                                const courseStmt = db.prepare(`SELECT ID FROM Courses WHERE ID=?`)
+
                                 const bookID = Number(row["ITMBKGENKE"])
                                 const courseID = Number(row["CRSSEQ"])
 
@@ -94,8 +93,8 @@ const createTable = (filePath: string, name: string): Promise<void> => {
                                 }
 
                                 // Check for course existence if needed
-                                const courseExists = courseIDs.has(courseID) ? courseID : placeholderID
-                                row["CRSSEQ"] = courseExists
+                                const courseExistId = courseStmt.get(courseID) ? courseID : placeholderID
+                                row["CRSSEQ"] = courseExistId
                             }
 
                             const values = insertKeys.map(key => {
@@ -230,6 +229,7 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
                     Sales
                 WHERE 
                     Term = :term
+                    AND Unit = '1'
                 GROUP BY 
                     BookID
             )
@@ -296,6 +296,8 @@ const getPrevSalesByBook = (isbn: string, title: string, term: string, year: str
                         AND Sales.Term = Courses.Term
                         AND Sales.Year = Courses.Year
                     WHERE Books.ISBN = ? AND Books.Title = ?
+                        AND Courses.Unit = '1'
+                        AND Sales.Unit = '1'
                         AND Courses.Term = ? 
                         AND Courses.Year != ?
                         AND Courses.Dept NOT IN ('SPEC', 'CANC')
@@ -339,7 +341,114 @@ const getBooksByTerm = (term: string, year: string): Promise<DBRow[]> => {
         } catch (error) {
             db.close()
             reject(error)
-            throw error
+        }
+    })
+}
+
+const getBooksByCourse = (courseID: number): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT
+                `)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
+const getCoursesByBook = (isbn: string, title: string, term: string, year: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT 
+                    CONCAT(Courses.Dept, ' ', 
+                        SUBSTR(CONCAT('000', Courses.Course), LENGTH(CONCAT('000', Courses.Course))-3+1, 3), ' ', 
+                        SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3)) AS Course, 
+                    Courses.EstEnrl, Courses.ActEnrl 
+                FROM 
+                    Courses 
+                JOIN 
+                    Course_Book ON Courses.ID = Course_Book.CourseID
+                JOIN 
+                    Books on Course_Book.BookID = Books.ID
+                WHERE Books.ISBN = ?
+                    AND Books.Title = ?
+                    AND Courses.Term = ?
+                    AND Courses.Year = ?
+                ORDER BY 
+                    Courses.Dept, Courses.Course, Courses.Section`)
+
+            const results = queryStmt.all(isbn, title, term, year) as DBRow[]
+
+            db.close()
+            resolve(results)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
+const getCoursesByTerm = (term: string, year: string, enrollment: boolean, limit?: number, offset?: number): Promise<{ queryResult: DBRow[], totalRowCount: number }> => {
+    const offsetLimitExists = typeof offset !== 'undefined' || typeof limit !== 'undefined'
+
+    return new Promise((resolve, reject) => {
+        const db = new Database(dbPath)
+
+        let query = `
+                SELECT 
+                    Courses.ID, Courses.Dept, 
+                    SUBSTR(CONCAT('000', Courses.Course), LENGTH(CONCAT('000', Courses.Course))-3+1, 3) AS Course, 
+                    SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3) AS Section, 
+                    Courses.Prof,
+                    Courses.EstEnrl,
+                    Courses.ActEnrl, 
+                    Courses.CRN
+                FROM 
+                    Courses
+                WHERE Courses.Term = ?
+                    AND Courses.Year = ?
+                `
+        const params: (string | number)[] = [term, year]
+
+        if (offsetLimitExists) {
+            query +=
+                `
+                AND Courses.Unit = '1'
+                ORDER BY
+                    Courses.Dept, Courses.Course, Courses.Section
+                LIMIT ?, ?
+                `
+            params.push(offset * limit, limit)
+        }
+
+        try {
+            const queryStmt = db.prepare(query)
+
+            const countStmt = db.prepare(`
+                SELECT 
+                    COUNT(*) AS Count
+                FROM 
+                    Courses
+                WHERE Courses.Unit = '1'
+                    AND Courses.Term = ?
+                    AND Courses.Year = ?
+                `)
+
+            const queryResult = queryStmt.all(...params) as DBRow[]
+            const countResult = countStmt.get(term, year) as DBRow
+
+            db.close()
+            resolve({ queryResult, totalRowCount: countResult.Count as number })
+        } catch (error) {
+            db.close()
+            reject(error)
         }
     })
 }
@@ -353,7 +462,9 @@ const getAllTerms = (): Promise<DBRow[]> => {
                 SELECT DISTINCT 
                     CONCAT(Term, Year) AS Term 
                 FROM 
-                    Courses 
+                    Courses
+                WHERE 
+                    Term != ''
                 ORDER BY 
                     Term, Year`).all() as DBRow[]
 
@@ -367,10 +478,41 @@ const getAllTerms = (): Promise<DBRow[]> => {
     })
 }
 
-const bSQLDB = {
-    all: { replaceTable, createTable, getAllTerms },
-    sales: { getPrevSalesByTerm, getPrevSalesByBook },
-    books: { getBooksByTerm }
+const getTablePage = (name: string, offset: number, limit: number): Promise<{ queryResult: DBRow[], totalRowCount: number }> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT 
+                    * 
+                FROM 
+                    ${name}
+                LIMIT ?, ?
+                `)
+
+            const countStmt = db.prepare(`
+                SELECT
+                    COUNT(*) AS Count 
+                FROM 
+                    ${name}
+                `)
+
+            const queryResult = queryStmt.all(offset * limit, limit) as DBRow[]
+            const countResult = countStmt.get() as DBRow
+
+            db.close()
+            resolve({ queryResult, totalRowCount: countResult.Count as number })
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
 }
 
-export default bSQLDB
+export const bSQLDB = {
+    all: { replaceTable, createTable, getAllTerms, getTablePage },
+    sales: { getPrevSalesByTerm, getPrevSalesByBook },
+    books: { getBooksByTerm },
+    courses: { getCoursesByBook, getCoursesByTerm }
+}

@@ -1,4 +1,4 @@
-import { Adoption } from '../../types/Adoption'
+import { Adoption } from '../../../types/Adoption'
 
 interface AdoptionTableProps {
     AdoptionData: Adoption[]

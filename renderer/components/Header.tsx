@@ -69,6 +69,9 @@ export default function Header({ isMenuOpen, handleMenuToggle, isChildWindow, is
                     <Link href="/home">
                         <div className="p-2 cursor-pointer hover:bg-gray-100">Home</div>
                     </Link>
+                    <Link href="/course">
+                        <div className="p-2 cursor-pointer hover:bg-gray-100">Course</div>
+                    </Link>
                     <Link href="/decision">
                         <div className="p-2 cursor-pointer hover:bg-gray-100">Decision</div>
                     </Link>
