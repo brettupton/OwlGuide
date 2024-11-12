@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useState } from 'react'
+import React, { ChangeEvent, MutableRefObject, useEffect, useRef, useState } from 'react'
 import { PageTable } from '../components'
 
 export default function Development() {
@@ -7,6 +7,8 @@ export default function Development() {
     const [totalRows, setTotalRows] = useState<number>(0)
     const [page, setPage] = useState<number>(1)
     const [limit, setLimit] = useState<number>(30)
+
+    const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
 
     useEffect(() => {
         if (typeof window !== 'undefined' && window.ipc) {
@@ -50,7 +52,7 @@ export default function Development() {
     }
 
     const handleReset = () => {
-        if ((document.getElementById('csv') as HTMLInputElement).value) {
+        if (document.getElementById('csv')) {
             (document.getElementById('csv') as HTMLInputElement).value = ""
         }
         setTable([])
@@ -85,7 +87,14 @@ export default function Development() {
                             <option>Course_Book</option>
                         </select>
                     </div>
-                    <PageTable pageData={table} totalRows={totalRows} page={page} updatePage={handlePageChange} />
+                    <PageTable
+                        pageData={table}
+                        totalRows={totalRows}
+                        page={page}
+                        limit={limit}
+                        updatePage={handlePageChange}
+                        tableRef={tableRef}
+                    />
                 </div>
                 :
                 <div className="flex p-2">

@@ -1,10 +1,10 @@
 import path from 'path'
 import fs from 'fs'
-import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'electron'
+import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage, safeStorage } from 'electron'
 import serve from 'electron-serve'
 import { v4 as uuidv4 } from 'uuid'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
-import { AdoptionService, regex, fileSys, bSQLDB } from './utils'
+import { AdoptionService, regex, fileManager, bSQLDB } from './utils'
 import { TemplateAdoption } from '../types/TemplateAdoption'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
 import { getTermDecisions, getFileDecisions } from './processes/decision'
@@ -12,14 +12,13 @@ import { dropTables, replaceTables } from './processes/sql'
 import { runBatchSpawn } from './electron-utils/run-batch'
 
 const isProd = process.env.NODE_ENV === 'production'
+
 const iconPath = path.join(__dirname, '..', 'renderer', 'public', 'images', 'owl.ico')
 const appHomeURL = isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`
 const resourcePath = isProd ? path.join(app.getPath('userData'), 'resources') : path.join(__dirname, "..", "resources")
 
 if (isProd) {
   serve({ directory: 'app' })
-} else {
-  app.setPath('userData', `${app.getPath('userData')} (development)`)
 }
 
 let mainWindow: BrowserWindow | undefined
@@ -66,7 +65,7 @@ ipcMain.on('initialize', async (event) => {
   if (isProd) {
     try {
       await runBatchSpawn("s981157837", resourcePath)
-      const files = await fileSys.dir.paths(resourcePath)
+      const files = await fileManager.dir.paths(resourcePath)
       await replaceTables(files)
     } catch (error) {
       dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `Trouble downloading new tables.\n\n${error}` })
@@ -235,9 +234,23 @@ ipcMain.on('course', async (event, { method, data }) => {
     case 'get-term-course':
       try {
         const [term, year] = regex.splitFullTerm(data.term)
-        const { queryResult, totalRowCount } = await bSQLDB.courses.getCoursesByTerm(term, year, false, data.limit, data.offset)
+        const { queryResult, totalRowCount } = await bSQLDB.courses.getCoursesByTerm(term, year, data.limit, data.lastCourse)
 
         event.reply('course-data', { courses: queryResult, total: totalRowCount, term: term + year })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("Course", `${error}\n\nContact dev for assistance.`)
+      }
+      break
+
+    case 'child-course':
+      try {
+        if (!childWindow) {
+          childWindow = await createChildWindow(mainWindow, "course-data", "bottom")
+        }
+
+        const { booksResult, course } = await bSQLDB.books.getBooksByCourse(data.courseID)
+        childWindow.webContents.send('data', { books: booksResult, course })
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("Course", `${error}\n\nContact dev for assistance.`)

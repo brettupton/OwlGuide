@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react"
+import { MutableRefObject, useEffect, useRef, useState } from "react"
 import { BackArrow, PageTable, TermSelect } from "../components"
 
 export default function Course() {
-    const [courses, setCourses] = useState([])
+    const [courses, setCourses] = useState<DBRow[]>([])
     const [totalRows, setTotalRows] = useState<number>(0)
     const [term, setTerm] = useState<string>("")
     const [limit, setLimit] = useState<number>(30)
-    const [offset, setOffset] = useState<number>(0)
+    const [page, setPage] = useState<number>(1)
+    const [activeCourse, setActiveCourse] = useState<number>(0)
+
+    const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
 
     useEffect(() => {
         if (typeof window !== undefined && window.ipc) {
@@ -19,12 +22,21 @@ export default function Course() {
     }, [])
 
     const updatePage = (newPage: number) => {
-        const newOffset = newPage - 1
-
-        if (newOffset >= 0) {
-            window.ipc.send('course', { method: 'get-term-course', data: { term, limit, offset: newOffset } })
-            setOffset(newOffset)
+        if (newPage >= 0) {
+            const latestCourse = courses.at(-1)
+            window.ipc.send('course',
+                {
+                    method: 'get-term-course',
+                    data: { term, limit, lastCourse: { ID: latestCourse.ID, Dept: latestCourse.Dept, Course: latestCourse.Course, Section: latestCourse.Section } }
+                })
+            setPage(newPage)
+            tableRef.current.scrollIntoView({ behavior: "auto" })
         }
+    }
+
+    const handleRowClick = (courseID: number) => {
+        setActiveCourse(courseID)
+        window.ipc.send('course', { method: 'child-course', data: { courseID } })
     }
 
     return (
@@ -37,7 +49,16 @@ export default function Course() {
                         <div className="flex text-sm">
                             Term: {term}
                         </div>
-                        <PageTable pageData={courses} totalRows={totalRows} page={offset + 1} updatePage={updatePage} />
+                        <PageTable
+                            pageData={courses}
+                            totalRows={totalRows}
+                            page={page}
+                            limit={limit}
+                            updatePage={updatePage}
+                            tableRef={tableRef}
+                            handleRowClick={handleRowClick}
+                            activeRow={activeCourse}
+                        />
                     </div>
                     :
                     <TermSelect process="course" />

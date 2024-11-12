@@ -10,7 +10,7 @@ const matchEnrollment = async (filePath: string) => {
         const [term = null, year = null] = regex.matchFileTermYear(filePath) || []
         if (!term) throw `Unexpected file name. Rename with term and try again.`
 
-        const { queryResult, totalRowCount } = await bSQLDB.courses.getCoursesByTerm(term, year, true)
+        const { queryResult, totalRowCount } = await bSQLDB.courses.getCoursesByTerm(term, year)
         fileData.forEach((course) => {
             // Verify all needed fields exist in course
             const requiredFields = [

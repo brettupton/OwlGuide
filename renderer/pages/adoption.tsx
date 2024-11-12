@@ -3,7 +3,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import React, { useState, ChangeEvent, useEffect, useRef } from "react"
 import { Adoption } from "../../types/Adoption"
-import { AdoptionTable } from "../components"
 
 export default function AdoptionHome() {
     const [filePath, setFilePath] = useState<string>("")
@@ -98,7 +97,7 @@ export default function AdoptionHome() {
                             </li>
                         </ul>
                     </div>
-                    <AdoptionTable AdoptionData={adoptionData} activeTab={activeTab} adoptionsAdded={adoptionsAdded} handleTemplateAdd={handleTemplateAdd} AdoptionTableRef={AdoptionTableRef} />
+                    {/* <AdoptionTable AdoptionData={adoptionData} activeTab={activeTab} adoptionsAdded={adoptionsAdded} handleTemplateAdd={handleTemplateAdd} AdoptionTableRef={AdoptionTableRef} /> */}
                 </div>
                 :
                 <div className="mt-3 ml-3">

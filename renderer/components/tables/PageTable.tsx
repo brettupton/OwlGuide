@@ -1,16 +1,22 @@
+import { MutableRefObject } from "react"
+
 interface PageTableProps {
-    pageData: { [field: string]: string }[]
+    pageData: { [field: string]: string | number }[]
     totalRows: number
     page: number
+    limit: number
     updatePage: (newPage: number) => void
+    tableRef: MutableRefObject<HTMLTableElement>
+    handleRowClick?: (courseID: number) => void
+    activeRow?: number
 }
 
-export default function PageTable({ pageData, totalRows, page, updatePage }: PageTableProps) {
+export default function PageTable({ pageData, totalRows, page, limit, updatePage, tableRef, handleRowClick, activeRow }: PageTableProps) {
     const headers = Object.keys(pageData[0])
 
     const rowClass = (header: string) => {
-        // Numbers need to be centered and set fixed width for professor column
-        const centerHeaders = ['Course', 'Section', 'EstEnrl', 'ActEnrl']
+        // Certain headers need to be centered and set fixed width for professor column
+        const centerHeaders = ['Course', 'Section', 'EstEnrl', 'ActEnrl', 'NoText', 'Adoptions']
 
         return `p-2 ${header === 'Prof' ? 'w-52' : centerHeaders.includes(header) ? 'text-center' : ''}`
     }
@@ -18,7 +24,7 @@ export default function PageTable({ pageData, totalRows, page, updatePage }: Pag
     return (
         <div className="w-full">
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-9rem)]">
-                <table className="w-full text-sm text-left rtl:text-right text-white">
+                <table className="w-full text-sm text-left rtl:text-right text-white" ref={tableRef}>
                     <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                         <tr>
                             {headers.map((header, index) => {
@@ -31,12 +37,12 @@ export default function PageTable({ pageData, totalRows, page, updatePage }: Pag
                         </tr>
                     </thead>
                     <tbody>
-                        {pageData.map((row, index) => {
+                        {pageData.map((row) => {
                             return (
-                                <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={index}>
+                                <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row['ID'] as number)}>
                                     {headers.map((header, index) => {
                                         return (
-                                            <td className={rowClass(header)} key={index + index}>
+                                            <td className={rowClass(header) + ` ${activeRow === row['ID'] ? 'bg-gray-400' : ''}`} key={`${row['ID']}-${header}`}>
                                                 {row[header]}
                                             </td>
                                         )
@@ -51,7 +57,7 @@ export default function PageTable({ pageData, totalRows, page, updatePage }: Pag
                 <span className="text-sm font-normal text-gray-400 mb-2 md:mb-0 block w-full md:inline md:w-auto">
                     Showing
                     <span className="font-semibold text-white px-1">
-                        {((page - 1) * 30) + 1}-{pageData.length * page}
+                        {((page - 1) * limit) + 1}-{pageData.length * page}
                     </span>
                     of
                     <span className="font-semibold text-white px-1">

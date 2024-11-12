@@ -8,15 +8,15 @@ export type Decision = {
 }
 
 export type SQLDecision = {
+    BookID: number
     ISBN: number
     Title: string
     PrevEstEnrl: number
     PrevActEnrl: number
+    PrevTotalSales: number
     CurrEstEnrl: number
     CurrActEnrl: number
     CurrEstSales: number
-    Decision?: number
-    TotalSales: number
 }
 
 export type TableTab = "All" | "EQ0" | "GT5" | "LT5"

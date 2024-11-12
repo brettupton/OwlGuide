@@ -39,7 +39,7 @@ export default function TermSelect({ process, latest }: { process: string, lates
             const term = e.currentTarget.value
             const method = process === 'decision' ? 'get-term-decision' : process === 'course' ? 'get-term-course' : ""
 
-            window.ipc.send(`${process}`, { method: method, data: { term, limit: 30, offset: 0 } })
+            window.ipc.send(`${process}`, { method: method, data: { term, limit: 30, lastCourse: { ID: 0, Dept: "", Course: "", Section: "" } } })
         }
     }
 
