@@ -1,18 +1,19 @@
 import { CSVCourse, XLSXCourse } from "../../types/Enrollment"
-import { fileSys, bSQLDB, regex } from "../utils"
+import { fileManager, bSQLDB, regex } from "../utils"
 import Papa from 'papaparse'
 
 const matchEnrollment = async (filePath: string) => {
     try {
-        const fileData: XLSXCourse[] = await fileSys.xlsx.read(filePath, 'enrollment')
+        const fileData: XLSXCourse[] = await fileManager.xlsx.read(filePath, 'enrollment')
         const newEnrl: string[][] = []
 
         const [term = null, year = null] = regex.matchFileTermYear(filePath) || []
         if (!term) throw `Unexpected file name. Rename with term and try again.`
 
-        const { queryResult, totalRowCount } = await bSQLDB.courses.getCoursesByTerm(term, year)
-        fileData.forEach((course) => {
-            // Verify all needed fields exist in course
+        const termSections = await bSQLDB.courses.getSectionsByTerm(term, year)
+
+        fileData.forEach(async (course) => {
+            // Verify all needed fields exist in course file
             const requiredFields = [
                 "COURSE REFERENCE NUMBER",
                 "CAMPUS",
@@ -34,13 +35,13 @@ const matchEnrollment = async (filePath: string) => {
 
             const CRN = course["COURSE REFERENCE NUMBER"].toString()
             // If no offering number, find potential match from database
-            const oNum = course["OFFERING NUMBER"] ?? findSectionNum(queryResult, CRN)
+            const oNum = course["OFFERING NUMBER"] ?? findSectionNum(termSections, CRN)
             const prof = course["PRIMARY INSTRUCTOR LAST NAME"] ? course["PRIMARY INSTRUCTOR LAST NAME"].toString().toUpperCase() : "TBD"
 
             newEnrl.push([
                 course["CAMPUS"].toString(),
                 course["SUBJECT"].toString(),
-                course["COURSE NUMBER"].toString(),
+                course["COURSE NUMBER"].toString().padStart(3, "0"),
                 oNum,
                 prof,
                 course["MAXIMUM ENROLLMENT"].toString(),
@@ -56,10 +57,10 @@ const matchEnrollment = async (filePath: string) => {
     }
 }
 
-const findSectionNum = (termData, CRN: string): string => {
-    const foundCourse = termData.find(course => course["CRN"] != null && course["CRN"].toString() === CRN)
+const findSectionNum = (termSections: DBRow[], CRN: string): string => {
+    const matchCourse = termSections.find(course => course["CRN"] != null && course["CRN"].toString() === CRN)
 
-    return foundCourse ? foundCourse["Section"] : "0"
+    return matchCourse ? matchCourse["Section"] as string : "0"
 }
 
 const submitEnrollment = async (enrollment: string[][], filePath: string) => {

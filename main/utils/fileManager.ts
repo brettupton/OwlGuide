@@ -1,8 +1,8 @@
 import fs from 'fs'
 import path from 'path'
-import XLSX from 'xlsx'
+import XLSX from '@e965/xlsx'
 import Papa from 'papaparse'
-import { configPath } from './paths'
+import paths from './paths'
 import { CSVCourse } from '../../types/Enrollment'
 
 const readCSVFile = (filePath: string): Promise<CSVCourse[]> => {
@@ -47,12 +47,12 @@ const readXLSXFile = (filePath: string, process: "enrollment" | "decision"): Pro
 
 const updateConfig = (key: string, value: Buffer): Promise<void> => {
     return new Promise((resolve, reject) => {
-        console.log(configPath)
-        if (!fs.existsSync(configPath)) {
+        console.log(paths.configPath)
+        if (!fs.existsSync(paths.configPath)) {
             // Convert buffer value to base64 encoded string for JSON storage
             const config: Config = { [key]: value.toString('base64') }
 
-            fs.writeFile(configPath, JSON.stringify(config, null, 2), (err) => {
+            fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
                 if (err) {
                     reject(`Error writing ${key} to config: ${err}`)
                 }
@@ -60,14 +60,14 @@ const updateConfig = (key: string, value: Buffer): Promise<void> => {
             })
         } else {
             // Config file exists and only need to update key value
-            fs.readFile(configPath, 'utf-8', (err, data) => {
+            fs.readFile(paths.configPath, 'utf-8', (err, data) => {
                 if (err) {
                     reject(`Couldn't read config: ${err}`)
                 }
                 const config: Config = JSON.parse(data)
                 config[key] = value.toString('base64')
 
-                fs.writeFile(configPath, JSON.stringify(config, null, 2), (err) => {
+                fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
                     if (err) {
                         reject(`Error writing ${key} to config: ${err}`)
                     }
@@ -80,8 +80,8 @@ const updateConfig = (key: string, value: Buffer): Promise<void> => {
 
 const getConfigValueBuffer = (key: string): Promise<Buffer> => {
     return new Promise((resolve, reject) => {
-        if (fs.existsSync(configPath)) {
-            fs.readFile(configPath, 'utf-8', (err, data) => {
+        if (fs.existsSync(paths.configPath)) {
+            fs.readFile(paths.configPath, 'utf-8', (err, data) => {
                 if (err) { reject(`Couldn't read config: ${err}`) }
                 const config: Config = JSON.parse(data)
 
@@ -100,15 +100,15 @@ const getConfigValueBuffer = (key: string): Promise<Buffer> => {
 
 const removeConfigKey = (key: string): Promise<void> => {
     return new Promise((resolve, reject) => {
-        if (fs.existsSync(configPath)) {
-            fs.readFile(configPath, 'utf-8', (err, data) => {
+        if (fs.existsSync(paths.configPath)) {
+            fs.readFile(paths.configPath, 'utf-8', (err, data) => {
                 if (err) { reject(`Couldn't read config: ${err}`) }
                 const config: Config = JSON.parse(data)
 
                 try {
                     delete config[key]
 
-                    fs.writeFile(configPath, JSON.stringify(config, null, 2), (err) => {
+                    fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
                         if (err) {
                             reject(`Error writing ${key} to config: ${err}`)
                         }

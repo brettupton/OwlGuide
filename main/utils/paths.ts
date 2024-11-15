@@ -6,7 +6,16 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const userData = app.getPath('userData')
-const configPath = path.join(userData, 'config.json')
-const logPath = app.getPath('logs')
+const resourcePath = path.join(__dirname, '..', 'resources')
 
-export { userData, configPath, logPath }
+const paths = {
+    userData: app.getPath('userData'),
+    configPath: path.join(userData, 'config.json'),
+    logPath: app.getPath('logs'),
+    resourcePath: path.join(__dirname, '..', 'resources'),
+    prodDBPath: path.join(process.resourcesPath, 'main/db/owlguide-2.db'),
+    tablesPath: path.join(resourcePath, 'tables'),
+    dbPath: process.env.NODE_ENV !== 'production' ? path.join(__dirname, '..', 'main', 'db', 'owlguide-2.db') : path.join(app.getPath('userData'), 'db/owlguide-2.db')
+}
+
+export default paths

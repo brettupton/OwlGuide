@@ -8,18 +8,18 @@
   "scripts": {
     "dev": "nextron",
     "build": "nextron build",
+    "build:win64": "nextron build --win --x64",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@e965/xlsx": "^0.20.3",
     "axios": "^1.7.2",
     "better-sqlite3": "^11.5.0",
     "electron-serve": "^1.3.0",
     "electron-store": "^8.2.0",
     "papaparse": "^5.4.1",
-    "sqlite3": "^5.1.7",
-    "uuid": "^10.0.0",
-    "xlsx": "^0.18.5"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.0",

@@ -1,8 +1,11 @@
-import { bSQLDB } from "../utils"
+import { bSQLDB, fileManager } from "../utils"
+import paths from "../utils/paths"
+import fs from 'fs'
 import path from 'path'
 
-export const replaceTables = async (files: string[]) => {
+export const replaceTables = async () => {
     try {
+        const files = await fileManager.dir.paths(paths.tablesPath)
         // Tables that have foreign key references need their reference table to be created first
         const order = ['MRP008', 'ADP001', 'ADP006', 'ADP003']
         files.sort((a, b) => {
@@ -20,13 +23,13 @@ export const replaceTables = async (files: string[]) => {
     }
 }
 
-export const dropTables = async (resourcePath: string) => {
+export const dropTables = async () => {
     try {
         const files = [
-            path.join(resourcePath, 'MRP008.csv'),
-            path.join(resourcePath, 'ADP001.csv'),
-            path.join(resourcePath, 'ADP006.csv'),
-            path.join(resourcePath, 'ADP003.csv')]
+            path.join(paths.tablesPath, 'MRP008.csv'),
+            path.join(paths.tablesPath, 'ADP001.csv'),
+            path.join(paths.tablesPath, 'ADP006.csv'),
+            path.join(paths.tablesPath, 'ADP003.csv')]
 
         for (const file of files) {
             console.log(file)
@@ -35,4 +38,20 @@ export const dropTables = async (resourcePath: string) => {
     } catch (error) {
         throw error
     }
+}
+
+export const initializeDB = async (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        if (fs.existsSync(paths.prodDBPath)) {
+            if (!fs.existsSync(path.join(paths.userData, 'db/owlguide-2.db'))) {
+                fs.mkdir(path.join(paths.userData, 'db'), { recursive: true }, (err) => {
+                    if (err) { reject(err) }
+                    fs.copyFile(paths.prodDBPath, path.join(paths.userData, 'db/owlguide-2.db'), (err) => {
+                        if (err) { reject(err) }
+                    })
+                    resolve()
+                })
+            }
+        }
+    })
 }

@@ -8,14 +8,14 @@ import { AdoptionService, regex, fileManager, bSQLDB } from './utils'
 import { TemplateAdoption } from '../types/TemplateAdoption'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
 import { getTermDecisions, getFileDecisions } from './processes/decision'
-import { dropTables, replaceTables } from './processes/sql'
+import { dropTables, initializeDB, replaceTables } from './processes/sql'
 import { runBatchSpawn } from './electron-utils/run-batch'
+import paths from './utils/paths'
 
 const isProd = process.env.NODE_ENV === 'production'
 
-const iconPath = path.join(__dirname, '..', 'renderer', 'public', 'images', 'owl.ico')
+const iconPath = path.join(__dirname, '..', 'resources', 'owl.ico')
 const appHomeURL = isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`
-const resourcePath = isProd ? path.join(app.getPath('userData'), 'resources') : path.join(__dirname, "..", "resources")
 
 if (isProd) {
   serve({ directory: 'app' })
@@ -64,14 +64,14 @@ app.on('window-all-closed', () => {
 ipcMain.on('initialize', async (event) => {
   if (isProd) {
     try {
-      await runBatchSpawn("s981157837", resourcePath)
-      const files = await fileManager.dir.paths(resourcePath)
-      await replaceTables(files)
+      await initializeDB()
+      // await runBatchSpawn("s981157837")
+      // await replaceTables()
     } catch (error) {
       dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `Trouble downloading new tables.\n\n${error}` })
     }
   }
-  event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion() })
+  event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion(), console: paths })
 })
 
 // Header Processes
@@ -168,7 +168,7 @@ ipcMain.on('sql', async (event, { method, data }) => {
       const files = data as string[]
 
       console.time('SQL')
-      await replaceTables(files)
+      await replaceTables()
       console.timeEnd('SQL')
       break
 
@@ -177,7 +177,7 @@ ipcMain.on('sql', async (event, { method, data }) => {
         console.log(`Recreating tables`)
 
         console.time('SQL')
-        await dropTables(resourcePath)
+        await dropTables()
         console.timeEnd('SQL')
       } catch (error) {
         console.error(error)

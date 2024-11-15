@@ -29,6 +29,7 @@ export default function PageTable({ pageData, totalRows, page, limit, updatePage
                         <tr>
                             {headers.map((header, index) => {
                                 return (
+                                    header !== "ID" &&
                                     <th scope="col" className={rowClass(header)} key={index}>
                                         {header}
                                     </th>
@@ -42,8 +43,9 @@ export default function PageTable({ pageData, totalRows, page, limit, updatePage
                                 <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row['ID'] as number)}>
                                     {headers.map((header, index) => {
                                         return (
+                                            header !== "ID" &&
                                             <td className={rowClass(header) + ` ${activeRow === row['ID'] ? 'bg-gray-400' : ''}`} key={`${row['ID']}-${header}`}>
-                                                {row[header]}
+                                                {typeof (row[header]) === 'string' ? row[header].length > 12 ? row[header].slice(0, 12) + "..." : row[header] : row[header]}
                                             </td>
                                         )
                                     })}

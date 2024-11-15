@@ -28,9 +28,10 @@ function App({ Component, pageProps }: AppProps) {
     if (typeof window !== 'undefined' && window.ipc) {
       window.ipc.send('initialize')
 
-      window.ipc.on('initialize-success', (reply: { isDev: boolean, appVer: string }) => {
+      window.ipc.on('initialize-success', (reply: { isDev: boolean, appVer: string, console: string[] }) => {
         setIsDev(reply.isDev)
         setAppVer(reply.appVer)
+        console.log(reply.console)
       })
     }
     const handleContextMenu = (event: MouseEvent) => {

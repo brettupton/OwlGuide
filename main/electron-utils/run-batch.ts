@@ -1,5 +1,6 @@
 import path from 'path'
 import { exec, spawn } from 'child_process'
+import paths from '../utils/paths'
 
 export const runBatchFile = (userId: string, resourcePath: string) => {
     const batchPath = path.join(__dirname, '../', 'main', 'db', 'download_tables.bat')
@@ -22,11 +23,11 @@ export const runBatchFile = (userId: string, resourcePath: string) => {
     })
 }
 
-export const runBatchSpawn = (userId: string, resourcePath: string): Promise<void> => {
+export const runBatchSpawn = (userId: string): Promise<void> => {
     const batchPath = path.join(__dirname, '../', 'main', 'db', 'download_tables.bat')
 
     return new Promise((resolve, reject) => {
-        const batchProcess = spawn(batchPath, [userId, resourcePath], { shell: true })
+        const batchProcess = spawn(batchPath, [userId, paths.tablesPath], { shell: true })
         batchProcess.stderr.on('data', (data) => {
             reject(`${data}`)
         })

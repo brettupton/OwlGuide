@@ -3,11 +3,9 @@ import fs from 'fs'
 import Papa from 'papaparse'
 import path from 'path'
 import tables from "../db/tables"
-import { logPath } from "./paths"
+import paths from '../utils/paths'
 import { regex } from "./regex"
 import { TableHeader } from "../../types/Database"
-
-const dbPath = path.join(__dirname, '..', 'main', 'db', 'owlguide-2.db')
 
 const buildTableSchema = (sqlHeader: TableHeader, newTable: boolean) => {
     const columns = Object.entries(sqlHeader)
@@ -29,7 +27,7 @@ const buildTableSchema = (sqlHeader: TableHeader, newTable: boolean) => {
 
 const createTable = (filePath: string): Promise<void> => {
     return new Promise((resolve, reject) => {
-        const db = new Database(dbPath)
+        const db = new Database(paths.dbPath)
         try {
             const matchName = regex.matchFileName(filePath)
             const name = Object.keys(tables).find(key => tables[key].TableName === matchName)
@@ -111,7 +109,7 @@ const createTable = (filePath: string): Promise<void> => {
                         insertMany(csvResults)
                         // Filter duplicates, sort, and create log file
                         missingBookIDs = missingBookIDs.filter((value, index) => missingBookIDs.indexOf(value) === index).sort((a, b) => a - b)
-                        fs.writeFileSync(path.join(logPath, 'missing_ID.log'), missingBookIDs.toString(), 'utf-8')
+                        fs.writeFileSync(path.join(paths.logPath, 'missing_ID.log'), missingBookIDs.toString(), 'utf-8')
                         db.close()
                         resolve()
                     } catch (insertError) {
@@ -136,7 +134,7 @@ const replaceTable = (filePath: string): Promise<void> => {
     return new Promise((resolve, reject) => {
         const matchName = regex.matchFileName(filePath)
         const name = Object.keys(tables).find(key => tables[key].TableName === matchName)
-        const db = new Database(dbPath)
+        const db = new Database(paths.dbPath)
 
         db.pragma('foreign_keys = OFF') // Disable foreign keys for batch operations
 
@@ -217,7 +215,7 @@ const replaceTable = (filePath: string): Promise<void> => {
 
 const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
-        const db = new Database(dbPath)
+        const db = new Database(paths.dbPath)
 
         try {
             const queryStmt = db.prepare(`
@@ -253,7 +251,7 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
 
 const getPrevSalesByBook = (isbn: string, title: string, term: string, year: string) => {
     return new Promise((resolve, reject) => {
-        const db = new Database(dbPath)
+        const db = new Database(paths.dbPath)
 
         try {
             const queryStmt = db.prepare(`
@@ -297,7 +295,7 @@ const getPrevSalesByBook = (isbn: string, title: string, term: string, year: str
 
 const getBooksByTerm = (term: string, year: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
-        const db = new Database(dbPath)
+        const db = new Database(paths.dbPath)
 
         try {
             const queryStmt = db.prepare(`
@@ -326,7 +324,7 @@ const getBooksByTerm = (term: string, year: string): Promise<DBRow[]> => {
 
 const getBooksByCourse = (courseID: number): Promise<{ booksResult: DBRow[], course: string }> => {
     return new Promise((resolve, reject) => {
-        const db = new Database(dbPath)
+        const db = new Database(paths.dbPath)
 
         try {
             const booksStmt = db.prepare(`
@@ -367,7 +365,7 @@ const getBooksByCourse = (courseID: number): Promise<{ booksResult: DBRow[], cou
 
 const getCoursesByBook = (isbn: string, title: string, term: string, year: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
-        const db = new Database(dbPath)
+        const db = new Database(paths.dbPath)
 
         try {
             const queryStmt = db.prepare(`
@@ -401,10 +399,8 @@ const getCoursesByBook = (isbn: string, title: string, term: string, year: strin
 }
 
 const getCoursesByTerm = (term: string, year: string, limit?: number, lastCourse?: { ID: number, Dept: string, Course: string, Section: string }): Promise<{ queryResult: DBRow[], totalRowCount: number }> => {
-    const paginated = typeof lastCourse !== 'undefined' && typeof limit !== 'undefined'
-
     return new Promise((resolve, reject) => {
-        const db = new Database(dbPath)
+        const db = new Database(paths.dbPath)
 
         // Base query
         let coursesQuery = `
@@ -412,6 +408,7 @@ const getCoursesByTerm = (term: string, year: string, limit?: number, lastCourse
                 Courses.ID, Courses.Dept, 
                 SUBSTR(CONCAT('000', Courses.Course), LENGTH(CONCAT('000', Courses.Course))-3+1, 3) AS Course, 
                 SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3) AS Section, 
+                Courses.Title,
                 Courses.Prof,
                 Courses.EstEnrl,
                 Courses.ActEnrl, 
@@ -427,23 +424,18 @@ const getCoursesByTerm = (term: string, year: string, limit?: number, lastCourse
                 AND Courses.Year = ?
         `
 
-        // Only add `Courses.Unit = '1'` condition if `LIMIT` and `OFFSET` are not present
+        // Only add `Courses.Unit = '1'` and greater than condition if `limit` and `lastCourse` are present
         const params: (string | number)[] = [term, year]
-        if (!paginated) {
+        if (lastCourse !== undefined) {
             coursesQuery += ` AND Courses.Unit = '1'`
-        } else {
             coursesQuery += ` AND (Courses.Dept, Courses.Course, Courses.Section, Courses.ID) > (?, ?, ?, ?)`
+            coursesQuery += ` ORDER BY Courses.Dept, Courses.Course, Courses.Section, Courses.ID`
             params.push(lastCourse.Dept, lastCourse.Course, lastCourse.Section, lastCourse.ID)
-        }
 
-        coursesQuery += `
-            ORDER BY
-                Courses.Dept, Courses.Course, Courses.Section, Courses.ID
-        `
-
-        if (paginated) {
-            coursesQuery += ` LIMIT ?`
-            params.push(limit)
+            if (limit !== undefined) {
+                coursesQuery += ` LIMIT ?`
+                params.push(limit)
+            }
         }
 
         try {
@@ -458,10 +450,14 @@ const getCoursesByTerm = (term: string, year: string, limit?: number, lastCourse
                     AND Courses.Year = ?
                 `)
 
-            const queryResult = queryStmt.all(...params) as DBRow[]
-            const countResult = countStmt.get(term, year) as DBRow
+            const transaction = db.transaction(() => {
+                const queryResult = queryStmt.all(...params) as DBRow[]
+                const countResult = countStmt.get(term, year) as DBRow
 
-            resolve({ queryResult, totalRowCount: countResult.Count as number })
+                resolve({ queryResult, totalRowCount: countResult.Count as number })
+            })
+
+            transaction()
         } catch (error) {
             reject(error)
         } finally {
@@ -470,9 +466,33 @@ const getCoursesByTerm = (term: string, year: string, limit?: number, lastCourse
     })
 }
 
+const getSectionsByTerm = (term: string, year: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3) AS Section,
+                Courses.CRN
+                FROM Courses
+                WHERE Term = ?
+                AND Year = ?
+                `)
+
+            const queryResult = queryStmt.all(term, year) as DBRow[]
+
+            db.close()
+            resolve(queryResult)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
 const getAllTerms = (): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
-        const db = new Database(dbPath)
+        const db = new Database(paths.dbPath)
 
         try {
             const terms = db.prepare(`
@@ -497,7 +517,7 @@ const getAllTerms = (): Promise<DBRow[]> => {
 
 const getTablePage = (name: string, offset: number, limit: number): Promise<{ queryResult: DBRow[], totalRowCount: number }> => {
     return new Promise((resolve, reject) => {
-        const db = new Database(dbPath)
+        const db = new Database(paths.dbPath)
 
         try {
             const queryStmt = db.prepare(`
@@ -531,5 +551,5 @@ export const bSQLDB = {
     all: { replaceTable, createTable, getAllTerms, getTablePage },
     sales: { getPrevSalesByTerm, getPrevSalesByBook },
     books: { getBooksByTerm, getBooksByCourse },
-    courses: { getCoursesByBook, getCoursesByTerm }
+    courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm }
 }
