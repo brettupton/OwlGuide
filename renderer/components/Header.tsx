@@ -75,9 +75,6 @@ export default function Header({ isMenuOpen, handleMenuToggle, isChildWindow, is
                     <Link href="/decision">
                         <div className="p-2 cursor-pointer hover:bg-gray-100">Decision</div>
                     </Link>
-                    <Link href="adoption">
-                        <div className="p-2 cursor-pointer hover:bg-gray-100">Adoptions</div>
-                    </Link>
                     <Link href="enrollment">
                         <div className="p-2 cursor-pointer hover:bg-gray-100">Enrollment</div>
                     </Link>

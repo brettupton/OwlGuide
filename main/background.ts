@@ -1,11 +1,9 @@
 import path from 'path'
 import fs from 'fs'
-import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage, safeStorage } from 'electron'
+import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'electron'
 import serve from 'electron-serve'
-import { v4 as uuidv4 } from 'uuid'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
-import { AdoptionService, regex, fileManager, bSQLDB } from './utils'
-import { TemplateAdoption } from '../types/TemplateAdoption'
+import { regex, fileManager, bSQLDB } from './utils'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
 import { getTermDecisions, getFileDecisions } from './processes/decision'
 import { dropTables, initializeDB, replaceTables } from './processes/sql'
@@ -23,7 +21,6 @@ if (isProd) {
 
 let mainWindow: BrowserWindow | undefined
 let childWindow: BrowserWindow | undefined
-let adoptionWindow: BrowserWindow | undefined
 let tray: Tray
 
   ; (async () => {
@@ -60,15 +57,13 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-// On app initialization, check for mode and version
+// On app initialization, copy DB to read-write directory
 ipcMain.on('initialize', async (event) => {
   if (isProd) {
     try {
       await initializeDB()
-      // await runBatchSpawn("s981157837")
-      // await replaceTables()
     } catch (error) {
-      dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `Trouble downloading new tables.\n\n${error}` })
+      dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `${error}\n\nContact dev for assistance.` })
     }
   }
   event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion(), console: paths })
@@ -99,6 +94,32 @@ ipcMain.on('close-child', () => {
   if (childWindow) {
     childWindow.close()
     childWindow = null
+  }
+})
+
+ipcMain.on('config', async (event, { method, data }) => {
+  switch (method) {
+    case 'update':
+      try {
+        const key = Object.keys(data)[0]
+        const value = data[key]
+
+        await fileManager.config.write(key, value)
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("Config", `${error}\n\nContact dev for assistance.`)
+      }
+      break
+
+    case 'get':
+      try {
+        const username = await fileManager.config.read(data)
+        console.log(username)
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("Config", `${error}\n\nContact dev for assistance.`)
+      }
+      break
   }
 })
 
@@ -168,7 +189,7 @@ ipcMain.on('sql', async (event, { method, data }) => {
       const files = data as string[]
 
       console.time('SQL')
-      await replaceTables()
+      await replaceTables(files)
       console.timeEnd('SQL')
       break
 
@@ -256,54 +277,5 @@ ipcMain.on('course', async (event, { method, data }) => {
         dialog.showErrorBox("Course", `${error}\n\nContact dev for assistance.`)
       }
       break
-  }
-})
-
-// ** ADOPTIONS **
-ipcMain.on('adoption-upload', async (event, filePath: string) => {
-  const adoptionService = new AdoptionService(filePath)
-  try {
-    const term = await adoptionService.getTerm()
-    const campus = await adoptionService.getCampus()
-    const allCourses = await adoptionService.getCourses()
-
-    event.reply('adoption-data', { allCourses, term, campus })
-
-  } catch (err) {
-    console.error(err)
-    dialog.showErrorBox("Adoption Error", "There was an error parsing adoption data.\n\n Please try again.")
-  }
-})
-
-ipcMain.on('new-template-course', (event, { Course, Title, term, campus }: { Course: string, Title: string, term: string, campus: string }) => {
-  adoptionWindow.webContents.send('new-course', { Course, Title, term, campus })
-})
-
-ipcMain.on('template-submit', (event, { templateCourses, term, campus }: { templateCourses: TemplateAdoption[], term: string, campus: string }) => {
-  // Get current date and unique ID for filename
-  const formattedDate = new Date().toJSON().slice(0, 10).split("-").join("")
-  const uniqueId = uuidv4().split('-')[0]
-
-  const adoptionService = new AdoptionService()
-  try {
-    const csv = adoptionService.downloadCSV(templateCourses, term, campus)
-    dialog.showSaveDialog({
-      defaultPath: path.join(app.getPath('downloads'), `AIP_${term[0] + term.slice(-2)}_${formattedDate}_${uniqueId}`),
-      filters: [{ name: 'CSV Files', extensions: ['csv'] }]
-    })
-      .then(result => {
-        if (!result.canceled && result.filePath) {
-          fs.writeFile(result.filePath, csv, 'utf8', (err) => {
-            if (err) {
-              throw new Error()
-            }
-            mainWindow.webContents.send('download-success')
-          })
-        }
-      })
-    // TODO: Move unsubmitted courses to submitted and resend data
-    // For now, refresh the page on client
-  } catch (err) {
-    dialog.showErrorBox("Error", "Error downloading template.\n\nPlease try again.")
   }
 })

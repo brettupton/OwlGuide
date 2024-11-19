@@ -1,5 +1,5 @@
 export * from "./AdoptionService"
-export * from "./TXTService"
+export * from "./readMgrReport"
 export * from "./bSQLDB"
 export * from "./fileManager"
 export * from './regex'

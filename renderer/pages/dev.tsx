@@ -7,6 +7,7 @@ export default function Development() {
     const [totalRows, setTotalRows] = useState<number>(0)
     const [page, setPage] = useState<number>(1)
     const [limit, setLimit] = useState<number>(30)
+    const [username, setUsername] = useState<string>("")
 
     const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
 
@@ -51,6 +52,20 @@ export default function Development() {
         window.ipc.send('sql', { method: "drop-table" })
     }
 
+    const handleUsernameChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.currentTarget
+
+        setUsername(value)
+    }
+
+    const handleUsernameSubmit = () => {
+        window.ipc.send('config', { method: "update", data: { 'username': username } })
+    }
+
+    const handleUserGet = () => {
+        window.ipc.send('config', { method: "get", data: 'username' })
+    }
+
     const handleReset = () => {
         if (document.getElementById('csv')) {
             (document.getElementById('csv') as HTMLInputElement).value = ""
@@ -59,6 +74,7 @@ export default function Development() {
         setTableName("")
         setTotalRows(0)
         setPage(1)
+        setUsername("")
     }
 
     return (
@@ -70,16 +86,48 @@ export default function Development() {
                     </svg>
                 </button>
             </div>
-            {table.length > 0
+            {table.length <= 0
                 ?
+                <div className="flex flex-col mt-3 gap-3">
+                    <div className="flex">
+                        <select
+                            id="tables"
+                            className="border text-sm rounded-lg block p-1 bg-gray-700 border-gray-600 text-white"
+                            onChange={handleTableChoice}
+                            defaultValue={tableName}>
+                            <option value="">Select</option>
+                            <option>Courses</option>
+                            <option>Books</option>
+                            <option>Sales</option>
+                            <option>Course_Book</option>
+                        </select>
+                    </div>
+                    <div className="flex">
+                        <input type="file" id="csv" multiple onChange={handleFileChange} />
+                    </div>
+                    <div className="flex w-full h-1/2">
+                        <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleTableDrop}>Drop</button>
+                    </div>
+                    <div className="flex flex-col">
+                        <div className="flex">
+                            <input type="text" className="rounded text-black p-1" placeholder="Username" onChange={handleUsernameChange} />
+                        </div>
+                        <div className="flex mt-2">
+                            <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleUsernameSubmit}>Submit</button>
+                        </div>
+                    </div>
+                    <div className="flex">
+                        <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleUserGet}>Get</button>
+                    </div>
+                </div>
+                :
                 <div className="flex flex-col">
                     <div className="flex">
                         <select
                             id="tables"
                             className="border text-sm rounded-lg block w-full p-1 bg-gray-700 border-gray-600 text-white"
                             onChange={handleTableChoice}
-                            defaultValue={tableName}
-                        >
+                            defaultValue={tableName}>
                             <option value="">Select</option>
                             <option>Courses</option>
                             <option>Books</option>
@@ -95,30 +143,6 @@ export default function Development() {
                         updatePage={handlePageChange}
                         tableRef={tableRef}
                     />
-                </div>
-                :
-                <div className="flex p-2">
-                    <div className="flex flex-col pr-2">
-                        <label htmlFor="tables" className="block mb-2 text-sm font-medium text-white">Table</label>
-                        <select
-                            id="tables"
-                            className="border text-sm rounded-lg block w-full p-1 bg-gray-700 border-gray-600 text-white"
-                            onChange={handleTableChoice}
-                        >
-                            <option value="">Select</option>
-                            <option>Courses</option>
-                            <option>Books</option>
-                            <option>Sales</option>
-                            <option>Course_Book</option>
-                        </select>
-                    </div>
-                    <div className="flex flex-col">
-                        <label htmlFor="csv" className="block mb-2 text-sm font-medium text-white">CSV</label>
-                        <input type="file" id="csv" multiple onChange={handleFileChange} />
-                    </div>
-                    <div className="flex w-full justify-center h-1/2">
-                        <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleTableDrop}>Drop</button>
-                    </div>
                 </div>
             }
         </div>

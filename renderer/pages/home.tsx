@@ -3,12 +3,12 @@ import Image from 'next/image'
 
 
 export default function HomePage({ isDev }) {
-  const routes = ['course', 'decision', 'adoption', 'enrollment']
+  const routes = ['course', 'decision', 'enrollment']
 
   return (
     <div className="flex flex-grow items-center justify-center">
       <div className="flex flex-col text-center -mt-24">
-        <Link href={`${isDev ? "/dev" : "/home"}`}>
+        <Link href="/dev">
           <Image
             className="ml-auto mr-auto"
             src="/images/owl.png"

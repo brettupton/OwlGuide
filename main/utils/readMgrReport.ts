@@ -1,19 +1,19 @@
 import fs from 'fs'
 
-interface ReturnTXTData {
+interface MgrReportData {
     fileData: string[]
     headerData: { [index: number]: string }
     term: string
 }
 
-export class TXTService {
+export class readMgrReport {
     private filePath: string
 
     constructor(filePath: string) {
         this.filePath = filePath
     }
 
-    public readFileData = (): Promise<ReturnTXTData> => {
+    public readFileData = (): Promise<MgrReportData> => {
         return new Promise((resolve, reject) => {
             fs.readFile(this.filePath, 'utf-8', (err, data) => {
                 if (err) {

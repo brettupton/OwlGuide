@@ -3,10 +3,16 @@ import paths from "../utils/paths"
 import fs from 'fs'
 import path from 'path'
 
-export const replaceTables = async () => {
+export const replaceTables = async (uploads?: string[]) => {
     try {
-        const files = await fileManager.dir.paths(paths.tablesPath)
-        // Tables that have foreign key references need their reference table to be created first
+        let files: string[]
+
+        if (!uploads) {
+            files = await fileManager.dir.paths(paths.tablesPath)
+        } else {
+            files = uploads
+        }
+        // Tables that have foreign key references need their referenced table to be created first
         const order = ['MRP008', 'ADP001', 'ADP006', 'ADP003']
         files.sort((a, b) => {
             const nameA = a.split('\\').pop().split('.')[0]
