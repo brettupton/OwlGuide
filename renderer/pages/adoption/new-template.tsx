@@ -1,9 +1,7 @@
 import { useEffect, useState, useRef, ChangeEvent } from "react"
-import { TemplateAdoption } from "../../../types/TemplateAdoption"
-import { v4 as uuidv4 } from 'uuid'
 
 export default function NewTemplate() {
-    const [templateCourses, setTemplateCourses] = useState<TemplateAdoption[]>([])
+    const [templateCourses, setTemplateCourses] = useState<any[]>([])
     const [courseAlphaSorted, setCourseAlphaSorted] = useState<boolean>(false)
     const [titleAlphaSorted, setTitleAlphaSorted] = useState<boolean>(false)
     const [term, setTerm] = useState<string>("")
@@ -15,12 +13,11 @@ export default function NewTemplate() {
     useEffect(() => {
         if (typeof window !== 'undefined' && window.ipc) {
             window.ipc.on('new-course', ({ Course, Title, term, campus }: { Course: string, Title: string, term: string, campus: string }) => {
-                const newCourse: TemplateAdoption = {
+                const newCourse = {
                     Course: Course,
                     Title: Title,
                     ISBN: "",
-                    noText: false,
-                    ID: uuidv4().split('-')[0]
+                    noText: false
                 }
                 setTemplateCourses((prevCourses) => {
                     // if (prevCourses.some(course => course.Course === Course)) {
@@ -44,11 +41,11 @@ export default function NewTemplate() {
         PrevCoursesLengthRef.current = templateCourses.length
     }, [templateCourses])
 
-    const handleAdoptionRemove = (course: TemplateAdoption) => {
+    const handleAdoptionRemove = (course) => {
         setTemplateCourses((prevCourses) => prevCourses.filter(currCourse => currCourse.ID !== course.ID))
     }
 
-    const handleISBNChange = (event: ChangeEvent<HTMLInputElement>, course: TemplateAdoption) => {
+    const handleISBNChange = (event: ChangeEvent<HTMLInputElement>, course) => {
         const { value } = event.currentTarget
 
         setTemplateCourses((prevCourses) => {
@@ -61,7 +58,7 @@ export default function NewTemplate() {
         })
     }
 
-    const handleNoTextChange = (course: TemplateAdoption) => {
+    const handleNoTextChange = (course) => {
         setTemplateCourses((prevCourses) => {
             return prevCourses.map((c) => {
                 if (c.ID === course.ID) {

@@ -1,8 +1,19 @@
 import { Decision, SQLDecision } from "../../types/Decision"
 import { fileManager, regex, bSQLDB } from "../utils"
+import * as ort from 'onnxruntime-node'
+import path from 'path'
+
+async function runPrediction() {
+    const session = await ort.InferenceSession.create(path.join(__dirname, '..', 'main', 'processes', 'sales_forest.onnx'))
+    const inputTensor = new ort.Tensor('float32', new Float32Array([2, 25, 2.857, 300, 4.5, 10]), [1, 6])
+
+    const results = await session.run({ input: inputTensor })
+    console.log(results.variable.cpuData[0])
+}
 
 const getTermDecisions = async (fullTerm: string) => {
     try {
+        await runPrediction()
         const [term = null, year = null] = regex.splitFullTerm(fullTerm) || []
         if (!term || !year) throw `Unexpected term or year.`
 
