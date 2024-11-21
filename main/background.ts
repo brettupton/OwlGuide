@@ -62,11 +62,11 @@ ipcMain.on('initialize', async (event) => {
   if (isProd) {
     try {
       await initializeDB()
+      event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion(), console: paths })
     } catch (error) {
       dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `${error}\n\nContact dev for assistance.` })
     }
   }
-  event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion(), console: paths })
 })
 
 // Header Processes

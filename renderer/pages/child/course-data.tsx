@@ -6,12 +6,10 @@ export default function CourseData() {
     const [course, setCourse] = useState<string>("")
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && window.ipc) {
-            window.ipc.on('data', ({ books, course }: { books: DBRow[], course: string }) => {
-                setData(books)
-                setCourse(course)
-            })
-        }
+        window.ipc.on('data', ({ books, course }: { books: DBRow[], course: string }) => {
+            setData(books)
+            setCourse(course)
+        })
     }, [])
 
     return (

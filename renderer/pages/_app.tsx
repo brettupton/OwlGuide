@@ -27,13 +27,14 @@ function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ipc) {
       window.ipc.send('initialize')
-
-      window.ipc.on('initialize-success', (reply: { isDev: boolean, appVer: string, console: string[] }) => {
-        setIsDev(reply.isDev)
-        setAppVer(reply.appVer)
-        console.log(reply.console)
-      })
     }
+
+    window.ipc.on('initialize-success', (reply: { isDev: boolean, appVer: string, console: string[] }) => {
+      setIsDev(reply.isDev)
+      setAppVer(reply.appVer)
+      console.log(reply.console)
+    })
+
     const handleContextMenu = (event: MouseEvent) => {
       event.preventDefault()
       const highlightedText = window.getSelection().toString().trim()

@@ -1,8 +1,6 @@
 import { BrowserWindow } from "electron"
 import path from 'path'
 
-const childWindowURL = process.env.NODE_ENV === 'production' ? 'app://./child' : `http://localhost:${process.argv[2]}/child`
-
 export const createChildWindow = async (mainWindow: BrowserWindow, childPath: string, location: "right" | "bottom") => {
   const mainBounds = mainWindow.getContentBounds()
   const windowWidth = location === "right" ? Math.floor(mainBounds.width * 0.4) : location === "bottom" ? mainBounds.width : 0
@@ -18,7 +16,13 @@ export const createChildWindow = async (mainWindow: BrowserWindow, childPath: st
     }
   })
 
-  await childWindow.loadURL(path.join(childWindowURL, childPath))
+  await childWindow.loadURL(
+    process.env.NODE_ENV === 'production'
+      ?
+      `app://./child/${childPath}`
+      :
+      `http://localhost:${process.argv[2]}/child/${childPath}`
+  )
 
   // Move child window to position on first load
   updateChildWindowPos(mainWindow, childWindow, location)

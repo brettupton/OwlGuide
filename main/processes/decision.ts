@@ -1,11 +1,8 @@
 import { Decision, SQLDecision } from "../../types/Decision"
 import { fileManager, regex, bSQLDB } from "../utils"
-import { predict } from "../utils/forest"
-
 
 const getTermDecisions = async (fullTerm: string) => {
     try {
-        await predict()
         const [term = null, year = null] = regex.splitFullTerm(fullTerm) || []
         if (!term || !year) throw `Unexpected term or year.`
 

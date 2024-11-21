@@ -59,5 +59,6 @@ export const initializeDB = async (): Promise<void> => {
                 })
             }
         }
+        resolve()
     })
 }
