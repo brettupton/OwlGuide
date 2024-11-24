@@ -1,7 +1,3 @@
-export type DBRow = {
-    [field: string]: string | number | null
-}
-
 export type TableHeader = {
     [header: string]: {
         type: string

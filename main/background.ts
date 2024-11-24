@@ -9,6 +9,7 @@ import { getTermDecisions, getFileDecisions } from './processes/decision'
 import { dropTables, initializeDB, replaceTables } from './processes/sql'
 import { runBatchSpawn } from './electron-utils/run-batch'
 import paths from './utils/paths'
+import { apiSearch, formatBookSearch } from './processes/book'
 
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -123,6 +124,52 @@ ipcMain.on('config', async (event, { method, data }) => {
   }
 })
 
+ipcMain.on('sql', async (event, { method, data }) => {
+  switch (method) {
+    case "get-table-page":
+      try {
+        const { queryResult, totalRowCount } = await bSQLDB.all.getTablePage(data.name, data.offset, data.limit)
+        event.reply('table-page', { rows: queryResult, total: totalRowCount })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("SQL", `Check the console.`)
+      }
+      break
+
+    case "get-terms":
+      try {
+        const terms = await bSQLDB.all.getAllTerms()
+        event.reply("term-list", { terms: terms.map((term) => term.Term) })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("SQL", `Check the console.`)
+      }
+      break
+
+    case "replace-table":
+      console.log("Replacing tables.")
+      const files = data as string[]
+
+      const timeStart = Date.now()
+      await replaceTables(files)
+      const timeEnd = Date.now()
+      dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `Tables Replaced in ${timeEnd - timeStart}s` })
+      break
+
+    case "drop-table":
+      try {
+        console.log(`Recreating tables`)
+
+        console.time('SQL')
+        await dropTables()
+        console.timeEnd('SQL')
+      } catch (error) {
+        console.error(error)
+      }
+      break
+  }
+})
+
 ipcMain.on('enrollment', async (event, { method, data }) => {
   switch (method) {
     case 'file-upload':
@@ -157,51 +204,6 @@ ipcMain.on('enrollment', async (event, { method, data }) => {
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance.`)
-      }
-      break
-  }
-})
-
-ipcMain.on('sql', async (event, { method, data }) => {
-  switch (method) {
-    case "get-table-page":
-      try {
-        const { queryResult, totalRowCount } = await bSQLDB.all.getTablePage(data.name, data.offset, data.limit)
-        event.reply('table-page', { rows: queryResult, total: totalRowCount })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("SQL", `Check the console.`)
-      }
-      break
-
-    case "get-terms":
-      try {
-        const terms = await bSQLDB.all.getAllTerms()
-        event.reply("term-list", { terms: terms.map((term) => term.Term) })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("SQL", `Check the console.`)
-      }
-      break
-
-    case "replace-table":
-      console.log("Replacing tables.")
-      const files = data as string[]
-
-      console.time('SQL')
-      await replaceTables(files)
-      console.timeEnd('SQL')
-      break
-
-    case "drop-table":
-      try {
-        console.log(`Recreating tables`)
-
-        console.time('SQL')
-        await dropTables()
-        console.timeEnd('SQL')
-      } catch (error) {
-        console.error(error)
       }
       break
   }
@@ -275,6 +277,28 @@ ipcMain.on('course', async (event, { method, data }) => {
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("Course", `${error}\n\nContact dev for assistance.`)
+      }
+      break
+  }
+})
+
+ipcMain.on('book', async (event, { method, data }) => {
+  switch (method) {
+    case 'search':
+      try {
+        const isbn = data as string
+        const search = regex.createSearchISBN(isbn)
+        // Query SQL DB for book term & vendor data
+        const sqlResults = await bSQLDB.books.getBookByISBN(search)
+        // Query Google API for book information data
+        const apiResults = await apiSearch(isbn)
+        // Join both results
+        const book = formatBookSearch(sqlResults, apiResults)
+
+        event.reply('data', { book })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("Book", `${error}\n\nContact dev for assistance.`)
       }
       break
   }

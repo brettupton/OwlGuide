@@ -75,7 +75,6 @@ export default function BuyingDecision() {
         </div>
         :
         <div className="flex flex-col items-center">
-          <FileForm process="decision" label="Decision" accept=".xlsx,.xlsb" />
           <TermSelect process="decision" latest={true} />
         </div>
       }

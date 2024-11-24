@@ -36,6 +36,7 @@ export default function Header({ isMenuOpen, handleMenuToggle, isChildWindow, is
                             alt="Owl logo"
                             width={35}
                             height={35}
+                            priority={true}
                         />
                         <button onClick={handleMenuToggle}>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-7">
@@ -78,7 +79,6 @@ export default function Header({ isMenuOpen, handleMenuToggle, isChildWindow, is
                     <Link href="enrollment">
                         <div className="p-2 cursor-pointer hover:bg-gray-100">Enrollment</div>
                     </Link>
-                    <div className="border-t border-gray-300"></div>
                 </div>
                 <div
                     className={`flex flex-col absolute text-black text-sm top-full right-20 mt-2 bg-white border border-gray-300 shadow-lg rounded-md ${isHelpMenuOpen ? 'block' : 'hidden'}`}

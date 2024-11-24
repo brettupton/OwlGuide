@@ -3,7 +3,8 @@ import Image from 'next/image'
 
 
 export default function HomePage({ isDev }) {
-  const routes = ['course', 'decision', 'enrollment']
+  const routes = ['course', 'book', 'decision', 'enrollment']
+  const plurals = ['course', 'decision', 'book']
 
   return (
     <div className="flex flex-grow items-center justify-center">
@@ -15,6 +16,7 @@ export default function HomePage({ isDev }) {
             alt="OwlGuide Logo"
             width={110}
             height={110}
+            priority={true}
           />
         </Link>
         <span className="courgette-regular text-3xl">OwlGuide</span>
@@ -25,7 +27,7 @@ export default function HomePage({ isDev }) {
               key={index}
               className="bg-white hover:bg-gray-300 text-gray-800 font-semibold w-full py-2 px-4 mt-3 border border-gray-400 rounded shadow text-center active:scale-95 transition-transform duration-75"
             >
-              {`${route[0].toUpperCase()}${route.slice(1)}`}
+              {`${route[0].toUpperCase()}${route.slice(1)}${plurals.includes(route) ? 's' : ''}`}
             </Link>
           ))}
         </div>

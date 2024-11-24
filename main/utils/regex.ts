@@ -24,4 +24,35 @@ const splitFullTerm = (fullTerm: string): string[] => {
     return match ? match.slice(0, 2) : []
 }
 
-export const regex = { matchFileName, matchFileTermYear, splitFullTerm }
+const createSearchISBN = (ISBN: string) => {
+    // Removes hyphens, first three digits, and last digit for searching any user inputted ISBN
+    let search = ISBN
+        .replace(/\-/g, '')
+        .replace(/^(978|290)/g, '')
+        .slice(0, -1)
+
+    return search
+}
+
+const toProperCase = (str: string | number) => {
+    return str.toString()
+        .split(/([^\w]+)/)
+        .map(part => {
+            if (/^\d+[A-Za-z]+$/.test(part)) {
+                // Handle ordinal numbers
+                return part.replace(/(\d+)([A-Za-z]+)/, (match, number, suffix) =>
+                    number + suffix.toLowerCase()
+                )
+            } else if (/^[a-zA-Z]/.test(part)) {
+                // Handle possessives
+                return part.replace(/(\w+)'?S$/, (match, word) =>
+                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() + "'s"
+                )
+            }
+            // Leave other parts (symbols, etc.) unchanged
+            return part
+        })
+        .join('')
+}
+
+export const regex = { matchFileName, matchFileTermYear, splitFullTerm, createSearchISBN, toProperCase }

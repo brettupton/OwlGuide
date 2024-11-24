@@ -322,6 +322,31 @@ const getBooksByTerm = (term: string, year: string): Promise<DBRow[]> => {
     })
 }
 
+const getBookByISBN = (ISBN: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT Books.ID, Books.ISBN, Books.Title, Books.Author, Books.Edition, Books.Publisher,
+                Courses.Term, Courses.Year
+                FROM Books
+                JOIN Course_Book ON Books.ID = Course_Book.BookID
+                JOIN Courses ON Course_Book.CourseID = Courses.ID
+                WHERE ISBN LIKE ?
+                AND Courses.Term NOT IN ('I', 'Q')
+                ORDER BY Courses.Term`)
+
+            const result = queryStmt.all('%' + ISBN + '%') as DBRow[]
+            db.close()
+            resolve(result)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
 const getBooksByCourse = (courseID: number): Promise<{ booksResult: DBRow[], course: string }> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
@@ -550,6 +575,6 @@ const getTablePage = (name: string, offset: number, limit: number): Promise<{ qu
 export const bSQLDB = {
     all: { replaceTable, createTable, getAllTerms, getTablePage },
     sales: { getPrevSalesByTerm, getPrevSalesByBook },
-    books: { getBooksByTerm, getBooksByCourse },
+    books: { getBooksByTerm, getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm }
 }
