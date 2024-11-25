@@ -328,14 +328,13 @@ const getBookByISBN = (ISBN: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
-                SELECT Books.ID, Books.ISBN, Books.Title, Books.Author, Books.Edition, Books.Publisher,
-                Courses.Term, Courses.Year
+                SELECT Books.ID, Books.ISBN, Books.Title, Books.Author, Books.Edition, Books.Publisher, 
+                Sales.Term, Sales.Year, Sales.TotalEstEnrl, Sales.TotalActEnrl, Sales.TotalEstSales, Sales.UsedSales, Sales.NewSales, Sales.Reorders
                 FROM Books
-                JOIN Course_Book ON Books.ID = Course_Book.BookID
-                JOIN Courses ON Course_Book.CourseID = Courses.ID
-                WHERE ISBN LIKE ?
-                AND Courses.Term NOT IN ('I', 'Q')
-                ORDER BY Courses.Term`)
+                JOIN Sales ON Books.ID = Sales.BookID
+                AND ISBN LIKE ?
+                AND Sales.Term NOT IN ('I', 'Q')
+                ORDER BY Sales.Year DESC, Sales.Term`)
 
             const result = queryStmt.all('%' + ISBN + '%') as DBRow[]
             db.close()

@@ -14,12 +14,22 @@ const formatBookSearch = (sqlResults: DBRow[], apiResults: APIResult | {}) => {
             Title: apiResults["Title"] || firstResult["Title"],
             Subtitle: apiResults["Subtitle"] || "",
             AuthorLast: firstResult["Author"],
-            Author: apiResults["Author"] || firstResult["Author"],
+            Author: apiResults["Author"] || "",
             Edition: firstResult["Edition"],
             Vendor: firstResult["Publisher"],
-            Publisher: apiResults["Publisher"] || firstResult["Publisher"],
+            Publisher: apiResults["Publisher"] || "",
             Image: apiResults["PreviewImg"],
-            Terms: sqlResults.map((result) => (result["Term"].toString()) + result["Year"].toString())
+            Terms: sqlResults.map((result) => {
+                return {
+                    Term: (result["Term"].toString()) + (result["Year"].toString()),
+                    EstEnrl: result["TotalEstEnrl"],
+                    ActEnrl: result["TotalActEnrl"],
+                    EstSales: result["TotalEstSales"],
+                    UsedSales: result["UsedSales"],
+                    NewSales: result["NewSales"],
+                    Reorders: result["Reorders"]
+                }
+            })
         }
     }
     return book
@@ -28,6 +38,8 @@ const formatBookSearch = (sqlResults: DBRow[], apiResults: APIResult | {}) => {
 const apiSearch = async (isbn: string): Promise<APIResult | {}> => {
     try {
         let result: APIResult | {} = {}
+
+        isbn = regex.usedBarcodeToISBN(isbn)
         const response = await
             axios.get('https://www.googleapis.com/books/v1/volumes',
                 {
@@ -43,12 +55,12 @@ const apiSearch = async (isbn: string): Promise<APIResult | {}> => {
         if (response.data.totalItems > 0) {
             const volInfo: GVolInfo = response.data.items[0].volumeInfo
 
-            result["ISBN"] = volInfo["industryIdentifiers"].length > 0 ? volInfo["industryIdentifiers"][0]["identifier"] : ""
+            result["ISBN"] = volInfo["industryIdentifiers"] ? volInfo["industryIdentifiers"][0]["identifier"] : ""
             result["Title"] = volInfo["title"]
             result["Subtitle"] = volInfo["subtitle"]
             result["Author"] = volInfo["authors"].join(", ")
             result["Publisher"] = volInfo["publisher"]
-            result["PreviewImg"] = volInfo["imageLinks"]["thumbnail"]
+            result["PreviewImg"] = volInfo["imageLinks"] ? volInfo["imageLinks"]["thumbnail"] : undefined
         }
 
         return result

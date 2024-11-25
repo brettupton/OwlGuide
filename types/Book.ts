@@ -9,7 +9,13 @@ export type BookResult = {
     Vendor: string
     Publisher: string
     Image: string
-    Terms: string[]
+    Terms: {
+        Term: string
+        EstEnrl: string
+        ActEnrl: string
+        EstSales: string
+        ActSales: string
+    }[]
 }
 
 export type APIResult = {
@@ -21,36 +27,36 @@ export type APIResult = {
 }
 
 export type GVolInfo = {
-    "title": string
-    "subtitle": string
-    "authors": string[]
-    "publisher": string
-    "publishedDate": string
-    "description": string
-    "industryIdentifiers": {
-        "type": string
-        "identifier": string
+    title: string
+    subtitle: string
+    authors: string[]
+    publisher: string
+    publishedDate: string
+    description: string
+    industryIdentifiers?: {
+        type: string
+        identifier: string
     }[]
-    "readingModes": {
-        "text": boolean
-        "image": boolean
+    readingModes: {
+        text: boolean
+        image: boolean
     }
-    "pageCount": number
-    "printType": string
-    "categories": string[]
-    "maturityRating": string,
-    "allowAnonLogging": boolean
-    "contentVersion": string
-    "panelizationSummary": {
-        "containsEpubBubbles": boolean
-        "containsImageBubbles": boolean
+    pageCount: number
+    printType: string
+    categories: string[]
+    maturityRating: string,
+    allowAnonLogging: boolean
+    contentVersion: string
+    panelizationSummary: {
+        containsEpubBubbles: boolean
+        containsImageBubbles: boolean
     }
-    "imageLinks": {
-        "smallThumbnail": string
-        "thumbnail": string
+    imageLinks?: {
+        smallThumbnail: string
+        thumbnail: string
     }
-    "language": string
-    "previewLink": string
-    "infoLink": string
-    "canonicalVolumeLink": string
+    language: string
+    previewLink: string
+    infoLink: string
+    canonicalVolumeLink: string
 }

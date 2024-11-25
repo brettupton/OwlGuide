@@ -10,6 +10,11 @@ export const rightClickMenu = (x: number, y: number, query: string, window: Brow
             label: 'Copy',
             role: 'copy'
         },
+        // TODO: Check if right-click on input element
+        {
+            label: 'Paste',
+            role: 'paste'
+        }
     ])
     const inspect = new MenuItem({
         label: 'Inspect Element',

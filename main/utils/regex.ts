@@ -43,16 +43,63 @@ const toProperCase = (str: string | number) => {
                 return part.replace(/(\d+)([A-Za-z]+)/, (match, number, suffix) =>
                     number + suffix.toLowerCase()
                 )
-            } else if (/^[a-zA-Z]/.test(part)) {
+            } else if (/(\w+)'S$/i.test(part)) {
                 // Handle possessives
                 return part.replace(/(\w+)'?S$/, (match, word) =>
                     word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() + "'s"
                 )
+            } else if (/^[a-zA-Z]/.test(part)) {
+                // Default
+                return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
             }
-            // Leave other parts (symbols, etc.) unchanged
+            // Leave symbols
             return part
         })
         .join('')
 }
 
-export const regex = { matchFileName, matchFileTermYear, splitFullTerm, createSearchISBN, toProperCase }
+const toISBN10 = (ISBN: string | number) => {
+    const base = ISBN.toString().replace(/-/g, '').slice(3, 12)
+    let checkSum = 0
+
+    for (let i = 10; i >= 2; i--) {
+        const currDigit = Math.abs(i - 10)
+        const prod = i * parseInt(base[currDigit])
+        checkSum += prod
+    }
+
+    const remainder = checkSum % 11
+    const checkDigit = 11 - remainder
+    return base + checkDigit
+}
+
+const toISBN13 = (ISBN: string | number) => {
+    const base = "978" + ISBN.toString().replace(/-/g, '').slice(0, 9)
+    let checkSum = 0
+    let weightAdd = 1
+
+    for (let i = 0; i < base.length; i++) {
+        const currWeight = (i + weightAdd) % 4
+        const prod = parseInt(base[i]) * currWeight
+        checkSum += prod
+        weightAdd += 1
+    }
+
+    const remainder = checkSum % 10
+    const checkDigit = 10 - remainder
+
+    return base + checkDigit
+}
+
+const usedBarcodeToISBN = (isbn: string | number) => {
+    let newISBN = isbn.toString()
+
+    if (/^290/g.test(newISBN)) {
+        newISBN = newISBN.replace(/^290/g, '978')
+        newISBN = newISBN.slice(0, 12) + ((parseInt(newISBN.slice(-1)) + 1) % 10)
+    }
+
+    return newISBN
+}
+
+export const regex = { matchFileName, matchFileTermYear, splitFullTerm, createSearchISBN, toProperCase, usedBarcodeToISBN }

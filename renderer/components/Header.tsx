@@ -68,16 +68,19 @@ export default function Header({ isMenuOpen, handleMenuToggle, isChildWindow, is
                     className={`absolute text-black font-medium top-full left-10 mt-2 bg-white border border-gray-300 shadow-lg rounded-md ${isMenuOpen ? 'block' : 'hidden'}`}
                     style={{ zIndex: 50 }} >
                     <Link href="/home">
-                        <div className="p-2 cursor-pointer hover:bg-gray-100">Home</div>
+                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Home</div>
                     </Link>
                     <Link href="/course">
-                        <div className="p-2 cursor-pointer hover:bg-gray-100">Course</div>
+                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Course</div>
+                    </Link>
+                    <Link href="/course">
+                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Book</div>
                     </Link>
                     <Link href="/decision">
-                        <div className="p-2 cursor-pointer hover:bg-gray-100">Decision</div>
+                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Decision</div>
                     </Link>
                     <Link href="enrollment">
-                        <div className="p-2 cursor-pointer hover:bg-gray-100">Enrollment</div>
+                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Enrollment</div>
                     </Link>
                 </div>
                 <div

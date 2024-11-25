@@ -11,7 +11,24 @@ export default function BookPage() {
         window.ipc.on('data', ({ book }: { book: BookResult }) => {
             setResultBook(book)
             setSearchISBN("")
+            if (document.getElementById('search')) {
+                const inputEle = document.getElementById('search') as HTMLInputElement
+                inputEle.value = ""
+                inputEle.focus()
+            }
         })
+
+        const clickAction = (e: KeyboardEvent) => {
+            if (e.key === "Enter") {
+                e.preventDefault()
+                document.getElementById('searchBtn')?.click()
+            }
+        }
+        window.addEventListener('keydown', clickAction)
+
+        return () => {
+            window.removeEventListener('keydown', clickAction)
+        }
     }, [])
 
     const handleISBNChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -21,7 +38,9 @@ export default function BookPage() {
     }
 
     const handleSearch = () => {
-        window.ipc.send('book', { method: 'search', data: searchISBN })
+        if (searchISBN) {
+            window.ipc.send('book', { method: 'search', data: searchISBN })
+        }
     }
 
     return (
@@ -42,7 +61,7 @@ export default function BookPage() {
                         maxLength={17}
                         className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full ps-8 p-2" placeholder="ISBN" />
                 </div>
-                <button onClick={handleSearch} className="p-2.5 ms-2 text-sm font-medium bg-white hover:bg-gray-300 text-gray-800 rounded-lg border focus:outline-none">
+                <button onClick={handleSearch} id="searchBtn" className="p-2.5 ms-2 text-sm font-medium bg-white hover:bg-gray-300 text-gray-800 rounded-lg border focus:outline-none">
                     <svg className="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
                         <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
                     </svg>

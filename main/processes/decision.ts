@@ -11,7 +11,6 @@ const getTermDecisions = async (fullTerm: string) => {
 
         termData.forEach((book) => {
             if (book["CurrEstSales"]) {
-                if (book["ISBN"] === 9780451524935) { console.log(book) }
 
                 const decision = calculateDecision(book as SQLDecision)
                 decisions.push(decision)
