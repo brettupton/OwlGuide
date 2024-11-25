@@ -2,7 +2,7 @@
   "private": true,
   "name": "owlguide",
   "description": "Textbook Management Assistance",
-  "version": "3.0.2",
+  "version": "3.1.2",
   "author": "Canari",
   "main": "app/background.js",
   "scripts": {
