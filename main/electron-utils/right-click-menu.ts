@@ -1,37 +1,44 @@
-import { BrowserWindow, Menu, MenuItem, shell } from "electron"
+import { BrowserWindow, Menu, MenuItem, MenuItemConstructorOptions, shell } from "electron"
 
-export const rightClickMenu = (x: number, y: number, query: string, window: BrowserWindow) => {
-    const contextMenu: Menu = Menu.buildFromTemplate([
-        {
-            label: 'Cut',
-            role: 'cut'
-        },
+export const rightClickMenu = (x: number, y: number, element: string, query: string, window: BrowserWindow) => {
+    const templateArr: (MenuItem | MenuItemConstructorOptions)[] = [
         {
             label: 'Copy',
             role: 'copy'
-        },
-        // TODO: Check if right-click on input element
-        {
-            label: 'Paste',
-            role: 'paste'
         }
-    ])
-    const inspect = new MenuItem({
-        label: 'Inspect Element',
-        click: () => {
-            window.webContents.inspectElement(x, y)
-        }
-    })
-    const searchGoogle = new MenuItem({
-        label: `Search Google for '${query}'`,
-        click: () => {
-            shell.openExternal(`https://www.google.com/search?q=${encodeURIComponent(query)}`)
-        }
-    })
-    contextMenu.append(inspect)
-    if (query) {
-        contextMenu.append(searchGoogle)
+    ]
+    if (element === "INPUT") {
+        templateArr.unshift(
+            {
+                label: 'Cut',
+                role: 'cut'
+            }
+        )
+        templateArr.push(
+            {
+                label: 'Paste',
+                role: 'paste'
+            }
+        )
     }
+    if (query) {
+        templateArr.push(
+            {
+                label: `Search Google for '${query}'`,
+                click: () => {
+                    shell.openExternal(`https://www.google.com/search?q=${encodeURIComponent(query)}`)
+                }
+            }
+        )
+    }
+
+    const contextMenu: Menu = Menu.buildFromTemplate(templateArr)
+    // const inspect = new MenuItem({
+    //     label: 'Inspect Element',
+    //     click: () => {
+    //         window.webContents.inspectElement(x, y)
+    //     }
+    // })
 
     return contextMenu
 }

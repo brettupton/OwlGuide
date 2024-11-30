@@ -2,8 +2,8 @@ import fs from 'fs'
 import path from 'path'
 import XLSX from '@e965/xlsx'
 import Papa from 'papaparse'
-import paths from './paths'
 import { safeStorage } from 'electron'
+import { paths } from './'
 import { CSVCourse } from '../../types/Enrollment'
 
 const readCSVFile = (filePath: string): Promise<CSVCourse[]> => {

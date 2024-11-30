@@ -3,12 +3,10 @@ import fs from 'fs'
 import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'electron'
 import serve from 'electron-serve'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
-import { regex, fileManager, bSQLDB } from './utils'
+import { regex, fileManager, bSQLDB, paths } from './utils'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
 import { getTermDecisions, getFileDecisions } from './processes/decision'
-import { dropTables, initializeDB, replaceTables } from './processes/sql'
-import { runBatchSpawn } from './electron-utils/run-batch'
-import paths from './utils/paths'
+import { initializeDB, replaceTables } from './processes/sql'
 import { apiSearch, formatBookSearch } from './processes/book'
 
 const isProd = process.env.NODE_ENV === 'production'
@@ -63,11 +61,11 @@ ipcMain.on('initialize', async (event) => {
   if (isProd) {
     try {
       await initializeDB()
-      event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion(), console: paths })
     } catch (error) {
       dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `${error}\n\nContact dev for assistance.` })
     }
   }
+  event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion(), console: paths })
 })
 
 // Header Processes
@@ -86,8 +84,8 @@ ipcMain.on('open-github', (event) => {
 })
 
 // Right Mouse Click Menu
-ipcMain.on('context-menu', (event, { x, y, query }: { x: number, y: number, query: string }) => {
-  const contextMenu = rightClickMenu(x, y, query, mainWindow)
+ipcMain.on('context-menu', (event, { x, y, element, query }: { x: number, y: number, element: string, query: string }) => {
+  const contextMenu = rightClickMenu(x, y, element, query, mainWindow)
   contextMenu.popup({ window: mainWindow })
 })
 
@@ -153,7 +151,7 @@ ipcMain.on('sql', async (event, { method, data }) => {
       const timeStart = Date.now()
       await replaceTables(files)
       const timeEnd = Date.now()
-      dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `Tables Replaced in ${timeEnd - timeStart}s` })
+      dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `Tables Replaced in ${(timeEnd - timeStart) / 1000}s`, type: "info" })
       break
 
     case "drop-table":
@@ -161,7 +159,7 @@ ipcMain.on('sql', async (event, { method, data }) => {
         console.log(`Recreating tables`)
 
         console.time('SQL')
-        await dropTables()
+        // await dropTables()
         console.timeEnd('SQL')
       } catch (error) {
         console.error(error)

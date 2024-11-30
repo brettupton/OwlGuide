@@ -3,8 +3,7 @@ import fs from 'fs'
 import Papa from 'papaparse'
 import path from 'path'
 import tables from "../db/tables"
-import paths from '../utils/paths'
-import { regex } from "./regex"
+import { regex, paths } from "./"
 import { TableHeader } from "../../types/Database"
 
 const buildTableSchema = (sqlHeader: TableHeader, newTable: boolean) => {

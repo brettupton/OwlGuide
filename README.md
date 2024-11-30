@@ -9,6 +9,7 @@ A user-friendly application designed to simplify various aspects of managing tex
 ## Features
 
 - Enhanced buying insights to inform decisions
+- ISBN lookup for term data
 - Support for adoption processes
 - Easy enrollment file conversion
 

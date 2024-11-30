@@ -37,8 +37,13 @@ function App({ Component, pageProps }: AppProps) {
 
     const handleContextMenu = (event: MouseEvent) => {
       event.preventDefault()
-      const highlightedText = window.getSelection().toString().trim()
-      window.ipc.send('context-menu', { x: event.x, y: event.y, query: highlightedText })
+      const { x, y, target } = event
+      let element = ""
+
+      if (target instanceof HTMLElement) {
+        element = target.tagName
+      }
+      window.ipc.send('context-menu', { x, y, element, query: window.getSelection().toString().trim() })
     }
 
     const handleClickOutsideMenu = (event: MouseEvent) => {
