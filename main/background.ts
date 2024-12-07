@@ -6,12 +6,12 @@ import { createWindow, createChildWindow, rightClickMenu } from './electron-util
 import { regex, fileManager, bSQLDB, paths } from './utils'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
 import { getTermDecisions, getFileDecisions } from './processes/decision'
-import { initializeDB, replaceTables } from './processes/sql'
+import { initializeDB, updateTables } from './processes/sql'
 import { apiSearch, formatBookSearch } from './processes/book'
 
 const isProd = process.env.NODE_ENV === 'production'
 
-const iconPath = path.join(__dirname, '..', 'resources', 'owl.ico')
+const iconPath = path.join(__dirname, '..', 'renderer', 'public', 'images', 'owl.ico')
 const appHomeURL = isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`
 
 if (isProd) {
@@ -144,25 +144,29 @@ ipcMain.on('sql', async (event, { method, data }) => {
       }
       break
 
-    case "replace-table":
-      console.log("Replacing tables.")
-      const files = data as string[]
+    case "update-table":
+      console.log("Updating tables.")
+      const files = data.files as string[]
 
-      const timeStart = Date.now()
-      await replaceTables(files)
-      const timeEnd = Date.now()
-      dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `Tables Replaced in ${(timeEnd - timeStart) / 1000}s`, type: "info" })
-      break
-
-    case "drop-table":
       try {
-        console.log(`Recreating tables`)
-
-        console.time('SQL')
-        // await dropTables()
-        console.timeEnd('SQL')
+        const timeStart = Date.now()
+        await updateTables(files)
+        const timeEnd = Date.now()
+        dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `Tables Replaced in ${(timeEnd - timeStart) / 1000}s`, type: "info" })
       } catch (error) {
         console.error(error)
+        dialog.showErrorBox("SQL", "Check console.")
+      }
+      break
+    case "recreate-db":
+      try {
+        const timeStart = Date.now()
+        await initializeDB()
+        const timeEnd = Date.now()
+        dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `DB Recreated in ${(timeEnd - timeStart) / 1000}s`, type: "info" })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("SQL", "Check console.")
       }
       break
   }

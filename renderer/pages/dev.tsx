@@ -44,12 +44,12 @@ export default function Development() {
                 newPaths.push(file.path)
             }
 
-            window.ipc.send('sql', { method: "replace-table", data: newPaths })
+            window.ipc.send('sql', { method: "update-table", data: { files: newPaths } })
         }
     }
 
-    const handleTableDrop = () => {
-        window.ipc.send('sql', { method: "drop-table" })
+    const handleRecreateDB = () => {
+        window.ipc.send('sql', { method: "recreate-db" })
     }
 
     const handleUsernameChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -105,8 +105,8 @@ export default function Development() {
                     <div className="flex">
                         <input type="file" id="csv" multiple onChange={handleFileChange} />
                     </div>
-                    <div className="flex w-full h-1/2">
-                        <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleTableDrop}>Drop</button>
+                    <div className="flex">
+                        <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleRecreateDB}>Recreate</button>
                     </div>
                     <div className="flex flex-col">
                         <div className="flex">

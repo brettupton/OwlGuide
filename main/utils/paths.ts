@@ -13,6 +13,5 @@ export const paths = {
     userDataPath: app.getPath('userData'),
     configPath: path.join(userData, 'config.json'),
     logPath: app.getPath('logs'),
-    dbPath: !isProd ? path.join(__dirname, '..', 'main', 'db/owlguide-2.db') : path.join(app.getPath('userData'), 'db/owlguide-2.db'),
-    extraResourceDbPath: path.join(process.resourcesPath, 'main/db/owlguide-2.db')
+    dbPath: !isProd ? path.join(__dirname, '..', 'main', 'db/owlguide.db') : path.join(app.getPath('userData'), 'db/owlguide.db')
 }
