@@ -5,9 +5,11 @@ import serve from 'electron-serve'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
 import { regex, fileManager, bSQLDB, paths } from './utils'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
-import { getTermDecisions, getFileDecisions } from './processes/decision'
+import { getTermDecisions, getFileDecisions, getDecisions } from './processes/decision'
 import { initializeDB, updateTables } from './processes/sql'
 import { apiSearch, formatBookSearch } from './processes/book'
+import { getPredictions } from './utils/lgbModel'
+import { Features } from '../types/LGBModel'
 
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -226,8 +228,8 @@ ipcMain.on('decision', async (event, { method, data }) => {
 
     case "get-term-decision":
       try {
-        const { decisions, term } = await getTermDecisions(data.term)
-        event.reply('decision-data', { decisions, term })
+        const decisions = await getDecisions(data.term)
+        event.reply('decision-data', { decisions, term: data.term })
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)

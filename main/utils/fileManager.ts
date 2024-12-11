@@ -156,6 +156,21 @@ const deleteFile = (filePath: string): Promise<void> => {
     })
 }
 
+const readJSON = (filePath: string): Promise<JSONParse> => {
+    return new Promise((resolve, reject) => {
+        fs.readFile(filePath, (err, data) => {
+            if (err) { reject(err) }
+
+            try {
+                const JSONObj: JSONParse = JSON.parse(data.toString())
+                resolve(JSONObj)
+            } catch (error) {
+                reject(error)
+            }
+        })
+    })
+}
+
 export const fileManager = {
     config: {
         read: getConfigValue,
@@ -170,5 +185,8 @@ export const fileManager = {
     },
     files: {
         delete: deleteFile
+    },
+    JSON: {
+        read: readJSON
     }
 }

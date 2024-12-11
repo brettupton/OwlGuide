@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Decision, TableTab } from '../../types/Decision'
-import { BackArrow, FileForm, DecisionTable, TermSelect } from '../components'
+import { BackArrow, DecisionTable, TermSelect } from '../components'
 
 export default function BuyingDecision() {
   const [decision, setDecision] = useState<Decision[]>([])
@@ -26,7 +26,8 @@ export default function BuyingDecision() {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ipc) {
       window.ipc.on('decision-data', (data: any) => {
-        setDecision(data.decisions)
+        const sorted = data.decisions.sort((a, b) => a["Title"].localeCompare(b["Title"]))
+        setDecision(sorted)
         setTerm(data.term)
       })
     }

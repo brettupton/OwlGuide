@@ -6,6 +6,12 @@ declare global {
     type Config = {
         [key: string]: string
     }
+
+    type JSONParse =
+        string | number | boolean | {
+            [x: string]: JSONParse
+        } | JSONParse[]
+
 }
 
 export { }

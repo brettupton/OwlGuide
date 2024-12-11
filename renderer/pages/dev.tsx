@@ -100,6 +100,8 @@ export default function Development() {
                             <option>Books</option>
                             <option>Sales</option>
                             <option>Course_Book</option>
+                            <option>Prices</option>
+                            <option>Inventory</option>
                         </select>
                     </div>
                     <div className="flex">
@@ -133,6 +135,8 @@ export default function Development() {
                             <option>Books</option>
                             <option>Sales</option>
                             <option>Course_Book</option>
+                            <option>Prices</option>
+                            <option>Inventory</option>
                         </select>
                     </div>
                     <PageTable

@@ -28,6 +28,7 @@ const createDB = async (): Promise<void[]> => {
                         })
                     })()
 
+                    // Placeholder ID for missing Book IDs in foreign tables
                     if (tableName === "Books") {
                         db.prepare(`INSERT INTO Books (ID) VALUES (0)`).run()
                     }
@@ -195,6 +196,56 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
     })
 }
 
+const getTermModelFeatures = (termYear: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+        const [term, year] = regex.splitFullTerm(termYear)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT
+                    Books.ID,
+                    Books.ISBN,
+                    Books.Title,
+                    Sales.EstSales,
+                    Sales.Term,
+                    Sales.Year,
+                    Books.Publisher,
+                    Courses.Dept,
+                    Courses.Course,
+                    Sales.EstEnrl,
+                    Sales.ActEnrl,
+                    (Prices.UnitPrice * (1 - (CAST(Prices.Discount AS REAL) - 30) / 100)) AS Price
+                FROM Sales
+                JOIN Books ON Sales.BookID = Books.ID
+                JOIN Prices ON Books.ID = Prices.BookID
+                JOIN Course_Book ON Books.ID = Course_Book.BookID
+                JOIN Courses ON Course_Book.CourseID = Courses.ID
+                WHERE Sales.Term = :term
+                    AND Sales.Year = :year
+                    AND Sales.Unit = 1
+					AND Courses.Term = Sales.Term
+					AND Courses.Year = Sales.Year
+                    AND Sales.NumCourses > 0
+                    AND Books.Publisher NOT IN ('VST', 'XX SUPPLY')
+                    AND Dept NOT IN ('CANC', 'SPEC')
+                    AND Course NOT IN ('CANC', 'SPEC')
+                    AND Prices.UnitPrice > 0
+                GROUP BY Sales.Term, Sales.Year, Sales.BookID
+                ORDER BY Sales.BookID
+                `)
+
+            const queryResult = queryStmt.all({ term, year }) as DBRow[]
+
+            db.close()
+            resolve(queryResult)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
 const getPrevSalesByBook = (isbn: string, title: string, term: string, year: string) => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
@@ -275,7 +326,7 @@ const getBookByISBN = (ISBN: string): Promise<DBRow[]> => {
         try {
             const queryStmt = db.prepare(`
                 SELECT Books.ID, Books.ISBN, Books.Title, Books.Author, Books.Edition, Books.Publisher, 
-                Sales.Term, Sales.Year, Sales.TotalEstEnrl, Sales.TotalActEnrl, Sales.TotalEstSales, Sales.UsedSales, Sales.NewSales, Sales.Reorders
+                Sales.Term, Sales.Year, Sales.EstEnrl, Sales.ActEnrl, Sales.EstSales, Sales.UsedSales, Sales.NewSales, Sales.Reorders
                 FROM Books
                 JOIN Sales ON Books.ID = Sales.BookID
                 AND ISBN LIKE ?
@@ -519,7 +570,7 @@ const getTablePage = (name: string, offset: number, limit: number): Promise<{ qu
 
 export const bSQLDB = {
     all: { createDB, updateDB, getAllTerms, getTablePage },
-    sales: { getPrevSalesByTerm, getPrevSalesByBook },
+    sales: { getPrevSalesByTerm, getPrevSalesByBook, getTermModelFeatures },
     books: { getBooksByTerm, getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm }
 }

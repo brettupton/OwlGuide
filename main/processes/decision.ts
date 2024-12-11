@@ -1,5 +1,7 @@
 import { Decision, SQLDecision } from "../../types/Decision"
+import { Features } from "../../types/LGBModel"
 import { fileManager, regex, bSQLDB } from "../utils"
+import { getPredictions } from "../utils/forest"
 
 const getTermDecisions = async (fullTerm: string) => {
     try {
@@ -42,6 +44,7 @@ const calculateDecision = (book: SQLDecision) => {
     const newDecision: Decision = {
         ISBN: book.ISBN,
         Title: book.Title,
+        EstEnrl: book.CurrEstEnrl,
         ActEnrl: book.CurrActEnrl,
         EstSales: book.CurrEstSales,
         Decision: newDec,
@@ -49,6 +52,29 @@ const calculateDecision = (book: SQLDecision) => {
     }
 
     return newDecision
+}
+
+const getDecisions = async (term: string) => {
+    try {
+        const books = await bSQLDB.sales.getTermModelFeatures(term) as Features[]
+        const predictions = await getPredictions(books)
+        const decisions: Decision[] = []
+
+        for (let book of predictions) {
+            decisions.push({
+                ISBN: book.ISBN,
+                Title: book.Title,
+                EstEnrl: book.EstEnrl,
+                ActEnrl: book.ActEnrl,
+                EstSales: book.EstSales,
+                Decision: Math.round(book.Prediction),
+                Diff: Math.abs(book.EstSales - Math.round(book.Prediction))
+            })
+        }
+        return decisions
+    } catch (error) {
+        throw error
+    }
 }
 
 const getFileDecisions = async (filePath: string) => {
@@ -115,4 +141,4 @@ const getFileDecisions = async (filePath: string) => {
     }
 }
 
-export { getTermDecisions, getFileDecisions }
+export { getTermDecisions, getFileDecisions, getDecisions }
