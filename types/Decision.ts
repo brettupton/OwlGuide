@@ -1,6 +1,7 @@
 export type Decision = {
     ISBN: number | string
     Title: string
+    EstEnrl: number
     ActEnrl: number
     EstSales: number
     Decision: number

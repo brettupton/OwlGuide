@@ -9,8 +9,7 @@ files:
       - package.json
       - app
       - main
-      - '!main/db/owlguide-2.db'
+      - '!main/db/tables.ts'
 publish: null
-extraResources: ['main/db/owlguide-2.db']
 win:
   icon: "resources/owl.ico"

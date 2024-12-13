@@ -102,7 +102,7 @@ const createCourseCSV = (enrollment: string[][], term: string, year: string) => 
         csvCourses.push(newCourse)
     })
 
-    return Papa.unparse(csvCourses)
+    return Papa.unparse(csvCourses, { header: false })
 }
 
 

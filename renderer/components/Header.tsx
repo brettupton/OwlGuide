@@ -71,13 +71,13 @@ export default function Header({ isMenuOpen, handleMenuToggle, isChildWindow, is
                         <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Home</div>
                     </Link>
                     <Link href="/course">
-                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Course</div>
+                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Courses</div>
                     </Link>
-                    <Link href="/course">
-                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Book</div>
+                    <Link href="/book">
+                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Books</div>
                     </Link>
                     <Link href="/decision">
-                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Decision</div>
+                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Decisions</div>
                     </Link>
                     <Link href="enrollment">
                         <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Enrollment</div>

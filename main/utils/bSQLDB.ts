@@ -1,13 +1,50 @@
 import Database from "better-sqlite3"
 import fs from 'fs'
-import Papa from 'papaparse'
-import path from 'path'
 import tables from "../db/tables"
-import paths from '../utils/paths'
-import { regex } from "./regex"
-import { TableHeader } from "../../types/Database"
+import { regex, paths, fileManager } from "./"
+import { SQLHeader } from "../../types/Database"
 
-const buildTableSchema = (sqlHeader: TableHeader, newTable: boolean) => {
+const createDB = async (): Promise<void[]> => {
+    if (fs.existsSync(paths.dbPath)) {
+        await fileManager.files.delete(paths.dbPath)
+    }
+
+    return await Promise.all(
+        Object.keys(tables).map((tableName): Promise<void> => {
+            return new Promise((resolve, reject) => {
+                const db = new Database(paths.dbPath)
+                const table = tables[tableName as keyof typeof tables]
+                const sqlHeader = table["SQLHeaders"]
+                const tableSchema = buildTableSchema(sqlHeader, table["CompKey"], false)
+
+                db.prepare(`DROP TABLE IF EXISTS ${tableName}`).run()
+                db.prepare(`CREATE TABLE IF NOT EXISTS ${tableName} ${tableSchema}`).run()
+
+                try {
+                    db.transaction(() => {
+                        table["Indexes"].forEach(index => {
+                            const indexStmt = `CREATE INDEX IF NOT EXISTS idx_${tableName.toLowerCase()}_${index.split(", ").join("_").toLowerCase()} ON ${tableName}(${index})`
+                            db.prepare(indexStmt).run()
+                        })
+                    })()
+
+                    // Placeholder ID for missing Book IDs in foreign tables
+                    if (tableName === "Books") {
+                        db.prepare(`INSERT INTO Books (ID) VALUES (0)`).run()
+                    }
+
+                    db.close()
+                    resolve()
+                } catch (error) {
+                    console.error("Error creating indexes:", error)
+                    db.close()
+                    reject(error)
+                }
+            })
+        }))
+}
+
+const buildTableSchema = (sqlHeader: SQLHeader, compKey: string[], update: boolean) => {
     const columns = Object.entries(sqlHeader)
         .map(([key, { type }]) => `${key} ${type}`)
         .join(", ")
@@ -22,195 +59,105 @@ const buildTableSchema = (sqlHeader: TableHeader, newTable: boolean) => {
         .filter(Boolean)
         .join(", ")
 
-    return `(${columns}${newTable && foreignKeys ? `, ${foreignKeys}` : ""})`
+    return `(${columns}${!update && foreignKeys ? `, ${foreignKeys}` : ""}${!update && compKey.length > 0 ? `, PRIMARY KEY (${compKey.join(", ")})` : ""})`
+        .replace(/,\s*$/, "")
 }
 
-const createTable = (filePath: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        const db = new Database(paths.dbPath)
-        try {
-            const matchName = regex.matchFileName(filePath)
-            const name = Object.keys(tables).find(key => tables[key].TableName === matchName)
-            const tableData = tables[name]
-            const stream = fs.createReadStream(filePath)
-            const sqlHeader = tableData["TableHeaders"]
-            const tableSchema = buildTableSchema(sqlHeader, true)
-            const insertKeys = Object.keys(sqlHeader).filter(key => sqlHeader[key].insert)
-            const placeholders = insertKeys.map(() => "?").join(", ")
-            let missingBookIDs: number[] = []
-            const placeholderID = 0
+const buildInsertStmt = (tableName: string, sqlHeader: SQLHeader, compKey: string[], temp: boolean) => {
+    const insertKeys = Object.keys(sqlHeader)
+    const placeholders = insertKeys.map(() => "?").join(", ")
+    const conflictKeys = compKey.length > 0
+        ? insertKeys.filter(key => !compKey.includes(key))
+        : insertKeys.filter(key => key !== "ID")
+    const placeholderID = 0
 
-            db.prepare(`DROP TABLE IF EXISTS ${name}`).run()
-            db.prepare(`CREATE TABLE IF NOT EXISTS ${name} ${tableSchema}`).run()
+    const resolveForeignKey = (key: string, refTable: string): string => `
+        CASE 
+            WHEN EXISTS (SELECT 1 FROM ${refTable} WHERE ID = temp_${tableName}.${key}) 
+            THEN temp_${tableName}.${key} 
+            ELSE ${placeholderID} 
+        END`
 
-            const insertIndexes = db.transaction((indexes: string[]) => {
-                indexes.forEach(index => {
-                    const indexStmt = `CREATE INDEX IF NOT EXISTS idx_${name.toLowerCase()}_${index.split(", ").join("_").toLowerCase()} ON ${name}(${index})`
-                    db.prepare(indexStmt).run()
-                })
-            })
+    // Construct SELECT fields with foreign key checks
+    const selectFields = insertKeys.map(key => {
+        if (tableName === "Course_Book" && key === "CourseID") {
+            return resolveForeignKey("CourseID", "Courses")
+        }
+        if ((["Sales", "Course_Book", "Prices", "Inventory"].includes(tableName)) && key === "BookID") {
+            return resolveForeignKey("BookID", "Books")
+        }
+        return `temp_${tableName}.${key}`
+    }).join(", ")
+
+    return `
+        INSERT INTO ${temp ? "temp_" : ""}${tableName} (${insertKeys.join(", ")}) 
+        ${temp
+            ? `VALUES (${placeholders})`
+            : `SELECT ${selectFields}
+                FROM temp_${tableName}
+                WHERE ${tableName === "Course_Book"
+                ? `CourseID IN (SELECT ID FROM Courses) AND BookID IN (SELECT ID FROM Books)`
+                : tableName === "Sales"
+                    ? `BookID IN (SELECT ID FROM Books)`
+                    : "true"}
+                ON CONFLICT(${sqlHeader["ID"] ? "ID" : compKey.join(", ")}) 
+                DO ${conflictKeys.length > 0
+                ? `UPDATE SET ${conflictKeys.map((key) => `${key} = excluded.${key}`).join(", ")}`
+                : `NOTHING`}`
+        }`
+}
+
+const updateDB = async (files: string[]) => {
+    const db = new Database(paths.dbPath)
+    for (const tableName of Object.keys(tables)) {
+        await new Promise<void>(async (resolve, reject) => {
+            const table = tables[tableName as keyof typeof tables]
+            const sqlHeader: SQLHeader = table["SQLHeaders"]
+            const tableSchema = buildTableSchema(sqlHeader, table["CompKey"], true)
+
+            db.prepare(`DROP TABLE IF EXISTS temp_${tableName}`).run()
+            db.prepare(`CREATE TEMP TABLE temp_${tableName} ${tableSchema}`).run()
+
+            const insertTemp = db.prepare(buildInsertStmt(tableName, sqlHeader, table["CompKey"], true))
+            const upsertStmt = db.prepare(buildInsertStmt(tableName, sqlHeader, table["CompKey"], false))
+
+            const filePath = files.find((file) => file.includes(table["CSVName"]))
 
             try {
-                insertIndexes(tableData["Indexes"])
-            } catch (indexError) {
-                console.error("Error creating indexes:", indexError)
-                throw indexError
-            }
-
-            const insertStmt = db.prepare(`INSERT INTO ${name} (${insertKeys.join(", ")}) VALUES (${placeholders})`)
-
-            Papa.parse(stream, {
-                header: true,
-                transformHeader: (header, index) => tableData["CSVHeaders"][index] || header,
-                complete: (results) => {
-                    let csvResults = results.data as DBRow[]
-
-                    if (name === "Books" || name === "Courses") {
-                        // Books and Courses have missing IDs from original CSV, a placeholder is used to keep data in reference table
-                        const placeholderValues = new Array(insertKeys.length - 1).fill("")
-                        placeholderValues.unshift(placeholderID)
-
-                        insertStmt.run(placeholderValues)
-                    }
-
-                    const insertMany = db.transaction((csv: DBRow[]) => {
-                        for (const row of csv) {
-                            if (name === "Sales" || name === "Course_Book") {
-                                const bookStmt = db.prepare(`SELECT ID FROM Books WHERE ID=?`)
-                                const courseStmt = db.prepare(`SELECT ID FROM Courses WHERE ID=?`)
-
-                                const bookID = Number(row["ITMBKGENKE"])
-                                const courseID = Number(row["CRSSEQ"])
-
-                                // Check if bookID exists directly in Books table
-                                const bookExistID = bookStmt.get(bookID) ? bookID : placeholderID
-                                row["ITMBKGENKE"] = bookExistID
-
-                                // Log for debugging if the ID was not found
-                                if (bookExistID === placeholderID) {
-                                    missingBookIDs.push(bookID)
-                                }
-
-                                // Check for course existence if needed
-                                const courseExistId = courseStmt.get(courseID) ? courseID : placeholderID
-                                row["CRSSEQ"] = courseExistId
-                            }
-
-                            const values = insertKeys.map(key => {
-                                const csvRef = sqlHeader[key].csvRef
-                                return Array.isArray(csvRef) ? csvRef.map(ref => row[ref] || "").join("") : row[csvRef]
-                            })
-
-                            insertStmt.run(values)
+                const csv = await fileManager.csv.read(filePath)
+                db.transaction(() => {
+                    for (const row of csv) {
+                        try {
+                            const values = mapCSVHeader(table["SQLHeaders"], table["CSVHeaders"], row)
+                            insertTemp.run(values)
+                        } catch (error) {
+                            console.error(`Error row:`, row)
+                            console.error(`Error details:`, error)
+                            throw error
                         }
-                    })
-
-                    try {
-                        insertMany(csvResults)
-                        // Filter duplicates, sort, and create log file
-                        missingBookIDs = missingBookIDs.filter((value, index) => missingBookIDs.indexOf(value) === index).sort((a, b) => a - b)
-                        fs.writeFileSync(path.join(paths.logPath, 'missing_ID.log'), missingBookIDs.toString(), 'utf-8')
-                        db.close()
-                        resolve()
-                    } catch (insertError) {
-                        db.close()
-                        reject(`Insertion error: ${insertError}`)
-                        throw insertError
                     }
-                },
-                error: (error) => {
-                    db.close()
-                    reject(`Parsing error: ${error}`)
-                }
-            })
-        } catch (error) {
-            db.close()
-            reject(`Setup error: ${error}`)
-        }
-    })
+                })()
+
+                upsertStmt.run()
+                resolve()
+            } catch (error) {
+                db.close()
+                reject(error)
+            }
+        })
+    }
+    db.close()
 }
 
-const replaceTable = (filePath: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        const matchName = regex.matchFileName(filePath)
-        const name = Object.keys(tables).find(key => tables[key].TableName === matchName)
-        const db = new Database(paths.dbPath)
-
-        db.pragma('foreign_keys = OFF') // Disable foreign keys for batch operations
-
-        try {
-            const stream = fs.createReadStream(filePath)
-            const tableData = tables[name]
-            const sqlHeader = tableData["TableHeaders"]
-            const tableSchema = buildTableSchema(sqlHeader, false)
-            const insertKeys = Object.keys(sqlHeader).filter(key => sqlHeader[key].insert)
-            const placeholders = insertKeys.map(() => "?").join(", ")
-
-            // Create staging table if it doesn’t exist and clear any existing data
-            db.prepare(`DROP TABLE IF EXISTS staging_${name}`).run()
-            db.prepare(`CREATE TABLE staging_${name} ${tableSchema}`).run()
-
-            const insertStmt = db.prepare(`INSERT OR REPLACE INTO staging_${name} (${insertKeys.join(", ")}) VALUES (${placeholders})`)
-
-            Papa.parse(stream, {
-                header: true,  // Set to true so transformHeader is effective
-                transformHeader: (header, index) => tableData["CSVHeaders"][index] || header,
-                complete: (results) => {
-                    const csvData = results.data as DBRow[]
-
-                    const uniqueRows = []
-                    const ids = new Set()
-
-                    // Filter to keep only unique IDs
-                    csvData.forEach(row => {
-                        if (row.ID && !ids.has(row.ID)) {  // Ensure ID is valid before adding
-                            uniqueRows.push(row)
-                            ids.add(row.ID)
-                        }
-                    })
-
-                    db.transaction(() => {
-                        uniqueRows.forEach(row => {
-                            const values = insertKeys.map(key => {
-                                const csvRef = sqlHeader[key].csvRef
-                                return Array.isArray(csvRef) ? csvRef.map(ref => row[ref] || "").join("") : row[csvRef]
-                            })
-                            insertStmt.run(values)
-                        })
-                    })()
-
-                    // Insert new rows from staging table to main table where IDs don't exist
-                    const insertNewStmt = db.prepare(`
-                        INSERT INTO ${name} (${insertKeys.join(", ")})
-                        SELECT ${insertKeys.join(", ")} FROM staging_${name}
-                        WHERE NOT EXISTS (SELECT 1 FROM ${name} WHERE ${name}.ID = staging_${name}.ID)
-                    `)
-                    insertNewStmt.run()
-
-                    // Update existing rows in the main table with values from the staging table
-                    const updateStmt = db.prepare(`
-                        UPDATE ${name}
-                        SET ${insertKeys.map(key => `${key} = (SELECT staging_${name}.${key} FROM staging_${name} WHERE ${name}.ID = staging_${name}.ID)`).join(", ")}
-                        WHERE EXISTS (SELECT 1 FROM staging_${name} WHERE ${name}.ID = staging_${name}.ID)
-                    `)
-                    updateStmt.run()
-
-                    db.prepare(`DROP TABLE IF EXISTS staging_${name}`).run()
-
-                    db.close()
-                    resolve()
-                },
-                error: (error) => {
-                    db.close()
-                    reject(error)
-                }
-            })
-        } catch (error) {
-            db.close()
-            reject(`${name}: ${error}`)
-            throw error
-        }
+const mapCSVHeader = (sqlHeader: SQLHeader, csvHeader: string[], row: { [field: string]: string | number }) => {
+    const values = Object.keys(sqlHeader).map(key => {
+        const csvRefIndex = Array.isArray(sqlHeader[key].csvRef)
+            ? sqlHeader[key]["csvRef"].map((ref) => csvHeader.findIndex((header) => header === ref))
+            : csvHeader.findIndex((header) => header === sqlHeader[key].csvRef)
+        return Array.isArray(csvRefIndex) ? csvRefIndex.map(index => row[index] || "").join("") : row[csvRefIndex]
     })
+
+    return values
 }
 
 const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
@@ -245,6 +192,56 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
             db.close()
             reject(error)
             throw error
+        }
+    })
+}
+
+const getTermModelFeatures = (termYear: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+        const [term, year] = regex.splitFullTerm(termYear)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT
+                    Books.ID,
+                    Books.ISBN,
+                    Books.Title,
+                    Sales.EstSales,
+                    Sales.Term,
+                    Sales.Year,
+                    Books.Publisher,
+                    Courses.Dept,
+                    Courses.Course,
+                    Sales.EstEnrl,
+                    Sales.ActEnrl,
+                    (Prices.UnitPrice * (1 - (CAST(Prices.Discount AS REAL) - 30) / 100)) AS Price
+                FROM Sales
+                JOIN Books ON Sales.BookID = Books.ID
+                JOIN Prices ON Books.ID = Prices.BookID
+                JOIN Course_Book ON Books.ID = Course_Book.BookID
+                JOIN Courses ON Course_Book.CourseID = Courses.ID
+                WHERE Sales.Term = :term
+                    AND Sales.Year = :year
+                    AND Sales.Unit = 1
+					AND Courses.Term = Sales.Term
+					AND Courses.Year = Sales.Year
+                    AND Sales.NumCourses > 0
+                    AND Books.Publisher NOT IN ('VST', 'XX SUPPLY')
+                    AND Dept NOT IN ('CANC', 'SPEC')
+                    AND Course NOT IN ('CANC', 'SPEC')
+                    AND Prices.UnitPrice > 0
+                GROUP BY Sales.Term, Sales.Year, Sales.BookID
+                ORDER BY Sales.BookID
+                `)
+
+            const queryResult = queryStmt.all({ term, year }) as DBRow[]
+
+            db.close()
+            resolve(queryResult)
+        } catch (error) {
+            db.close()
+            reject(error)
         }
     })
 }
@@ -329,7 +326,7 @@ const getBookByISBN = (ISBN: string): Promise<DBRow[]> => {
         try {
             const queryStmt = db.prepare(`
                 SELECT Books.ID, Books.ISBN, Books.Title, Books.Author, Books.Edition, Books.Publisher, 
-                Sales.Term, Sales.Year, Sales.TotalEstEnrl, Sales.TotalActEnrl, Sales.TotalEstSales, Sales.UsedSales, Sales.NewSales, Sales.Reorders
+                Sales.Term, Sales.Year, Sales.EstEnrl, Sales.ActEnrl, Sales.EstSales, Sales.UsedSales, Sales.NewSales, Sales.Reorders
                 FROM Books
                 JOIN Sales ON Books.ID = Sales.BookID
                 AND ISBN LIKE ?
@@ -572,8 +569,8 @@ const getTablePage = (name: string, offset: number, limit: number): Promise<{ qu
 }
 
 export const bSQLDB = {
-    all: { replaceTable, createTable, getAllTerms, getTablePage },
-    sales: { getPrevSalesByTerm, getPrevSalesByBook },
+    all: { createDB, updateDB, getAllTerms, getTablePage },
+    sales: { getPrevSalesByTerm, getPrevSalesByBook, getTermModelFeatures },
     books: { getBooksByTerm, getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm }
 }

@@ -3,18 +3,17 @@ import fs from 'fs'
 import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'electron'
 import serve from 'electron-serve'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
-import { regex, fileManager, bSQLDB } from './utils'
+import { regex, fileManager, bSQLDB, paths } from './utils'
 import { matchEnrollment, submitEnrollment } from './processes/enrollment'
-import { getTermDecisions, getFileDecisions } from './processes/decision'
-import { dropTables, initializeDB, replaceTables } from './processes/sql'
-import { runBatchSpawn } from './electron-utils/run-batch'
-import paths from './utils/paths'
+import { getTermDecisions, getFileDecisions, getDecisions } from './processes/decision'
+import { initializeDB, updateTables } from './processes/sql'
 import { apiSearch, formatBookSearch } from './processes/book'
 
 const isProd = process.env.NODE_ENV === 'production'
 
-const iconPath = path.join(__dirname, '..', 'resources', 'owl.ico')
+const iconPath = path.join(__dirname, '..', 'renderer', 'public', 'images', 'owl.ico')
 const appHomeURL = isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`
+let dbLoaded = false
 
 if (isProd) {
   serve({ directory: 'app' })
@@ -60,14 +59,15 @@ app.on('window-all-closed', () => {
 
 // On app initialization, copy DB to read-write directory
 ipcMain.on('initialize', async (event) => {
-  if (isProd) {
+  if (isProd && !dbLoaded) {
     try {
       await initializeDB()
-      event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion(), console: paths })
+      dbLoaded = true
     } catch (error) {
       dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `${error}\n\nContact dev for assistance.` })
     }
   }
+  event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion(), console: paths })
 })
 
 // Header Processes
@@ -86,8 +86,8 @@ ipcMain.on('open-github', (event) => {
 })
 
 // Right Mouse Click Menu
-ipcMain.on('context-menu', (event, { x, y, query }: { x: number, y: number, query: string }) => {
-  const contextMenu = rightClickMenu(x, y, query, mainWindow)
+ipcMain.on('context-menu', (event, { x, y, element, query }: { x: number, y: number, element: string, query: string }) => {
+  const contextMenu = rightClickMenu(x, y, element, query, mainWindow)
   contextMenu.popup({ window: mainWindow })
 })
 
@@ -146,25 +146,29 @@ ipcMain.on('sql', async (event, { method, data }) => {
       }
       break
 
-    case "replace-table":
-      console.log("Replacing tables.")
-      const files = data as string[]
+    case "update-table":
+      console.log("Updating tables.")
+      const files = data.files as string[]
 
-      const timeStart = Date.now()
-      await replaceTables(files)
-      const timeEnd = Date.now()
-      dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `Tables Replaced in ${timeEnd - timeStart}s` })
-      break
-
-    case "drop-table":
       try {
-        console.log(`Recreating tables`)
-
-        console.time('SQL')
-        await dropTables()
-        console.timeEnd('SQL')
+        const timeStart = Date.now()
+        await updateTables(files)
+        const timeEnd = Date.now()
+        dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `Tables Replaced in ${(timeEnd - timeStart) / 1000}s`, type: "info" })
       } catch (error) {
         console.error(error)
+        dialog.showErrorBox("SQL", "Check console.")
+      }
+      break
+    case "recreate-db":
+      try {
+        const timeStart = Date.now()
+        await initializeDB()
+        const timeEnd = Date.now()
+        dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `DB Recreated in ${(timeEnd - timeStart) / 1000}s`, type: "info" })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox("SQL", "Check console.")
       }
       break
   }
@@ -224,8 +228,8 @@ ipcMain.on('decision', async (event, { method, data }) => {
 
     case "get-term-decision":
       try {
-        const { decisions, term } = await getTermDecisions(data.term)
-        event.reply('decision-data', { decisions, term })
+        const decisions = await getDecisions(data.term)
+        event.reply('decision-data', { decisions, term: data.term })
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)

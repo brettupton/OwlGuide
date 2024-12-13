@@ -22,9 +22,9 @@ const formatBookSearch = (sqlResults: DBRow[], apiResults: APIResult | {}) => {
             Terms: sqlResults.map((result) => {
                 return {
                     Term: (result["Term"].toString()) + (result["Year"].toString()),
-                    EstEnrl: result["TotalEstEnrl"],
-                    ActEnrl: result["TotalActEnrl"],
-                    EstSales: result["TotalEstSales"],
+                    EstEnrl: result["EstEnrl"],
+                    ActEnrl: result["ActEnrl"],
+                    EstSales: result["EstSales"],
                     UsedSales: result["UsedSales"],
                     NewSales: result["NewSales"],
                     Reorders: result["Reorders"]

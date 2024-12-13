@@ -2,34 +2,22 @@ import fs from 'fs'
 import path from 'path'
 import XLSX from '@e965/xlsx'
 import Papa from 'papaparse'
-import paths from './paths'
 import { safeStorage } from 'electron'
-import { CSVCourse } from '../../types/Enrollment'
+import { paths } from './'
 
-const readCSVFile = (filePath: string): Promise<CSVCourse[]> => {
+const parseCSV = (filePath: string): Promise<{ [field: string]: string | number }[]> => {
     return new Promise((resolve, reject) => {
-        const stream = fs.createReadStream(filePath)
-        Papa.parse(stream, {
-            beforeFirstChunk: (chunk) => {
-                const lines = chunk.split("\n")
-                const header = "UnitNumber,Term,Year,DepartmentName,CourseNumber,SectionNumber,ProfessorName,MaximumCapacity,EstPreEnrollment,ActualEnrollment,ContinuationClass,EveningClass,ExtensionClass,TextnetFlag,Location,CourseTitle,CourseID"
-
-                const newChunk = [header, ...lines].join("\n")
-                return newChunk
+        Papa.parse(fs.createReadStream(filePath), {
+            complete: (results) => {
+                const { data } = results
+                resolve(data as { [field: string]: string | number }[])
             },
-            header: true,
-            complete: (results, file) => {
-                const result = results.data as CSVCourse[]
-                resolve(result)
-            },
-            error: (error, file) => {
-                reject(error)
-            }
+            error: (error: Error) => { reject(error) }
         })
     })
 }
 
-const readXLSXFile = (filePath: string, process: "enrollment" | "decision"): Promise<any[]> => {
+const parseXLSX = (filePath: string, process: "enrollment" | "decision"): Promise<any[]> => {
     return new Promise(async (resolve, reject) => {
         try {
             const wb = XLSX.readFile(filePath)
@@ -157,23 +145,29 @@ const removeConfigKey = (key: string): Promise<void> => {
     })
 }
 
-const getDirPaths = (dir: string): Promise<string[]> => {
+const deleteFile = (filePath: string): Promise<void> => {
     return new Promise((resolve, reject) => {
-        const filePaths: string[] = []
-        if (fs.existsSync(dir)) {
-            fs.readdir(dir, (err, files) => {
-                if (err) {
-                    reject(`Couldn't read directory: ${err}`)
-                }
-
-                files.forEach((file) => {
-                    filePaths.push(path.join(dir, file))
-                })
-                resolve(filePaths)
+        if (fs.existsSync(filePath)) {
+            fs.unlink(filePath, (err) => {
+                if (err) { reject(err) }
+                resolve()
             })
-        } else {
-            reject(`Directory ${dir} not found.`)
         }
+    })
+}
+
+const readJSON = (filePath: string): Promise<JSONParse> => {
+    return new Promise((resolve, reject) => {
+        fs.readFile(filePath, (err, data) => {
+            if (err) { reject(err) }
+
+            try {
+                const JSONObj: JSONParse = JSON.parse(data.toString())
+                resolve(JSONObj)
+            } catch (error) {
+                reject(error)
+            }
+        })
     })
 }
 
@@ -184,12 +178,15 @@ export const fileManager = {
         delete: removeConfigKey
     },
     csv: {
-        read: readCSVFile
+        read: parseCSV
     },
     xlsx: {
-        read: readXLSXFile
+        read: parseXLSX
     },
-    dir: {
-        paths: getDirPaths
+    files: {
+        delete: deleteFile
+    },
+    JSON: {
+        read: readJSON
     }
 }

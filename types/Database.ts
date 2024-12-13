@@ -1,7 +1,6 @@
-export type TableHeader = {
+export type SQLHeader = {
     [header: string]: {
         type: string
-        insert: boolean
         csvRef: string | string[]
         foreignKey?: {
             references: string
@@ -13,9 +12,10 @@ export type TableHeader = {
 
 export type Table = {
     [table: string]: {
-        "TableName": string
-        "TableHeaders": TableHeader
+        "CSVName": string
+        "SQLHeaders": SQLHeader
         "CSVHeaders": string[]
+        "CompKey": string[]
         "Indexes": string[]
     }
 }
