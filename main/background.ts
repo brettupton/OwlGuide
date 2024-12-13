@@ -8,13 +8,12 @@ import { matchEnrollment, submitEnrollment } from './processes/enrollment'
 import { getTermDecisions, getFileDecisions, getDecisions } from './processes/decision'
 import { initializeDB, updateTables } from './processes/sql'
 import { apiSearch, formatBookSearch } from './processes/book'
-import { getPredictions } from './utils/lgbModel'
-import { Features } from '../types/LGBModel'
 
 const isProd = process.env.NODE_ENV === 'production'
 
 const iconPath = path.join(__dirname, '..', 'renderer', 'public', 'images', 'owl.ico')
 const appHomeURL = isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`
+let dbLoaded = false
 
 if (isProd) {
   serve({ directory: 'app' })
@@ -60,9 +59,10 @@ app.on('window-all-closed', () => {
 
 // On app initialization, copy DB to read-write directory
 ipcMain.on('initialize', async (event) => {
-  if (isProd) {
+  if (isProd && !dbLoaded) {
     try {
       await initializeDB()
+      dbLoaded = true
     } catch (error) {
       dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `${error}\n\nContact dev for assistance.` })
     }
