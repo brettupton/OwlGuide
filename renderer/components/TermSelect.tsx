@@ -6,7 +6,7 @@ export default function TermSelect({ process, latest }: { process: string, lates
 
     useEffect(() => {
         if (typeof window !== undefined && window.ipc) {
-            window.ipc.send('sql', { method: 'get-terms' })
+            window.ipc.send('main', { process: 'sql', method: 'get-terms' })
 
             window.ipc.on('term-list', (data: { terms: string[] }) => {
                 if (latest) {
@@ -39,7 +39,7 @@ export default function TermSelect({ process, latest }: { process: string, lates
             const term = e.currentTarget.value
             const method = process === 'decision' ? 'get-term-decision' : process === 'course' ? 'get-term-course' : ""
 
-            window.ipc.send(`${process}`, { method: method, data: { term, limit: 30, lastCourse: { ID: 0, Dept: "", Course: "", Section: "" } } })
+            window.ipc.send('main', { process, method, data: { term, limit: 30, lastCourse: { ID: 0, Dept: "", Course: "", Section: "" } } })
         }
     }
 

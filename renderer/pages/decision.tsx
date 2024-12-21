@@ -38,7 +38,7 @@ export default function BuyingDecision() {
       ISBN: isbn,
       Title: title
     })
-    window.ipc.send('decision', { method: 'child-decision', data: { term, isbn, title } })
+    window.ipc.send('child', { process: 'decision', data: { term, isbn, title } })
   }
 
   const handleTabClick = (tab: TableTab) => {

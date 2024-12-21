@@ -39,7 +39,7 @@ export default function BookPage() {
 
     const handleSearch = () => {
         if (searchISBN) {
-            window.ipc.send('book', { method: 'search', data: searchISBN })
+            window.ipc.send('main', { process: 'book', method: 'search', data: searchISBN })
         }
     }
 

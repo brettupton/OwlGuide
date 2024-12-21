@@ -7,63 +7,53 @@ export default function Development() {
     const [totalRows, setTotalRows] = useState<number>(0)
     const [page, setPage] = useState<number>(1)
     const [limit, setLimit] = useState<number>(30)
-    const [username, setUsername] = useState<string>("")
 
     const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
 
-    useEffect(() => {
-        if (typeof window !== 'undefined' && window.ipc) {
-            window.ipc.on('table-page', (reply: { rows: { [field: string]: string }[], total: number }) => {
-                setTable(reply.rows)
-                setTotalRows(reply.total)
-            })
-        }
-    }, [])
+    // useEffect(() => {
+    //     if (typeof window !== 'undefined' && window.ipc) {
+    //         window.ipc.on('table-page', (reply: { rows: { [field: string]: string }[], total: number }) => {
+    //             setTable(reply.rows)
+    //             setTotalRows(reply.total)
+    //         })
+    //     }
+    // }, [])
 
-    const handleTableChoice = (e: ChangeEvent<HTMLSelectElement>) => {
-        const { value } = e.currentTarget
+    // const handleTableChoice = (e: ChangeEvent<HTMLSelectElement>) => {
+    //     const { value } = e.currentTarget
 
-        if (value) {
-            setTableName(value)
-            setPage(1)
-            window.ipc.send('sql', { method: "get-table-page", data: { name: value, offset: 0, limit } })
-        }
-    }
+    //     if (value) {
+    //         setTableName(value)
+    //         setPage(1)
+    //         window.ipc.send('sql', { method: "get-table-page", data: { name: value, offset: 0, limit } })
+    //     }
+    // }
 
-    const handlePageChange = (newPage: number) => {
-        if (newPage > 0 && newPage <= Math.floor(totalRows / 30)) {
-            window.ipc.send('sql', { method: "get-table-page", data: { name: tableName, offset: (newPage - 1), limit } })
-            setPage(newPage)
-        }
-    }
+    // const handlePageChange = (newPage: number) => {
+    //     if (newPage > 0 && newPage <= Math.floor(totalRows / 30)) {
+    //         window.ipc.send('sql', { method: "get-table-page", data: { name: tableName, offset: (newPage - 1), limit } })
+    //         setPage(newPage)
+    //     }
+    // }
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.currentTarget.files) {
             const newPaths: string[] = []
+
             for (const file of Array.from(e.currentTarget.files)) {
                 newPaths.push(file.path)
             }
 
-            window.ipc.send('sql', { method: "update-table", data: { files: newPaths } })
+            window.ipc.send('main', { process: 'sql', method: "update-db", data: { files: newPaths } })
         }
     }
 
     const handleRecreateDB = () => {
-        window.ipc.send('sql', { method: "recreate-db" })
+        window.ipc.send('main', { process: 'sql', method: "recreate-db" })
     }
 
-    const handleUsernameChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const { value } = e.currentTarget
-
-        setUsername(value)
-    }
-
-    const handleUsernameSubmit = () => {
-        window.ipc.send('config', { method: "update", data: { 'username': username } })
-    }
-
-    const handleUserGet = () => {
-        window.ipc.send('config', { method: "get", data: 'username' })
+    const handleWorkerWin = () => {
+        window.ipc.send('worker')
     }
 
     const handleReset = () => {
@@ -74,7 +64,6 @@ export default function Development() {
         setTableName("")
         setTotalRows(0)
         setPage(1)
-        setUsername("")
     }
 
     return (
@@ -89,11 +78,11 @@ export default function Development() {
             {table.length <= 0
                 ?
                 <div className="flex flex-col mt-3 gap-3">
-                    <div className="flex">
+                    {/* <div className="flex">
                         <select
                             id="tables"
                             className="border text-sm rounded-lg block p-1 bg-gray-700 border-gray-600 text-white"
-                            onChange={handleTableChoice}
+                            onChange={}
                             defaultValue={tableName}>
                             <option value="">Select</option>
                             <option>Courses</option>
@@ -103,28 +92,20 @@ export default function Development() {
                             <option>Prices</option>
                             <option>Inventory</option>
                         </select>
-                    </div>
+                    </div> */}
                     <div className="flex">
                         <input type="file" id="csv" multiple onChange={handleFileChange} />
                     </div>
                     <div className="flex">
                         <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleRecreateDB}>Recreate</button>
                     </div>
-                    <div className="flex flex-col">
-                        <div className="flex">
-                            <input type="text" className="rounded text-black p-1" placeholder="Username" onChange={handleUsernameChange} />
-                        </div>
-                        <div className="flex mt-2">
-                            <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleUsernameSubmit}>Submit</button>
-                        </div>
-                    </div>
                     <div className="flex">
-                        <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleUserGet}>Get</button>
+                        <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleWorkerWin}>Worker</button>
                     </div>
                 </div>
                 :
                 <div className="flex flex-col">
-                    <div className="flex">
+                    {/* <div className="flex">
                         <select
                             id="tables"
                             className="border text-sm rounded-lg block w-full p-1 bg-gray-700 border-gray-600 text-white"
@@ -146,7 +127,7 @@ export default function Development() {
                         limit={limit}
                         updatePage={handlePageChange}
                         tableRef={tableRef}
-                    />
+                    /> */}
                 </div>
             }
         </div>

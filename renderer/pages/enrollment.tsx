@@ -17,11 +17,10 @@ CRN     8
 export default function EnrollmentHome() {
     const [enrollment, setEnrollment] = useState<string[][]>([])
     const [needOfferings, setNeedOfferings] = useState<string[][]>([])
-    const [filePath, setFilePath] = useState<string>("")
 
     useEffect(() => {
         if (typeof window !== 'undefined' && window.ipc) {
-            window.ipc.on('enrollment-data', (data: { enrollment: string[][], filePath: string }) => {
+            window.ipc.on('data', (data: { enrollment: string[][] }) => {
                 // Sort by department and course number, then find courses with no offering numbers
                 const sorted = data.enrollment.sort((a, b) => {
                     if (a[1].localeCompare(b[1]) !== 0) {
@@ -34,10 +33,9 @@ export default function EnrollmentHome() {
 
                 setEnrollment(sorted)
                 setNeedOfferings(offerings)
-                setFilePath(data.filePath)
             })
 
-            window.ipc.on('enrl-success', () => {
+            window.ipc.on('success', () => {
                 setEnrollment([])
                 setNeedOfferings([])
             })
@@ -56,7 +54,7 @@ export default function EnrollmentHome() {
     }
 
     const handleSubmit = () => {
-        window.ipc.send('enrollment', { method: 'file-download', data: { enrollment, filePath } })
+        window.ipc.send('main', { process: 'enrollment', method: 'file-download', data: { enrollment } })
     }
 
     return (

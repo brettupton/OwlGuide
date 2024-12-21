@@ -17,15 +17,13 @@ const parseCSV = (filePath: string): Promise<{ [field: string]: string | number 
     })
 }
 
-const parseXLSX = (filePath: string, process: "enrollment" | "decision"): Promise<any[]> => {
+const parseXLSX = (filePath: string): Promise<{ [key: string]: string | number }[]> => {
     return new Promise(async (resolve, reject) => {
         try {
             const wb = XLSX.readFile(filePath)
             const wsname = wb.SheetNames[0]
             let ws = wb.Sheets[wsname]
-            // Decision XLSX has four unncessary rows at beginning of sheet
-            const startingRow = process === "decision" ? 4 : 0
-            let data: any[] = XLSX.utils.sheet_to_json(ws, { range: startingRow })
+            let data: { [key: string]: string | number }[] = XLSX.utils.sheet_to_json(ws)
 
             resolve(data)
         } catch (error) {
@@ -156,13 +154,13 @@ const deleteFile = (filePath: string): Promise<void> => {
     })
 }
 
-const readJSON = (filePath: string): Promise<JSONParse> => {
+const readJSON = (filePath: string): Promise<JSONish> => {
     return new Promise((resolve, reject) => {
         fs.readFile(filePath, (err, data) => {
             if (err) { reject(err) }
 
             try {
-                const JSONObj: JSONParse = JSON.parse(data.toString())
+                const JSONObj: JSONish = JSON.parse(data.toString())
                 resolve(JSONObj)
             } catch (error) {
                 reject(error)

@@ -24,8 +24,9 @@ export default function Course() {
     const updatePage = (newPage: number) => {
         if (newPage >= 0) {
             const latestCourse = courses.at(-1)
-            window.ipc.send('course',
+            window.ipc.send('main',
                 {
+                    process: 'course',
                     method: 'get-term-course',
                     data: { term, limit, lastCourse: { ID: latestCourse.ID, Dept: latestCourse.Dept, Course: latestCourse.Course, Section: latestCourse.Section } }
                 })
@@ -36,7 +37,7 @@ export default function Course() {
 
     const handleRowClick = (courseID: number) => {
         setActiveCourse(courseID)
-        window.ipc.send('course', { method: 'child-course', data: { courseID } })
+        window.ipc.send('child', { process: 'course', data: { courseID } })
     }
 
     return (
