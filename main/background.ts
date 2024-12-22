@@ -5,6 +5,7 @@ import { createWindow, createChildWindow, rightClickMenu } from './electron-util
 import { bSQLDB, paths } from './utils'
 import { bookProcess, courseProcess, decisionProcess, enrollmentProcess, sqlProcess } from './processes'
 import { getIBMTables, initializeDB } from './processes/helpers/sqlDatabase'
+import { logger } from './utils/logger'
 
 const isProd = process.env.NODE_ENV === 'production'
 let dbLoaded = false
@@ -91,51 +92,34 @@ ipcMain.on('close-child', () => {
 })
 
 ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
-  switch (process) {
-    case 'book':
-      try {
+  logger.newLog({ logType: 'main-event', process, method })
+
+  try {
+    switch (process) {
+      case 'book':
         await bookProcess({ event, method, data })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Book", `${error}\n\nContact dev for assistance.`)
-      }
-      break
+        break
 
-    case 'course':
-      try {
+      case 'course':
         await courseProcess({ event, method, data })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Course", `${error}\n\nContact dev for assistance.`)
-      }
-      break
+        break
 
-    case 'decision':
-      try {
+      case 'decision':
         await decisionProcess({ event, method, data })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)
-      }
-      break
+        break
 
-    case 'enrollment':
-      try {
+      case 'enrollment':
         await enrollmentProcess({ event, method, data })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance.`)
-      }
-      break
+        break
 
-    case 'sql':
-      try {
+      case 'sql':
         await sqlProcess({ event, method, data })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("SQL", `${error}\n\nContact dev for assistance.`)
-      }
-      break
+        break
+    }
+  } catch (error) {
+    console.error(error)
+    logger.newLog({ logType: 'main-error', process, method, text: `${error}` })
+    dialog.showErrorBox(`${process.toUpperCase()}`, `${error}\n\nContact dev for assistance.`)
   }
 })
 
