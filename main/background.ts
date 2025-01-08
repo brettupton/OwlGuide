@@ -92,7 +92,7 @@ ipcMain.on('close-child', () => {
 })
 
 ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
-  logger.newLog({ logType: 'main-event', process, method })
+  logger.newLog({ logType: 'main-event', process, method, term: data ? data['term'] as string ?? '' : '' })
 
   try {
     switch (process) {
@@ -119,7 +119,7 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
   } catch (error) {
     console.error(error)
     logger.newLog({ logType: 'main-error', process, method, text: `${error}` })
-    dialog.showErrorBox(`${process.toUpperCase()}`, `${error}\n\nContact dev for assistance.`)
+    dialog.showErrorBox(`${process[0].toUpperCase() + process.slice(1)}`, `${error}\n\nContact dev for assistance.`)
   }
 })
 

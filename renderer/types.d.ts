@@ -7,18 +7,18 @@ declare global {
         [key: string]: string
     }
 
-    type JSONish =
+    type JSObj =
         | string
         | number
         | boolean
-        | { [key: string]: JSONish }
-        | JSONish[]
+        | { [key: string]: JSObj }
+        | JSObj[]
 
     type ProcessArgs = {
         event?: Electron.IpcMainEvent
         process?: string
         method: string
-        data: JSONish
+        data: JSObj
     }
 
 }

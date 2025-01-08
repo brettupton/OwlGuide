@@ -42,7 +42,7 @@ export const getIBMTables = async (userId: string) => {
     const tables = ['ADP001', 'ADP003', 'ADP006', 'MRP008', 'MRP009', 'MRP012']
     const batchPath = path.join(__dirname, '..', 'main', 'processes', 'helpers', 'acsWorker.js')
     const downloadDir = path.join(__dirname, '..', 'tmp')
-    const workerPromises = []
+    const workerPromises: Promise<void>[] = []
 
     tables.forEach((table) => {
         workerPromises.push(newWorker(batchPath, table, { table, userId, downloadDir }))

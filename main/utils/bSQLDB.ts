@@ -419,44 +419,57 @@ const getCoursesByBook = (isbn: string, title: string, term: string, year: strin
     })
 }
 
-const getCoursesByTerm = (term: string, year: string, limit?: number, lastCourse?: { ID: number, Dept: string, Course: string, Section: string }): Promise<{ queryResult: DBRow[], totalRowCount: number }> => {
+const getCoursesByTerm = (term: string, year: string, limit: number, isForward: boolean, isSearch: boolean,
+    pivotCourse: { Dept: string, Course: string, Section: string }): Promise<{ queryResult: DBRow[], totalRows: number }> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
 
-        // Base query
+        const direction = isForward ? '>' : '<'
+        const order = isForward ? '' : ' DESC'
+
+        // 1=1 ensures condition is filled even if not provided 
+        const queryCondition = isSearch ? `AND 
+            (
+                ${pivotCourse.Dept ? "Courses.Dept >= :dept" : "1=1"}
+                AND ${pivotCourse.Course ? "Courses.Course >= :course" : "1=1"}
+                AND ${pivotCourse.Section ? "Courses.Section >= :section" : "1=1"}
+            )`
+            :
+            `AND (Courses.Dept, Courses.Course, Courses.Section) ${direction} (:dept, :course, :section)`
+
         let coursesQuery = `
-            SELECT 
-                Courses.ID, Courses.Dept, 
-                SUBSTR(CONCAT('000', Courses.Course), LENGTH(CONCAT('000', Courses.Course))-3+1, 3) AS Course, 
-                SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3) AS Section, 
-                Courses.Title,
-                Courses.Prof,
-                Courses.EstEnrl,
-                Courses.ActEnrl, 
-                Courses.CRN, 
-                Courses.NoText,
-                CASE 
-                    WHEN EXISTS (SELECT 1 FROM Course_Book WHERE Course_Book.CourseID = Courses.ID) THEN 'Y'
-                    ELSE 'N'
-                END AS Adoptions
-            FROM 
-                Courses
-            WHERE Courses.Term = ?
-                AND Courses.Year = ?
-        `
+                SELECT 
+                    Courses.ID, 
+                    Courses.Dept, 
+                    SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course, 
+                    SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section, 
+                    Courses.Title, 
+                    Courses.Prof, 
+                    Courses.EstEnrl, 
+                    Courses.ActEnrl, 
+                    Courses.NoText, 
+                    CASE 
+                        WHEN EXISTS (SELECT 1 FROM Course_Book WHERE Course_Book.CourseID = Courses.ID) THEN 'Y'
+                        ELSE 'N'
+                    END AS Adopt
+                FROM 
+                    Courses
+                WHERE 
+                    Courses.Term = :term 
+                    AND Courses.Year = :year 
+                    AND Courses.Unit = '1' 
+                    ${queryCondition}
+                ORDER BY 
+                    Courses.Dept${order}, Courses.Course${order}, Courses.Section${order}
+                LIMIT :limit
+            `
 
-        // Only add `Courses.Unit = '1'` and greater than condition if `limit` and `lastCourse` are present
-        const params: (string | number)[] = [term, year]
-        if (lastCourse !== undefined) {
-            coursesQuery += ` AND Courses.Unit = '1'`
-            coursesQuery += ` AND (Courses.Dept, Courses.Course, Courses.Section, Courses.ID) > (?, ?, ?, ?)`
-            coursesQuery += ` ORDER BY Courses.Dept, Courses.Course, Courses.Section, Courses.ID`
-            params.push(lastCourse.Dept, lastCourse.Course, lastCourse.Section, lastCourse.ID)
-
-            if (limit !== undefined) {
-                coursesQuery += ` LIMIT ?`
-                params.push(limit)
-            }
+        // Wrap in a reverse-order query if moving backward
+        if (!isForward) {
+            coursesQuery = `
+                SELECT * FROM (${coursesQuery}) AS Courses 
+                ORDER BY Courses.Dept, Courses.Course, Courses.Section
+            `
         }
 
         try {
@@ -472,10 +485,10 @@ const getCoursesByTerm = (term: string, year: string, limit?: number, lastCourse
                 `)
 
             const transaction = db.transaction(() => {
-                const queryResult = queryStmt.all(...params) as DBRow[]
+                const queryResult = queryStmt.all({ term, year, dept: pivotCourse.Dept, course: pivotCourse.Course, section: pivotCourse.Section, limit }) as DBRow[]
                 const countResult = countStmt.get(term, year) as DBRow
 
-                resolve({ queryResult, totalRowCount: countResult.Count as number })
+                resolve({ queryResult, totalRows: countResult.Count as number })
             })
 
             transaction()

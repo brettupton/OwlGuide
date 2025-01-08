@@ -154,13 +154,13 @@ const deleteFile = (filePath: string): Promise<void> => {
     })
 }
 
-const readJSON = (filePath: string): Promise<JSONish> => {
+const readJSON = (filePath: string): Promise<JSObj> => {
     return new Promise((resolve, reject) => {
         fs.readFile(filePath, (err, data) => {
             if (err) { reject(err) }
 
             try {
-                const JSONObj: JSONish = JSON.parse(data.toString())
+                const JSONObj: JSObj = JSON.parse(data.toString())
                 resolve(JSONObj)
             } catch (error) {
                 reject(error)
