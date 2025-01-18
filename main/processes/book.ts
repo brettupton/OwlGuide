@@ -14,7 +14,7 @@ export const bookProcess = async ({ event, method, data }: ProcessArgs) => {
                 // Join both results
                 const book = formatBookSearch(sqlResults, apiResults)
 
-                event.reply('data', { book })
+                event.reply('book-data', { book })
             } catch (error) {
                 console.error(error)
                 throw error

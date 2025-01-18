@@ -25,10 +25,9 @@ const getDecisions = async (term: string) => {
     }
 }
 
-const getTermDecisions = async (fullTerm: string) => {
+const getTermDecisions = async (termYear: string) => {
     try {
-        const [term = null, year = null] = regex.splitFullTerm(fullTerm) || []
-        if (!term || !year) throw `Unexpected term or year.`
+        const [term, year] = regex.splitFullTerm(termYear)
 
         const termData = await bSQLDB.sales.getPrevSalesByTerm(term, year)
         let decisions: Decision[] = []
@@ -42,8 +41,7 @@ const getTermDecisions = async (fullTerm: string) => {
         })
 
         decisions = decisions.sort((a, b) => a.Title.localeCompare(b.Title))
-
-        return { decisions, term: term + year }
+        return decisions
     } catch (error) {
         throw error
     }
@@ -53,14 +51,14 @@ const calculateDecision = (book: SQLDecision) => {
     // Get previous semester sales over enrollment
     const salesEnrl = book.PrevActEnrl && (book.PrevActEnrl !== 0) ? book.PrevTotalSales / book.PrevActEnrl : 0.2
 
-    // If no current Actual Enrollment, calculate based on past percent change from Estimated to Actual
-    if (book.CurrActEnrl === 0 && book.CurrEstEnrl !== 0) {
-        // Calculate previous percentage change as a multiplier
-        const prevPerChange = book.PrevEstEnrl ? (book.PrevActEnrl - book.PrevEstEnrl) / book.PrevEstEnrl : 0
+    // // If no current Actual Enrollment, calculate based on past percent change from Estimated to Actual
+    // if (book.CurrActEnrl === 0 && book.CurrEstEnrl !== 0) {
+    //     // Calculate previous percentage change as a multiplier
+    //     const prevPerChange = book.PrevEstEnrl ? (book.PrevActEnrl - book.PrevEstEnrl) / book.PrevEstEnrl : 0
 
-        // Apply the percentage change to current estimated enrollment
-        book.CurrActEnrl = Math.round(book.CurrEstEnrl * (1 + prevPerChange))
-    }
+    //     // Apply the percentage change to current estimated enrollment
+    //     book.CurrActEnrl = Math.round(book.CurrEstEnrl * (1 + prevPerChange))
+    // }
 
     const newDec = Math.round(book.CurrActEnrl * salesEnrl)
     const newDecision: Decision = {

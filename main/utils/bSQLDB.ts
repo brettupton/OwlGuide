@@ -168,12 +168,12 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
             const queryStmt = db.prepare(`
                 SELECT 
                     Sales.BookID, Books.ISBN, Books.Title,
-                    SUM(CASE WHEN Sales.Year != :year THEN Sales.TotalEstEnrl ELSE 0 END) AS PrevEstEnrl,
-                    SUM(CASE WHEN Sales.Year != :year THEN Sales.TotalActEnrl ELSE 0 END) AS PrevActEnrl,
+                    SUM(CASE WHEN Sales.Year != :year THEN Sales.EstEnrl ELSE 0 END) AS PrevEstEnrl,
+                    SUM(CASE WHEN Sales.Year != :year THEN Sales.ActEnrl ELSE 0 END) AS PrevActEnrl,
                     SUM(CASE WHEN Sales.Year != :year THEN Sales.UsedSales + Sales.NewSales ELSE 0 END) AS PrevTotalSales,
-                    MAX(CASE WHEN Sales.Year = :year THEN Sales.TotalEstEnrl ELSE NULL END) AS CurrEstEnrl,
-                    MAX(CASE WHEN Sales.Year = :year THEN Sales.TotalActEnrl ELSE NULL END) AS CurrActEnrl,
-                    MAX(CASE WHEN Sales.Year = :year THEN Sales.TotalEstSales ELSE NULL END) AS CurrEstSales
+                    MAX(CASE WHEN Sales.Year = :year THEN Sales.EstEnrl ELSE NULL END) AS CurrEstEnrl,
+                    MAX(CASE WHEN Sales.Year = :year THEN Sales.ActEnrl ELSE NULL END) AS CurrActEnrl,
+                    MAX(CASE WHEN Sales.Year = :year THEN Sales.EstSales ELSE NULL END) AS CurrEstSales
                 FROM 
                     Sales
                 JOIN 
@@ -187,11 +187,9 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
 
             db.close()
             resolve(results)
-
         } catch (error) {
             db.close()
             reject(error)
-            throw error
         }
     })
 }
@@ -285,7 +283,6 @@ const getPrevSalesByBook = (isbn: string, title: string, term: string, year: str
         } catch (error) {
             db.close()
             reject(error)
-            throw error
         }
     })
 }
@@ -331,6 +328,7 @@ const getBookByISBN = (ISBN: string): Promise<DBRow[]> => {
                 JOIN Sales ON Books.ID = Sales.BookID
                 AND ISBN LIKE ?
                 AND Sales.Term NOT IN ('I', 'Q')
+                AND Sales.Unit = '1'
                 ORDER BY Sales.Year DESC, Sales.Term`)
 
             const result = queryStmt.all('%' + ISBN + '%') as DBRow[]
@@ -492,10 +490,9 @@ const getCoursesByTerm = (term: string, year: string, limit: number, isForward: 
             })
 
             transaction()
+            db.close()
         } catch (error) {
             reject(error)
-        } finally {
-            db.close()
         }
     })
 }
@@ -544,7 +541,6 @@ const getAllTerms = (): Promise<DBRow[]> => {
         } catch (error) {
             db.close()
             reject(error)
-            throw error
         }
     })
 }

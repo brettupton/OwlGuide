@@ -2,7 +2,7 @@ import path from 'path'
 import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'electron'
 import serve from 'electron-serve'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
-import { bSQLDB, paths } from './utils'
+import { bSQLDB, fileManager, paths, regex } from './utils'
 import { bookProcess, courseProcess, decisionProcess, enrollmentProcess, sqlProcess } from './processes'
 import { getIBMTables, initializeDB } from './processes/helpers/sqlDatabase'
 import { logger } from './utils/logger'
@@ -92,7 +92,7 @@ ipcMain.on('close-child', () => {
 })
 
 ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
-  logger.newLog({ logType: 'main-event', process, method, term: data ? data['term'] as string ?? '' : '' })
+  logger.newLog({ logType: 'main-event', process, method, term: (data && data['term'] as string) ?? '' })
 
   try {
     switch (process) {
@@ -131,6 +131,37 @@ ipcMain.on('worker', async (event) => {
   }
 })
 
+ipcMain.on('config', async (event, { method, data }) => {
+  switch (method) {
+    case 'write':
+      try {
+        await fileManager.config.write(data.key, data.value, true)
+        console.log("Write Success")
+      } catch (error) {
+        console.error(error)
+      }
+      break
+
+    case 'read':
+      try {
+        const configValue = await fileManager.config.read(data.key, true)
+        console.log(configValue)
+      } catch (error) {
+        console.error(error)
+      }
+      break
+
+    case 'delete':
+      try {
+        await fileManager.config.delete(data.key)
+        console.log("Delete Success")
+      } catch (error) {
+        console.error(error)
+      }
+      break
+  }
+})
+
 ipcMain.on('child', async (event, { process, data }) => {
   switch (process) {
     case 'course':
@@ -153,7 +184,7 @@ ipcMain.on('child', async (event, { process, data }) => {
           childWindow = await createChildWindow(mainWindow, "decision-data", "right")
         }
 
-        const [term, year] = data.term.match(/[a-zA-z]|\d+/g)
+        const [term, year] = regex.splitFullTerm(data.term)
         const salesHistory = await bSQLDB.sales.getPrevSalesByBook(data.isbn, data.title, term, year)
         const courses = await bSQLDB.courses.getCoursesByBook(data.isbn, data.title, term, year)
 

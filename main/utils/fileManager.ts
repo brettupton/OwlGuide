@@ -32,20 +32,15 @@ const parseXLSX = (filePath: string): Promise<{ [key: string]: string | number }
     })
 }
 
-const updateConfig = (key: string, value: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        // Convert key and value to encrypted buffer
-        const keyBuffer = safeStorage.encryptString(key)
-        const valBuffer = safeStorage.encryptString(value)
-
-        // Convert buffers to base64 string for JSON parse later
-        const keyEncode = keyBuffer.toString('base64')
-        const valEncode = valBuffer.toString('base64')
-
-        console.log(`Key: ${key}; Value: ${value}; Key-Encode: ${keyEncode}; Val-Encode: ${valEncode}`)
+const updateConfigValue = (key: string, value: string, encrypt: boolean): Promise<void> => {
+    return new Promise(async (resolve, reject) => {
+        if (encrypt) {
+            // Encryption to a buffer then convert to base64 string (allows for JSON storage)
+            value = safeStorage.encryptString(value).toString('base64')
+        }
 
         if (!fs.existsSync(paths.configPath)) {
-            const config: Config = { [keyEncode]: valEncode }
+            const config: Config = { [key]: value }
 
             fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
                 if (err) {
@@ -54,63 +49,38 @@ const updateConfig = (key: string, value: string): Promise<void> => {
                 resolve()
             })
         } else {
-            // Config file exists and only need to update key value
-            fs.readFile(paths.configPath, 'utf-8', (err, data) => {
-                if (err) {
-                    reject(`Couldn't read config: ${err}`)
-                }
-                let keyFound = false
-                const config: Config = JSON.parse(data)
+            try {
+                const config = await readJSON(paths.configPath)
+                config[key] = value
 
-                for (const configKey in config) {
-                    // Decode key buffer from JSON to check against key needed
-                    const configBuffer = Buffer.from(configKey, 'base64')
-                    const configDecode = safeStorage.decryptString(configBuffer)
-
-                    console.log(`Key: ${configKey}; Decode: ${configDecode}`)
-
-                    if (configDecode === key) {
-                        config[configKey] = valEncode
-                        keyFound = true
-                    }
-                }
-                // If key not found in loop, create new value in config
-                if (!keyFound) {
-                    config[keyEncode] = valEncode
-                }
                 fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
                     if (err) {
-                        reject(`Error writing ${key} to config: ${err}`)
+                        throw new Error(`${err}`)
                     }
                     resolve()
                 })
-            })
+            } catch (error) {
+                reject(`Error writing ${key} to config: ${error}`)
+            }
         }
     })
 }
 
-const getConfigValue = (key: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
+const getConfigValue = (key: string, decrypt: boolean): Promise<string> => {
+    return new Promise(async (resolve, reject) => {
         if (fs.existsSync(paths.configPath)) {
-            fs.readFile(paths.configPath, 'utf-8', (err, data) => {
-                if (err) { reject(`Couldn't read config: ${err}`) }
-                const config: Config = JSON.parse(data)
+            try {
+                const config = await readJSON(paths.configPath)
 
-                for (const keyEncode in config) {
-                    // Decode key buffer from JSON to check against key needed
-                    const keyBuffer = Buffer.from(keyEncode, 'base64')
-                    const keyDecode = safeStorage.decryptString(keyBuffer)
-
-                    if (keyDecode === key) {
-                        // Decode value from found key
-                        const valBuffer = Buffer.from(config[keyEncode], 'base64')
-
-                        resolve(safeStorage.decryptString(valBuffer))
-                    }
+                if (decrypt && config[key]) {
+                    const valBuffer = Buffer.from(config[key], 'base64')
+                    resolve(safeStorage.decryptString(valBuffer))
+                } else {
+                    resolve(config[key])
                 }
-                // If we reach the end of the loop, key doesn't exist
-                reject(`${key} does not exist in config.`)
-            })
+            } catch (error) {
+                reject(`Config error: ${error}`)
+            }
         } else {
             reject('Config does not exist.')
         }
@@ -134,6 +104,7 @@ const removeConfigKey = (key: string): Promise<void> => {
                         resolve()
                     })
                 } catch (error) {
+                    console.error(error)
                     reject(`Couldn't delete ${key} from config.`)
                 }
             })
@@ -172,7 +143,7 @@ const readJSON = (filePath: string): Promise<JSObj> => {
 export const fileManager = {
     config: {
         read: getConfigValue,
-        write: updateConfig,
+        write: updateConfigValue,
         delete: removeConfigKey
     },
     csv: {

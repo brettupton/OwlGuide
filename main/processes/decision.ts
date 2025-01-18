@@ -1,11 +1,11 @@
-import { getDecisions } from "./helpers/buyDecision"
+import { getDecisions, getTermDecisions } from "./helpers/buyDecision"
 
 export const decisionProcess = async ({ event, method, data }: ProcessArgs) => {
     switch (method) {
         case "get-term-decision":
             try {
                 if (typeof data === 'object' && !Array.isArray(data)) {
-                    const decisions = await getDecisions(data.term as string)
+                    const decisions = await getTermDecisions(data.term as string)
                     event.reply('decision-data', { decisions, term: data.term })
                 } else {
                     throw "Unexpected data value received from renderer."

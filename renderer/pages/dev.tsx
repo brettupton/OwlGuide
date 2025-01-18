@@ -1,40 +1,13 @@
-import React, { ChangeEvent, MutableRefObject, useEffect, useRef, useState } from 'react'
-import { PageTable } from '../components'
+import React, { ChangeEvent, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function Development() {
-    const [table, setTable] = useState<{ [field: string]: string }[]>([])
-    const [tableName, setTableName] = useState<string>("")
-    const [totalRows, setTotalRows] = useState<number>(0)
-    const [page, setPage] = useState<number>(1)
-    const [limit, setLimit] = useState<number>(30)
+    const [writeKey, setWriteKey] = useState<string>("")
+    const [writeValue, setWriteValue] = useState<string>("")
+    const [readKey, setReadKey] = useState<string>("")
+    const [deleteKey, setDeleteKey] = useState<string>("")
 
-    const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
-
-    // useEffect(() => {
-    //     if (typeof window !== 'undefined' && window.ipc) {
-    //         window.ipc.on('table-page', (reply: { rows: { [field: string]: string }[], total: number }) => {
-    //             setTable(reply.rows)
-    //             setTotalRows(reply.total)
-    //         })
-    //     }
-    // }, [])
-
-    // const handleTableChoice = (e: ChangeEvent<HTMLSelectElement>) => {
-    //     const { value } = e.currentTarget
-
-    //     if (value) {
-    //         setTableName(value)
-    //         setPage(1)
-    //         window.ipc.send('sql', { method: "get-table-page", data: { name: value, offset: 0, limit } })
-    //     }
-    // }
-
-    // const handlePageChange = (newPage: number) => {
-    //     if (newPage > 0 && newPage <= Math.floor(totalRows / 30)) {
-    //         window.ipc.send('sql', { method: "get-table-page", data: { name: tableName, offset: (newPage - 1), limit } })
-    //         setPage(newPage)
-    //     }
-    // }
+    const router = useRouter()
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.currentTarget.files) {
@@ -48,22 +21,45 @@ export default function Development() {
         }
     }
 
-    const handleRecreateDB = () => {
-        window.ipc.send('main', { process: 'sql', method: "recreate-db" })
-    }
-
     const handleWorkerWin = () => {
         window.ipc.send('worker')
     }
 
+    const handleKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.currentTarget
+        setWriteKey(value)
+    }
+
+    const handleValueChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.currentTarget
+        setWriteValue(value)
+    }
+
+    const handleReadKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.currentTarget
+        setReadKey(value)
+    }
+
+    const handleDelKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.currentTarget
+        setDeleteKey(value)
+    }
+
+    const handleConfigSubmit = () => {
+        window.ipc.send('config', { method: 'write', data: { key: writeKey, value: writeValue } })
+    }
+
+    const handleConfigRead = () => {
+        window.ipc.send('config', { method: 'read', data: { key: readKey } })
+    }
+
+    const handleConfigDelete = () => {
+        window.ipc.send('config', { method: 'delete', data: { key: deleteKey } })
+    }
+
+
     const handleReset = () => {
-        if (document.getElementById('csv')) {
-            (document.getElementById('csv') as HTMLInputElement).value = ""
-        }
-        setTable([])
-        setTableName("")
-        setTotalRows(0)
-        setPage(1)
+        router.refresh()
     }
 
     return (
@@ -75,61 +71,52 @@ export default function Development() {
                     </svg>
                 </button>
             </div>
-            {table.length <= 0
-                ?
-                <div className="flex flex-col mt-3 gap-3">
-                    {/* <div className="flex">
-                        <select
-                            id="tables"
-                            className="border text-sm rounded-lg block p-1 bg-gray-700 border-gray-600 text-white"
-                            onChange={}
-                            defaultValue={tableName}>
-                            <option value="">Select</option>
-                            <option>Courses</option>
-                            <option>Books</option>
-                            <option>Sales</option>
-                            <option>Course_Book</option>
-                            <option>Prices</option>
-                            <option>Inventory</option>
-                        </select>
-                    </div> */}
+            <div className="flex flex-col mt-3 gap-3">
+                <div className="flex">
+                    <input type="file" id="csv" multiple onChange={handleFileChange} />
+                </div>
+                <div className="flex">
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleWorkerWin}>Worker</button>
+                </div>
+                <div className="flex">
+                    <span className="underline underline-offset-8">Config</span>
+                </div>
+                <div className="flex w-1/4">
+                    <input
+                        placeholder="Key"
+                        className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
+                        onChange={handleReadKeyChange} />
+                </div>
+                <div className="flex">
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleConfigRead}>Read</button>
+                </div>
+                <div className="flex w-1/4">
+                    <input
+                        placeholder="Key"
+                        className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
+                        onChange={handleDelKeyChange} />
+                </div>
+                <div className="flex">
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleConfigDelete}>Delete</button>
+                </div>
+                <div className="flex">
                     <div className="flex">
-                        <input type="file" id="csv" multiple onChange={handleFileChange} />
+                        <input
+                            placeholder="Key"
+                            className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
+                            onChange={handleKeyChange} />
                     </div>
                     <div className="flex">
-                        <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleRecreateDB}>Recreate</button>
-                    </div>
-                    <div className="flex">
-                        <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleWorkerWin}>Worker</button>
+                        <input
+                            placeholder="Value"
+                            className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
+                            onChange={handleValueChange} />
                     </div>
                 </div>
-                :
-                <div className="flex flex-col">
-                    {/* <div className="flex">
-                        <select
-                            id="tables"
-                            className="border text-sm rounded-lg block w-full p-1 bg-gray-700 border-gray-600 text-white"
-                            onChange={handleTableChoice}
-                            defaultValue={tableName}>
-                            <option value="">Select</option>
-                            <option>Courses</option>
-                            <option>Books</option>
-                            <option>Sales</option>
-                            <option>Course_Book</option>
-                            <option>Prices</option>
-                            <option>Inventory</option>
-                        </select>
-                    </div>
-                    <PageTable
-                        pageData={table}
-                        totalRows={totalRows}
-                        page={page}
-                        limit={limit}
-                        updatePage={handlePageChange}
-                        tableRef={tableRef}
-                    /> */}
+                <div className="flex">
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleConfigSubmit}>Write</button>
                 </div>
-            }
+            </div>
         </div>
     )
 }
