@@ -2,20 +2,15 @@ import Database from "better-sqlite3"
 import fs from 'fs'
 import tables from "../db/tables"
 import { regex, paths, fileManager } from "./"
-import { SQLHeader } from "../../types/Database"
+import { TableData, TableName, Column } from "../../types/Database"
 
 const createDB = async (): Promise<void[]> => {
-    if (fs.existsSync(paths.dbPath)) {
-        await fileManager.files.delete(paths.dbPath)
-    }
-
     return await Promise.all(
         Object.keys(tables).map((tableName): Promise<void> => {
             return new Promise((resolve, reject) => {
-                const db = new Database(paths.dbPath)
-                const table = tables[tableName as keyof typeof tables]
-                const sqlHeader = table["SQLHeaders"]
-                const tableSchema = buildTableSchema(sqlHeader, table["CompKey"], false)
+                const db = new Database('./owlguide.db')
+                const table = tables[tableName as TableName]
+                const tableSchema = buildTableSchema(table, false)
 
                 db.prepare(`DROP TABLE IF EXISTS ${tableName}`).run()
                 db.prepare(`CREATE TABLE IF NOT EXISTS ${tableName} ${tableSchema}`).run()
@@ -44,11 +39,14 @@ const createDB = async (): Promise<void[]> => {
         }))
 }
 
-const buildTableSchema = (sqlHeader: SQLHeader, compKey: string[], update: boolean) => {
-    const columns = Object.entries(sqlHeader)
+const buildTableSchema = (table: TableData, isSync: boolean) => {
+    const compKey = table["CompKey"]
+    // Map each column key with its associated type
+    const columns = Object.entries(table["Columns"])
         .map(([key, { type }]) => `${key} ${type}`)
         .join(", ")
-    const foreignKeys = Object.entries(sqlHeader)
+    // Map foreign keys with its references & onDelete and onUpdate properties
+    const foreignKeys = Object.entries(table["Columns"])
         .map(([key, { foreignKey }]) => {
             return foreignKey
                 ? `FOREIGN KEY (${key}) REFERENCES ${foreignKey.references}` +
@@ -59,11 +57,12 @@ const buildTableSchema = (sqlHeader: SQLHeader, compKey: string[], update: boole
         .filter(Boolean)
         .join(", ")
 
-    return `(${columns}${!update && foreignKeys ? `, ${foreignKeys}` : ""}${!update && compKey.length > 0 ? `, PRIMARY KEY (${compKey.join(", ")})` : ""})`
+    // Syncing table doesn't require including foreign or primary keys
+    return `(${columns}${!isSync && foreignKeys ? `, ${foreignKeys}` : ""}${!isSync && compKey.length > 0 ? `, PRIMARY KEY (${compKey.join(", ")})` : ""})`
         .replace(/,\s*$/, "")
 }
 
-const buildInsertStmt = (tableName: string, sqlHeader: SQLHeader, compKey: string[], temp: boolean) => {
+const buildInsertStmt = (tableName: string, sqlHeader: Column, compKey: string[], temp: boolean) => {
     const insertKeys = Object.keys(sqlHeader)
     const placeholders = insertKeys.map(() => "?").join(", ")
     const conflictKeys = compKey.length > 0
@@ -112,8 +111,8 @@ const updateDB = async (files: string[]) => {
     for (const tableName of Object.keys(tables)) {
         await new Promise<void>(async (resolve, reject) => {
             const table = tables[tableName as keyof typeof tables]
-            const sqlHeader: SQLHeader = table["SQLHeaders"]
-            const tableSchema = buildTableSchema(sqlHeader, table["CompKey"], true)
+            const sqlHeader: Column = table["Columns"]
+            const tableSchema = buildTableSchema(table, true)
 
             db.prepare(`DROP TABLE IF EXISTS temp_${tableName}`).run()
             db.prepare(`CREATE TEMP TABLE temp_${tableName} ${tableSchema}`).run()
@@ -149,11 +148,35 @@ const updateDB = async (files: string[]) => {
     db.close()
 }
 
-const mapCSVHeader = (sqlHeader: SQLHeader, csvHeader: string[], row: { [field: string]: string | number }) => {
+const buildSelectStmt = async (table: TableData) => {
+    let statement = 'SELECT'
+    const tableCols = Object.keys(table['Columns'])
+    const [insertRef, updateRef] = table['InsertUpdate']
+    const lastUpdate = await fileManager.config.read('lastDBUpdate', false)
+
+    for (let i = 0; i < tableCols.length; i++) {
+        const col = tableCols[i]
+        let ref = table['Columns'][col]['bncRef']
+
+        // If not at end of columns array, append comma after reference
+        // If reference is an array, join elements 
+        statement += ` ${Array.isArray(ref) ? ref.join(', ') : ref}${(i + 1) < tableCols.length ? ',' : ''}`
+    }
+
+    statement += ` FROM T2DB00622.${table['BNCName']}`
+
+    // Diverge into two statements: one where ROW CHANGE TIMESTAMP exists and one where it doesn't
+    const rowChangeStmt = statement + ` WHERE ROW_CHANGE_TIMESTAMP >= TIMESTAMP('${lastUpdate}')`
+    const insertUpdateStmt = statement + ` WHERE ${insertRef} >= TIMESTAMP('${lastUpdate}') OR ${updateRef} >= TIMESTAMP('${lastUpdate}')`
+
+    return [statement, rowChangeStmt, insertUpdateStmt]
+}
+
+const mapCSVHeader = (sqlHeader: Column, csvHeader: string[], row: { [field: string]: string | number }) => {
     const values = Object.keys(sqlHeader).map(key => {
-        const csvRefIndex = Array.isArray(sqlHeader[key].csvRef)
-            ? sqlHeader[key]["csvRef"].map((ref) => csvHeader.findIndex((header) => header === ref))
-            : csvHeader.findIndex((header) => header === sqlHeader[key].csvRef)
+        const csvRefIndex = Array.isArray(sqlHeader[key].bncRef)
+            ? sqlHeader[key].bncRef.map((ref) => csvHeader.findIndex((header) => header === ref))
+            : csvHeader.findIndex((header) => header === sqlHeader[key].bncRef)
         return Array.isArray(csvRefIndex) ? csvRefIndex.map(index => row[index] || "").join("") : row[csvRefIndex]
     })
 
@@ -578,7 +601,7 @@ const getTablePage = (name: string, offset: number, limit: number): Promise<{ qu
 }
 
 export const bSQLDB = {
-    all: { createDB, updateDB, getAllTerms, getTablePage },
+    all: { createDB, updateDB, buildSelectStmt, getAllTerms, getTablePage },
     sales: { getPrevSalesByTerm, getPrevSalesByBook, getTermModelFeatures },
     books: { getBooksByTerm, getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm }

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { MutableRefObject } from 'react'
 
 interface HeaderProps {
-    isMenuOpen: boolean
+    isHeaderMenuOpen: boolean
     handleMenuToggle: () => void
     isChildWindow: boolean
     isHelpMenuOpen: boolean
@@ -12,7 +12,7 @@ interface HeaderProps {
     HeaderMenuRef: MutableRefObject<any>
 }
 
-export default function Header({ isMenuOpen, handleMenuToggle, isChildWindow, isHelpMenuOpen, handleHelpMenuToggle, appVer, HeaderMenuRef }: HeaderProps) {
+export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWindow, isHelpMenuOpen, handleHelpMenuToggle, appVer, HeaderMenuRef }: HeaderProps) {
     const handleMinimize = () => {
         window.ipc.send('minimize-app')
     }
@@ -65,7 +65,7 @@ export default function Header({ isMenuOpen, handleMenuToggle, isChildWindow, is
                     </div>
                 </div>
                 <div
-                    className={`absolute text-black font-medium top-full left-10 mt-2 bg-white border border-gray-300 shadow-lg rounded-md ${isMenuOpen ? 'block' : 'hidden'}`}
+                    className={`absolute text-black font-medium top-full left-10 mt-2 bg-white border border-gray-300 shadow-lg rounded-md ${isHeaderMenuOpen ? 'block' : 'hidden'}`}
                     style={{ zIndex: 50 }} >
                     <Link href="/home">
                         <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Home</div>

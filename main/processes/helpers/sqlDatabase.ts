@@ -2,6 +2,8 @@ import { bSQLDB, paths } from "../../utils"
 import fs from 'fs'
 import path from 'path'
 import { newWorker } from "../worker"
+import tables from "../../db/tables"
+import { TableData } from "../../../types/Database"
 
 export const updateDB = async (files: string[]) => {
     if (files.length === 6) {
@@ -39,15 +41,25 @@ export const initializeDB = async (): Promise<void> => {
 }
 
 export const getIBMTables = async (userId: string) => {
-    const tables = ['ADP001', 'ADP003', 'ADP006', 'MRP008', 'MRP009', 'MRP012']
+    const sqlTables = Object.keys(tables)
     const batchPath = path.join(__dirname, '..', 'main', 'processes', 'helpers', 'acsWorker.js')
     const downloadDir = path.join(__dirname, '..', 'tmp')
     const workerPromises: Promise<void>[] = []
 
-    tables.forEach((table) => {
-        workerPromises.push(newWorker(batchPath, table, { table, userId, downloadDir }))
+    sqlTables.forEach(async (tableName) => {
+        const table = tables[tableName] as TableData
+        const [stmt, rowChangeStmt, insertUpdateStmt] = await bSQLDB.all.buildSelectStmt(table)
+        workerPromises.push(newWorker(batchPath, tableName, { tableName: table.BNCName, sqlStmt: insertUpdateStmt, userId, downloadDir }))
     })
 
+    try {
+        const wrkrResults = await Promise.allSettled(workerPromises)
+        const rejectArr = wrkrResults.filter((promise) => promise.status === "rejected")
+
+        console.log(rejectArr)
+    } catch (error) {
+        throw error
+    }
     const results = await Promise.allSettled(workerPromises)
 
     return results

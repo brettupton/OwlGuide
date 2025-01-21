@@ -102,4 +102,22 @@ const usedBarcodeToISBN = (isbn: string | number) => {
     return newISBN
 }
 
-export const regex = { matchFileName, matchFileTermYear, splitFullTerm, createSearchISBN, toProperCase, usedBarcodeToISBN }
+const db2TimeToLocal = (db2: string) => {
+    // Convert IBM Db2 timestamp to ISO (YYYY-MM-DDTHH:mm:ssZ) to convert to Date string
+    const iso = db2.substring(0, db2.lastIndexOf('-')) + 'T' + db2.substring(db2.lastIndexOf('-') + 1).slice(0, 8).replace(/[\.]/g, ':') + 'Z'
+    return new Date(iso).toLocaleString()
+}
+
+const ISOtoDb2Time = (iso: string) => {
+    return iso.replace('T', '-').replace(/:/g, '.').replace('Z', '').slice(0, 26) + '000'
+}
+
+export const regex = {
+    matchFileName,
+    matchFileTermYear,
+    splitFullTerm,
+    createSearchISBN,
+    toProperCase,
+    usedBarcodeToISBN,
+    db2TimeToLocal
+}

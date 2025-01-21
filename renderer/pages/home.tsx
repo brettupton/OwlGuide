@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 
-export default function HomePage({ isDev }) {
+export default function HomePage() {
   const routes = ['course', 'book', 'decision', 'enrollment']
   const plurals = ['course', 'decision', 'book']
 

@@ -4,34 +4,41 @@ import { useRouter } from 'next/router'
 
 import '../styles/globals.css'
 import Header from '../components/Header'
+import Footer from '../components/Footer'
+import Login from '../components/Login'
 
 function App({ Component, pageProps }: AppProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false)
+  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState<boolean>(false)
   const [isHelpMenuOpen, setIsHelpMenuOpen] = useState<boolean>(false)
+  const [isLoginMenuOpen, setIsLoginMenuOpen] = useState<boolean>(false)
   const [isChildWindow, setIsChildWindow] = useState<boolean>(false)
-  const [isDev, setIsDev] = useState<boolean>(false)
   const [appVer, setAppVer] = useState<string>("")
+  const [dbUpdateTime, setDBUpdateTime] = useState<string>("")
 
   const handleMenuToggle = () => {
-    setIsMenuOpen(!isMenuOpen)
+    setIsHeaderMenuOpen(!isHeaderMenuOpen)
   }
 
   const handleHelpMenuToggle = () => {
     setIsHelpMenuOpen(!isHelpMenuOpen)
   }
 
-  const HeaderMenuRef = useRef(null)
+  const handleLoginMenuToggle = () => {
+    setIsLoginMenuOpen(!isLoginMenuOpen)
+  }
 
+  const HeaderMenuRef = useRef(null)
+  const LoginMenuRef = useRef(null)
   const router = useRouter()
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ipc) {
-      window.ipc.send('initialize')
+      window.ipc.send('main', { process: 'app', method: 'get-values' })
     }
 
-    window.ipc.on('initialize-success', (reply: { isDev: boolean, appVer: string }) => {
-      setIsDev(reply.isDev)
-      setAppVer(reply.appVer)
+    window.ipc.on('appData', ({ appVer, lastDBUpdate }: { appVer: string, lastDBUpdate: string }) => {
+      setAppVer(appVer)
+      setDBUpdateTime(lastDBUpdate)
     })
 
     const handleContextMenu = (event: MouseEvent) => {
@@ -47,8 +54,12 @@ function App({ Component, pageProps }: AppProps) {
 
     const handleClickOutsideMenu = (event: MouseEvent) => {
       if (HeaderMenuRef.current && !HeaderMenuRef.current.contains(event.target)) {
-        setIsMenuOpen(false)
+        setIsHeaderMenuOpen(false)
         setIsHelpMenuOpen(false)
+      }
+
+      if (LoginMenuRef.current && !LoginMenuRef.current.contains(event.target)) {
+        setIsLoginMenuOpen(false)
       }
     }
 
@@ -66,7 +77,7 @@ function App({ Component, pageProps }: AppProps) {
       window.ipc.send('close-child')
     }
 
-    setIsMenuOpen(false)
+    setIsHeaderMenuOpen(false)
     setIsChildWindow(router.pathname.startsWith('/child'))
 
     router.events.on('routeChangeStart', handleCloseChild)
@@ -79,15 +90,22 @@ function App({ Component, pageProps }: AppProps) {
   return (
     <div className="flex flex-col h-screen">
       <Header
-        isMenuOpen={isMenuOpen}
+        isHeaderMenuOpen={isHeaderMenuOpen}
         handleMenuToggle={handleMenuToggle}
         isHelpMenuOpen={isHelpMenuOpen}
         handleHelpMenuToggle={handleHelpMenuToggle}
         isChildWindow={isChildWindow}
         appVer={appVer}
         HeaderMenuRef={HeaderMenuRef} />
-      <Component {...pageProps}
-        isDev={isDev} />
+      <Component {...pageProps} />
+      <Login
+        isLoginMenuOpen={isLoginMenuOpen}
+        handleLoginMenuToggle={handleLoginMenuToggle}
+        LoginMenuRef={LoginMenuRef} />
+      <Footer
+        syncDB={handleLoginMenuToggle}
+        dbUpdateTime={dbUpdateTime}
+      />
     </div>
   )
 }

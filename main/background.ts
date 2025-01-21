@@ -6,8 +6,9 @@ import { bSQLDB, fileManager, paths, regex } from './utils'
 import { bookProcess, courseProcess, decisionProcess, enrollmentProcess, sqlProcess } from './processes'
 import { getIBMTables, initializeDB } from './processes/helpers/sqlDatabase'
 import { logger } from './utils/logger'
+import { appProcess } from './processes/app'
 
-const isProd = process.env.NODE_ENV === 'production'
+export const isProd = process.env.NODE_ENV === 'production'
 let dbLoaded = false
 
 if (isProd) {
@@ -50,7 +51,7 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-// On app initialization, copy DB to read-write directory
+// On app initialization, create DB in read-write directory
 ipcMain.on('initialize', async (event) => {
   if (isProd && !dbLoaded) {
     try {
@@ -60,7 +61,7 @@ ipcMain.on('initialize', async (event) => {
       dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `${error}\n\nContact dev for assistance.` })
     }
   }
-  event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion() })
+  event.reply('initialize-success', {})
 })
 
 // Header Processes
@@ -96,6 +97,10 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
 
   try {
     switch (process) {
+      case 'app':
+        await appProcess({ event, method, data })
+        break
+
       case 'book':
         await bookProcess({ event, method, data })
         break
