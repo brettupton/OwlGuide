@@ -22,7 +22,7 @@ export default function Development() {
     }
 
     const handleWorkerWin = () => {
-        window.ipc.send('worker')
+        window.ipc.send('acs')
     }
 
     const handleKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -76,7 +76,7 @@ export default function Development() {
                     <input type="file" id="csv" multiple onChange={handleFileChange} />
                 </div>
                 <div className="flex">
-                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleWorkerWin}>Worker</button>
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleWorkerWin}>ACS</button>
                 </div>
                 <div className="flex">
                     <span className="underline underline-offset-8">Config</span>

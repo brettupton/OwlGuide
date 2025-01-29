@@ -1,5 +1,5 @@
-import { bSQLDB } from "../utils"
-import { updateDB, initializeDB } from "./helpers/sqlDatabase"
+import { bSQLDB, fileManager, paths } from "../utils"
+import { updateDB, initializeDB, getIBMTables } from "./helpers/sqlDatabase"
 
 export const sqlProcess = async ({ event, method, data }: ProcessArgs) => {
     switch (method) {
@@ -13,20 +13,15 @@ export const sqlProcess = async ({ event, method, data }: ProcessArgs) => {
             break
 
         case "update-db":
-            console.log("Updating tables.")
+            try {
+                const { userId, password } = data["userInfo"]
+                await getIBMTables(userId, password)
+                // getIBMTables loads tables into temp directory
+                const files = await fileManager.files.names(paths.tempPath)
 
-            if (typeof data === 'object') {
-                const files = data["files"] as string[]
-
-                try {
-                    const timeStart = Date.now()
-                    await updateDB(files)
-                    const timeEnd = Date.now()
-
-                    console.log(`Tables updated in ${(timeEnd - timeStart) / 1000}s`)
-                } catch (error) {
-                    throw error
-                }
+                await updateDB(files)
+            } catch (error) {
+                throw error
             }
             break
 

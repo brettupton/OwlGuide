@@ -33,9 +33,19 @@ let tray: Tray
       },
     })
 
-    // Tray Icon
     tray = new Tray(nativeImage.createFromPath(paths.iconPath).resize({ width: 16 }))
     tray.setToolTip('OwlGuide')
+
+    // Check app version to determine if database needs to be created/recreated
+    const appVer = await fileManager.config.read('appVersion', false)
+    if (isProd && appVer !== app.getVersion()) {
+      try {
+        await bSQLDB.all.createDB()
+        await fileManager.config.write('appVersion', app.getVersion(), false)
+      } catch (error) {
+        dialog.showErrorBox('Database Error', `${error}\n\nContact dev for assistance.`)
+      }
+    }
 
     await mainWindow.loadURL(isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`)
 
@@ -49,19 +59,6 @@ let tray: Tray
 
 app.on('window-all-closed', () => {
   app.quit()
-})
-
-// On app initialization, create DB in read-write directory
-ipcMain.on('initialize', async (event) => {
-  if (isProd && !dbLoaded) {
-    try {
-      await initializeDB()
-      dbLoaded = true
-    } catch (error) {
-      dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `${error}\n\nContact dev for assistance.` })
-    }
-  }
-  event.reply('initialize-success', {})
 })
 
 // Header Processes
@@ -128,9 +125,9 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
   }
 })
 
-ipcMain.on('worker', async (event) => {
+ipcMain.on('acs', async (event) => {
   try {
-    console.log(await getIBMTables('1234'))
+    await getIBMTables('1234', '1234')
   } catch (error) {
     console.error(error)
   }
@@ -140,7 +137,7 @@ ipcMain.on('config', async (event, { method, data }) => {
   switch (method) {
     case 'write':
       try {
-        await fileManager.config.write(data.key, data.value, true)
+        await fileManager.config.write(data.key, data.value, false)
         console.log("Write Success")
       } catch (error) {
         console.error(error)
@@ -149,7 +146,7 @@ ipcMain.on('config', async (event, { method, data }) => {
 
     case 'read':
       try {
-        const configValue = await fileManager.config.read(data.key, true)
+        const configValue = await fileManager.config.read(data.key, false)
         console.log(configValue)
       } catch (error) {
         console.error(error)

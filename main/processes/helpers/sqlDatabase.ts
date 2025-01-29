@@ -1,9 +1,9 @@
 import { bSQLDB, paths } from "../../utils"
 import fs from 'fs'
 import path from 'path'
-import { newWorker } from "../worker"
 import tables from "../../db/tables"
 import { TableData } from "../../../types/Database"
+import { spawn } from "child_process"
 
 export const updateDB = async (files: string[]) => {
     if (files.length === 6) {
@@ -40,27 +40,54 @@ export const initializeDB = async (): Promise<void> => {
     })
 }
 
-export const getIBMTables = async (userId: string) => {
-    const sqlTables = Object.keys(tables)
-    const batchPath = path.join(__dirname, '..', 'main', 'processes', 'helpers', 'acsWorker.js')
+export const getIBMTables = async (userId: string, password: string) => {
     const downloadDir = path.join(__dirname, '..', 'tmp')
-    const workerPromises: Promise<void>[] = []
+    const acsExec = `"C:\\Users\\Public\\IBM\\ClientSolutions\\Start_Programs\\Windows_i386-32\\acslaunch_win-32.exe"`
+    const tablePromises: Promise<void>[] = []
 
-    sqlTables.forEach(async (tableName) => {
+    Object.keys(tables).forEach(async (tableName) => {
         const table = tables[tableName] as TableData
-        const [stmt, rowChangeStmt, insertUpdateStmt] = await bSQLDB.all.buildSelectStmt(table)
-        workerPromises.push(newWorker(batchPath, tableName, { tableName: table.BNCName, sqlStmt: insertUpdateStmt, userId, downloadDir }))
+        const statement = bSQLDB.all.buildSelectStmt(table)
+        const clientFile = `${downloadDir}/${tableName}.csv`
+        const command = `${acsExec} /plugin=cldownload /system=${process.env.IBM_SYSTEM_HOST} /sql="${statement}" /clientfile="${clientFile}"`
+        const devBatch = path.join(__dirname, '..', 'main', 'db', 'dev-acs.bat')
+
+        tablePromises.push(new Promise((resolve, reject) => {
+            const acsProcess = spawn(command, { shell: true })
+
+            acsProcess.stdout.on('data', (data) => {
+                const output = data.toString()
+
+                if (output.includes('User')) {
+                    acsProcess.stdin.write(`${userId}\n`)
+                }
+
+                if (output.includes('Password')) {
+                    acsProcess.stdin.write(`${password}\n`)
+                }
+            })
+
+            acsProcess.stderr.on('data', (data) => {
+                reject(`Error from ${tableName}: ${data.toString()}`)
+            })
+
+            acsProcess.on('close', (code) => {
+                // Do something when closed
+            })
+
+            acsProcess.on('exit', (code) => {
+                if (code !== 0) {
+                    reject(`Failed to download ${tableName}, exit code: ${code}`)
+                }
+                resolve()
+            })
+        })
+        )
     })
 
     try {
-        const wrkrResults = await Promise.allSettled(workerPromises)
-        const rejectArr = wrkrResults.filter((promise) => promise.status === "rejected")
-
-        console.log(rejectArr)
+        await Promise.all(tablePromises)
     } catch (error) {
         throw error
     }
-    const results = await Promise.allSettled(workerPromises)
-
-    return results
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 
@@ -14,6 +14,11 @@ function App({ Component, pageProps }: AppProps) {
   const [isChildWindow, setIsChildWindow] = useState<boolean>(false)
   const [appVer, setAppVer] = useState<string>("")
   const [dbUpdateTime, setDBUpdateTime] = useState<string>("")
+  const [userInfo, setUserInfo] = useState({ userId: "", password: "" })
+
+  const HeaderMenuRef = useRef(null)
+  const LoginMenuRef = useRef(null)
+  const router = useRouter()
 
   const handleMenuToggle = () => {
     setIsHeaderMenuOpen(!isHeaderMenuOpen)
@@ -27,9 +32,20 @@ function App({ Component, pageProps }: AppProps) {
     setIsLoginMenuOpen(!isLoginMenuOpen)
   }
 
-  const HeaderMenuRef = useRef(null)
-  const LoginMenuRef = useRef(null)
-  const router = useRouter()
+  const handleUserChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.currentTarget
+
+    const newUser = {
+      ...userInfo,
+      [id]: value
+    }
+
+    setUserInfo(newUser)
+  }
+
+  const handleDBUpdate = () => {
+    window.ipc.send('main', { process: 'sql', method: 'update-db', data: { userInfo } })
+  }
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ipc) {
@@ -101,6 +117,8 @@ function App({ Component, pageProps }: AppProps) {
       <Login
         isLoginMenuOpen={isLoginMenuOpen}
         handleLoginMenuToggle={handleLoginMenuToggle}
+        handleUserChange={handleUserChange}
+        handleDBUpdate={handleDBUpdate}
         LoginMenuRef={LoginMenuRef} />
       <Footer
         syncDB={handleLoginMenuToggle}

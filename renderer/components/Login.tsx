@@ -1,4 +1,4 @@
-export default function Login({ isLoginMenuOpen, handleLoginMenuToggle, LoginMenuRef }) {
+export default function Login({ isLoginMenuOpen, handleLoginMenuToggle, handleUserChange, handleDBUpdate, LoginMenuRef }) {
     return (
         <div className={`absolute inset-0 flex items-center justify-center ${isLoginMenuOpen ? 'block' : 'hidden'}`} ref={LoginMenuRef}>
             <div className="relative flex flex-col items-center justify-center mx-auto">
@@ -13,11 +13,12 @@ export default function Login({ isLoginMenuOpen, handleLoginMenuToggle, LoginMen
                     <div className="p-6 space-y-4">
                         <div className="space-y-2">
                             <div>
-                                <label htmlFor="userID" className="block mb-2 text-sm font-medium text-white">User ID</label>
+                                <label htmlFor="userId" className="block mb-2 text-sm font-medium text-white">User ID</label>
                                 <input type="text"
-                                    name="userID"
-                                    id="userID"
+                                    name="userId"
+                                    id="userId"
                                     placeholder="s912345678"
+                                    onChange={handleUserChange}
                                     className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2 placeholder-gray-400" />
                             </div>
                             <div>
@@ -26,11 +27,16 @@ export default function Login({ isLoginMenuOpen, handleLoginMenuToggle, LoginMen
                                     name="password"
                                     id="password"
                                     placeholder="•••••••••••••••"
+                                    onChange={handleUserChange}
                                     className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2 placeholder-gray-400" />
                             </div>
                             <div className="flex justify-center">
                                 <div className="w-1/2">
-                                    <button className="bg-white hover:bg-gray-300 text-gray-800 font-semibold w-full py-1 px-3 mt-3 border border-gray-400 rounded shadow text-center active:scale-95 transition-transform duration-75">Sign in</button>
+                                    <button
+                                        className="bg-white hover:bg-gray-300 text-gray-800 font-semibold w-full py-1 px-3 mt-3 border border-gray-400 rounded shadow text-center active:scale-95 transition-transform duration-75"
+                                        onClick={handleDBUpdate}>
+                                        Sign in
+                                    </button>
                                 </div>
                             </div>
                         </div>

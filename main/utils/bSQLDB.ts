@@ -1,8 +1,7 @@
 import Database from "better-sqlite3"
-import fs from 'fs'
 import tables from "../db/tables"
 import { regex, paths, fileManager } from "./"
-import { TableData, TableName, Column } from "../../types/Database"
+import { TableData, TableName } from "../../types/Database"
 
 const createDB = async (): Promise<void[]> => {
     return await Promise.all(
@@ -62,14 +61,21 @@ const buildTableSchema = (table: TableData, isSync: boolean) => {
         .replace(/,\s*$/, "")
 }
 
-const buildInsertStmt = (tableName: string, sqlHeader: Column, compKey: string[], temp: boolean) => {
-    const insertKeys = Object.keys(sqlHeader)
+const buildInsertStmt = (tableName: TableName, temp: boolean) => {
+    const columns = tables[tableName]["Columns"]
+    const compKey = tables[tableName]["CompKey"]
+
+    // Create insert keys and respective placeholders for values 
+    const insertKeys = Object.keys(columns)
     const placeholders = insertKeys.map(() => "?").join(", ")
+
+    // Retrieve insert keys that aren't composite key
     const conflictKeys = compKey.length > 0
         ? insertKeys.filter(key => !compKey.includes(key))
         : insertKeys.filter(key => key !== "ID")
     const placeholderID = 0
 
+    // Check for foreign key existence in refTable, resolving to placeholderID if it doesn't exist
     const resolveForeignKey = (key: string, refTable: string): string => `
         CASE 
             WHEN EXISTS (SELECT 1 FROM ${refTable} WHERE ID = temp_${tableName}.${key}) 
@@ -88,6 +94,7 @@ const buildInsertStmt = (tableName: string, sqlHeader: Column, compKey: string[]
         return `temp_${tableName}.${key}`
     }).join(", ")
 
+    // If not temp table, select all values from temporary table and handle conflicts
     return `
         INSERT INTO ${temp ? "temp_" : ""}${tableName} (${insertKeys.join(", ")}) 
         ${temp
@@ -99,26 +106,54 @@ const buildInsertStmt = (tableName: string, sqlHeader: Column, compKey: string[]
                 : tableName === "Sales"
                     ? `BookID IN (SELECT ID FROM Books)`
                     : "true"}
-                ON CONFLICT(${sqlHeader["ID"] ? "ID" : compKey.join(", ")}) 
+                ON CONFLICT(${columns["ID"] ? "ID" : compKey.join(", ")}) 
                 DO ${conflictKeys.length > 0
                 ? `UPDATE SET ${conflictKeys.map((key) => `${key} = excluded.${key}`).join(", ")}`
                 : `NOTHING`}`
         }`
 }
 
+const buildSelectStmt = (table: TableData) => {
+    let lastUpdate = '0001-01-01-00.00.00.000000'
+
+    // If column reference is an array, concat elements together
+    const columns = Object.entries(table.Columns)
+        .map(([colName, colData]) => Array.isArray(colData.bncRef) ? `CONCAT(${colData.bncRef.join(', ')}) AS ${colName}` : colData.bncRef)
+        .join(', ')
+
+    let statement = `SELECT ${columns} FROM T2DB00622.${table.BNCName}`
+
+    if (table.Timestamp?.length) {
+        // Handle special case for ADP006 table, which uses a date instead of a timestamp
+        if (table.BNCName === 'ADP006') {
+            // Format date to 'YYYYMMDD' format
+            lastUpdate = lastUpdate.substring(0, lastUpdate.lastIndexOf('-')).replace(/-/g, '')
+
+            statement += ` WHERE ${table.Timestamp[0]} >= '${lastUpdate}'`
+        } else {
+            const conditions = table.Timestamp
+                .map((col, index) => `${index > 0 ? 'OR ' : ''}${col} >= TIMESTAMP('${lastUpdate}')`)
+                .join(' ')
+
+            statement += ` WHERE ${conditions}`
+        }
+    }
+
+    return statement
+}
+
 const updateDB = async (files: string[]) => {
     const db = new Database(paths.dbPath)
-    for (const tableName of Object.keys(tables)) {
+    for (const tableName of Object.keys(tables) as TableName[]) {
         await new Promise<void>(async (resolve, reject) => {
-            const table = tables[tableName as keyof typeof tables]
-            const sqlHeader: Column = table["Columns"]
+            const table = tables[tableName]
             const tableSchema = buildTableSchema(table, true)
 
             db.prepare(`DROP TABLE IF EXISTS temp_${tableName}`).run()
             db.prepare(`CREATE TEMP TABLE temp_${tableName} ${tableSchema}`).run()
 
-            const insertTemp = db.prepare(buildInsertStmt(tableName, sqlHeader, table["CompKey"], true))
-            const upsertStmt = db.prepare(buildInsertStmt(tableName, sqlHeader, table["CompKey"], false))
+            const insertTemp = db.prepare(buildInsertStmt(tableName, true))
+            const upsertStmt = db.prepare(buildInsertStmt(tableName, false))
 
             const filePath = files.find((file) => file.includes(table["CSVName"]))
 
@@ -127,8 +162,7 @@ const updateDB = async (files: string[]) => {
                 db.transaction(() => {
                     for (const row of csv) {
                         try {
-                            const values = mapCSVHeader(table["SQLHeaders"], table["CSVHeaders"], row)
-                            insertTemp.run(values)
+                            insertTemp.run(row)
                         } catch (error) {
                             console.error(`Error row:`, row)
                             console.error(`Error details:`, error)
@@ -146,41 +180,6 @@ const updateDB = async (files: string[]) => {
         })
     }
     db.close()
-}
-
-const buildSelectStmt = async (table: TableData) => {
-    let statement = 'SELECT'
-    const tableCols = Object.keys(table['Columns'])
-    const [insertRef, updateRef] = table['InsertUpdate']
-    const lastUpdate = await fileManager.config.read('lastDBUpdate', false)
-
-    for (let i = 0; i < tableCols.length; i++) {
-        const col = tableCols[i]
-        let ref = table['Columns'][col]['bncRef']
-
-        // If not at end of columns array, append comma after reference
-        // If reference is an array, join elements 
-        statement += ` ${Array.isArray(ref) ? ref.join(', ') : ref}${(i + 1) < tableCols.length ? ',' : ''}`
-    }
-
-    statement += ` FROM T2DB00622.${table['BNCName']}`
-
-    // Diverge into two statements: one where ROW CHANGE TIMESTAMP exists and one where it doesn't
-    const rowChangeStmt = statement + ` WHERE ROW_CHANGE_TIMESTAMP >= TIMESTAMP('${lastUpdate}')`
-    const insertUpdateStmt = statement + ` WHERE ${insertRef} >= TIMESTAMP('${lastUpdate}') OR ${updateRef} >= TIMESTAMP('${lastUpdate}')`
-
-    return [statement, rowChangeStmt, insertUpdateStmt]
-}
-
-const mapCSVHeader = (sqlHeader: Column, csvHeader: string[], row: { [field: string]: string | number }) => {
-    const values = Object.keys(sqlHeader).map(key => {
-        const csvRefIndex = Array.isArray(sqlHeader[key].bncRef)
-            ? sqlHeader[key].bncRef.map((ref) => csvHeader.findIndex((header) => header === ref))
-            : csvHeader.findIndex((header) => header === sqlHeader[key].bncRef)
-        return Array.isArray(csvRefIndex) ? csvRefIndex.map(index => row[index] || "").join("") : row[csvRefIndex]
-    })
-
-    return values
 }
 
 const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {

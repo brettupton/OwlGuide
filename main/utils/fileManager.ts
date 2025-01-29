@@ -114,6 +114,19 @@ const removeConfigKey = (key: string): Promise<void> => {
     })
 }
 
+const getDirFileNames = (dir: string): Promise<string[]> => {
+    return new Promise((resolve, reject) => {
+        if (fs.existsSync(dir)) {
+            fs.readdir(dir, (err, files) => {
+                if (err) { reject(err) }
+                resolve(files)
+            })
+        } else {
+            reject(`Directory ${dir} does not exist.`)
+        }
+    })
+}
+
 const deleteFile = (filePath: string): Promise<void> => {
     return new Promise((resolve, reject) => {
         if (fs.existsSync(filePath)) {
@@ -153,6 +166,7 @@ export const fileManager = {
         read: parseXLSX
     },
     files: {
+        names: getDirFileNames,
         delete: deleteFile
     },
     JSON: {

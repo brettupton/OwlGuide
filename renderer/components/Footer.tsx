@@ -1,6 +1,6 @@
 export default function Footer({ syncDB, dbUpdateTime }) {
     return (
-        <div className="flex bg-gray-800 absolute bottom-0 w-full">
+        <footer className="flex bg-gray-800 absolute bottom-0 w-full">
             <div className="flex px-2 py-1 gap-1">
                 <div className="flex">
                     <button onClick={syncDB}>
@@ -13,6 +13,6 @@ export default function Footer({ syncDB, dbUpdateTime }) {
                     Last Update: {dbUpdateTime}
                 </div>
             </div>
-        </div>
+        </footer>
     )
 }
