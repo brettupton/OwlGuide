@@ -10,6 +10,13 @@ files:
       - app
       - main
       - '!main/db/tables.ts'
+extraResources:
+  - from: resources
+    to: images
+    filter: 
+      - owl.png
 publish: null
 win:
   icon: "resources/owl.ico"
+nsis:
+  deleteAppDataOnUninstall: true

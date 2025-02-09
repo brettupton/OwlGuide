@@ -23,7 +23,7 @@ export default function PageTable({ pageData, totalRows, page, limit, updatePage
 
     return (
         <div className="w-full">
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-11rem)]">
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-12.5rem)]">
                 <table className="w-full text-sm text-left rtl:text-right text-white" ref={tableRef}>
                     <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                         <tr>

@@ -11,7 +11,7 @@ interface MatchTableProps {
 export default function MatchTable({ dataLength, needOfferings, handleOfferingChange, handleSubmit }: MatchTableProps) {
     return (
         <div className="flex flex-col w-full p-2">
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-8rem)]">
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-9.5rem)]">
                 <table className="w-full text-sm text-left rtl:text-right text-white">
                     <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                         <tr>

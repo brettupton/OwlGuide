@@ -119,5 +119,6 @@ export const regex = {
     createSearchISBN,
     toProperCase,
     usedBarcodeToISBN,
-    db2TimeToLocal
+    db2TimeToLocal,
+    ISOtoDb2Time
 }

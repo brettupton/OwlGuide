@@ -27,7 +27,7 @@ export default function BookPage() {
             setIsInvalid(true)
             return
         }
-        window.ipc.send('main', { process: 'book', method: 'search', data: searchISBN })
+        window.ipc.send('main', { process: 'book', method: 'search-isbn', data: { isbn: searchISBN } })
     }
 
     return (

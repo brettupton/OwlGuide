@@ -3,9 +3,9 @@ import { apiSearch, formatBookSearch } from './helpers/bookSearch'
 
 export const bookProcess = async ({ event, method, data }: ProcessArgs) => {
     switch (method) {
-        case 'search':
+        case 'search-isbn':
             try {
-                const isbn = data as string
+                const isbn = data["isbn"]
                 const search = regex.createSearchISBN(isbn)
                 // Query SQL DB for book term & vendor data
                 const sqlResults = await bSQLDB.books.getBookByISBN(search)

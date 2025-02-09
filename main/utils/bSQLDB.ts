@@ -7,7 +7,7 @@ const createDB = async (): Promise<void[]> => {
     return await Promise.all(
         Object.keys(tables).map((tableName): Promise<void> => {
             return new Promise((resolve, reject) => {
-                const db = new Database('./owlguide.db')
+                const db = new Database(paths.dbPath)
                 const table = tables[tableName as TableName]
                 const tableSchema = buildTableSchema(table, false)
 
@@ -113,8 +113,8 @@ const buildInsertStmt = (tableName: TableName, temp: boolean) => {
         }`
 }
 
-const buildSelectStmt = (table: TableData) => {
-    let lastUpdate = '0001-01-01-00.00.00.000000'
+const buildSelectStmt = async (table: TableData) => {
+    let lastUpdate = await fileManager.config.read('dbUpdateTime', false)
 
     // If column reference is an array, concat elements together
     const columns = Object.entries(table.Columns)
@@ -155,7 +155,7 @@ const updateDB = async (files: string[]) => {
             const insertTemp = db.prepare(buildInsertStmt(tableName, true))
             const upsertStmt = db.prepare(buildInsertStmt(tableName, false))
 
-            const filePath = files.find((file) => file.includes(table["CSVName"]))
+            const filePath = files.find((file) => file.includes(tableName))
 
             try {
                 const csv = await fileManager.csv.read(filePath)

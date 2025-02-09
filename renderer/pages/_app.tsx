@@ -15,6 +15,8 @@ function App({ Component, pageProps }: AppProps) {
   const [appVer, setAppVer] = useState<string>("")
   const [dbUpdateTime, setDBUpdateTime] = useState<string>("")
   const [userInfo, setUserInfo] = useState({ userId: "", password: "" })
+  const [isPassShow, setIsPassShow] = useState<boolean>(false)
+  const [isDBUpdating, setIsDBUpdating] = useState<boolean>(false)
 
   const HeaderMenuRef = useRef(null)
   const LoginMenuRef = useRef(null)
@@ -30,6 +32,11 @@ function App({ Component, pageProps }: AppProps) {
 
   const handleLoginMenuToggle = () => {
     setIsLoginMenuOpen(!isLoginMenuOpen)
+    setIsPassShow(false)
+    setUserInfo({
+      userId: "",
+      password: ""
+    })
   }
 
   const handleUserChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -39,12 +46,14 @@ function App({ Component, pageProps }: AppProps) {
       ...userInfo,
       [id]: value
     }
-
     setUserInfo(newUser)
   }
 
   const handleDBUpdate = () => {
-    window.ipc.send('main', { process: 'sql', method: 'update-db', data: { userInfo } })
+    if (Object.values(userInfo).every((ele) => ele !== "")) {
+      setIsDBUpdating(true)
+      window.ipc.send('main', { process: 'sql', method: 'update-db', data: { userInfo } })
+    }
   }
 
   useEffect(() => {
@@ -52,9 +61,17 @@ function App({ Component, pageProps }: AppProps) {
       window.ipc.send('main', { process: 'app', method: 'get-values' })
     }
 
-    window.ipc.on('appData', ({ appVer, lastDBUpdate }: { appVer: string, lastDBUpdate: string }) => {
+    window.ipc.on('appData', ({ appVer, dbUpdateTime }: { appVer: string, dbUpdateTime: string }) => {
       setAppVer(appVer)
-      setDBUpdateTime(lastDBUpdate)
+      setDBUpdateTime(dbUpdateTime)
+    })
+
+    window.ipc.on('update-success', () => {
+      router.reload()
+    })
+
+    window.ipc.on('update-fail', () => {
+      setIsDBUpdating(false)
     })
 
     const handleContextMenu = (event: MouseEvent) => {
@@ -118,11 +135,17 @@ function App({ Component, pageProps }: AppProps) {
         isLoginMenuOpen={isLoginMenuOpen}
         handleLoginMenuToggle={handleLoginMenuToggle}
         handleUserChange={handleUserChange}
+        userInfo={userInfo}
+        isPassShow={isPassShow}
+        handlePassToggle={() => setIsPassShow(!isPassShow)}
         handleDBUpdate={handleDBUpdate}
+        isDBUpdating={isDBUpdating}
         LoginMenuRef={LoginMenuRef} />
       <Footer
         syncDB={handleLoginMenuToggle}
         dbUpdateTime={dbUpdateTime}
+        isDBUpdating={isDBUpdating}
+        isChildWindow={isChildWindow}
       />
     </div>
   )

@@ -1,24 +1,17 @@
-import fs from 'fs'
-import path from 'path'
-import { paths } from './'
+import path from "path"
+import fs from "fs"
+import { paths } from "./paths"
 
-interface ILogData {
-    logType: string
-    process: string
-    method: string
-    term?: string
-    text?: string
+type LogType = "main" | "sql" | "acs" | "error"
+
+const addNewLog = (logType: LogType, details: string[]) => {
+    const timeStamp = new Date().toLocaleString().toUpperCase()
+    const logFilePath = path.join(paths.logPath, `owlguide-${logType}.log`)
+    // Filter 'truthy' values from array before join
+    const newDetails = details.map((detail) => { return detail.toUpperCase() }).filter(Boolean)
+
+    const logLine = (`[${timeStamp}]: ${newDetails.join(" ")}\n`)
+    fs.appendFile(logFilePath, logLine, (err) => { if (err) console.error(err) })
 }
 
-const newLog = (logData: ILogData) => {
-    const date = new Date()
-    let line = `[${date.toLocaleString()}] ${logData.logType.toUpperCase()} ${logData.process.toUpperCase()} ${logData.method.toUpperCase()} ${logData.term ?? ''} ${logData.text ?? ''}\n`
-
-    fs.appendFile(path.join(paths.logPath, 'owlguide-log.log'), line, (err) => {
-        if (err) {
-            console.error(err)
-        }
-    })
-}
-
-export const logger = { newLog }
+export const logger = { addNewLog }

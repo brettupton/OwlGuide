@@ -1,13 +1,18 @@
-import React, { ChangeEvent, useState } from 'react'
+import React, { ChangeEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function Development() {
-    const [writeKey, setWriteKey] = useState<string>("")
-    const [writeValue, setWriteValue] = useState<string>("")
-    const [readKey, setReadKey] = useState<string>("")
-    const [deleteKey, setDeleteKey] = useState<string>("")
-
     const router = useRouter()
+
+    useEffect(() => {
+        window.ipc.on('config-data', ({ config }: Config) => {
+            console.log(config)
+        })
+
+        window.ipc.on('update-success', () => {
+            router.refresh()
+        })
+    }, [])
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.currentTarget.files) {
@@ -17,46 +22,17 @@ export default function Development() {
                 newPaths.push(file.path)
             }
 
-            window.ipc.send('main', { process: 'sql', method: "update-db", data: { files: newPaths } })
+            window.ipc.send('main', { process: 'sql', method: "update-db-manual", data: { files: newPaths } })
         }
     }
 
-    const handleWorkerWin = () => {
-        window.ipc.send('acs')
+    const handleOpenUserPath = () => {
+        window.ipc.send('dev', { method: 'open-user-dir' })
     }
 
-    const handleKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const { value } = e.currentTarget
-        setWriteKey(value)
+    const handleDBRecreate = () => {
+        window.ipc.send('main', { process: 'sql', method: 'recreate-db' })
     }
-
-    const handleValueChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const { value } = e.currentTarget
-        setWriteValue(value)
-    }
-
-    const handleReadKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const { value } = e.currentTarget
-        setReadKey(value)
-    }
-
-    const handleDelKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const { value } = e.currentTarget
-        setDeleteKey(value)
-    }
-
-    const handleConfigSubmit = () => {
-        window.ipc.send('config', { method: 'write', data: { key: writeKey, value: writeValue } })
-    }
-
-    const handleConfigRead = () => {
-        window.ipc.send('config', { method: 'read', data: { key: readKey } })
-    }
-
-    const handleConfigDelete = () => {
-        window.ipc.send('config', { method: 'delete', data: { key: deleteKey } })
-    }
-
 
     const handleReset = () => {
         router.refresh()
@@ -73,48 +49,19 @@ export default function Development() {
             </div>
             <div className="flex flex-col mt-3 gap-3">
                 <div className="flex">
+                    <span className="underline underline-offset-8">Database</span>
+                </div>
+                <div className="flex">
                     <input type="file" id="csv" multiple onChange={handleFileChange} />
                 </div>
                 <div className="flex">
-                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleWorkerWin}>ACS</button>
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDBRecreate}>Recreate</button>
                 </div>
                 <div className="flex">
-                    <span className="underline underline-offset-8">Config</span>
-                </div>
-                <div className="flex w-1/4">
-                    <input
-                        placeholder="Key"
-                        className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
-                        onChange={handleReadKeyChange} />
+                    <span className="underline underline-offset-8">Directory</span>
                 </div>
                 <div className="flex">
-                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleConfigRead}>Read</button>
-                </div>
-                <div className="flex w-1/4">
-                    <input
-                        placeholder="Key"
-                        className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
-                        onChange={handleDelKeyChange} />
-                </div>
-                <div className="flex">
-                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleConfigDelete}>Delete</button>
-                </div>
-                <div className="flex">
-                    <div className="flex">
-                        <input
-                            placeholder="Key"
-                            className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
-                            onChange={handleKeyChange} />
-                    </div>
-                    <div className="flex">
-                        <input
-                            placeholder="Value"
-                            className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
-                            onChange={handleValueChange} />
-                    </div>
-                </div>
-                <div className="flex">
-                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleConfigSubmit}>Write</button>
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleOpenUserPath}>Open</button>
                 </div>
             </div>
         </div>

@@ -44,8 +44,7 @@ const apiSearch = async (isbn: string): Promise<APIResult | {}> => {
             axios.get('https://www.googleapis.com/books/v1/volumes',
                 {
                     params: {
-                        q: `isbn:${isbn}`,
-                        key: process.env.GCLOUD_API_KEY
+                        q: `isbn:${isbn}`
                     }
                 }
             )

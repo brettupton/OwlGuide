@@ -66,23 +66,34 @@ const updateConfigValue = (key: string, value: string, encrypt: boolean): Promis
     })
 }
 
-const getConfigValue = (key: string, decrypt: boolean): Promise<string> => {
+const getConfigValue = (key?: string, decrypt?: boolean): Promise<string> => {
     return new Promise(async (resolve, reject) => {
         if (fs.existsSync(paths.configPath)) {
             try {
                 const config = await readJSON(paths.configPath)
 
-                if (decrypt && config[key]) {
-                    const valBuffer = Buffer.from(config[key], 'base64')
-                    resolve(safeStorage.decryptString(valBuffer))
+                if (key) {
+                    if (decrypt && config[key]) {
+                        const valBuffer = Buffer.from(config[key], 'base64')
+                        resolve(safeStorage.decryptString(valBuffer))
+                    } else {
+                        resolve(config[key])
+                    }
                 } else {
-                    resolve(config[key])
+                    resolve(JSON.stringify(config))
                 }
             } catch (error) {
                 reject(`Config error: ${error}`)
             }
         } else {
-            reject('Config does not exist.')
+            // Create config, if doesn't already exist
+            const config = {}
+            fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
+                if (err) {
+                    throw new Error(`${err}`)
+                }
+                resolve("")
+            })
         }
     })
 }
@@ -111,6 +122,15 @@ const removeConfigKey = (key: string): Promise<void> => {
         } else {
             reject(`Config does not exist.`)
         }
+    })
+}
+
+const createDir = (dir: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        fs.mkdir(dir, { recursive: true }, (err) => {
+            if (err) { reject(err) }
+            resolve()
+        })
     })
 }
 
@@ -166,6 +186,7 @@ export const fileManager = {
         read: parseXLSX
     },
     files: {
+        create: createDir,
         names: getDirFileNames,
         delete: deleteFile
     },

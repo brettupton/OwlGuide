@@ -14,4 +14,6 @@ A user-friendly application designed to simplify various aspects of managing tex
 - Easy enrollment file conversion
 
 ## Installation
-Download the latest release from the link above and run the setup executable to install the application.
+
+- Download the latest release from the link above and run the setup executable to install the application.
+- Login with credentials to sync with database

@@ -6,6 +6,9 @@ module.exports = {
   images: {
     unoptimized: true,
   },
+  env: {
+    IBM_SYSTEM_HOST: process.env.IBM_SYSTEM_HOST
+  },
   webpack: (config, { isServer }) => {
     config.output.globalObject = 'self';
 

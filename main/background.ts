@@ -1,15 +1,14 @@
+require("dotenv").config()
 import path from 'path'
 import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'electron'
 import serve from 'electron-serve'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
-import { bSQLDB, fileManager, paths, regex } from './utils'
+import { bSQLDB, fileManager, paths, regex, logger } from './utils'
 import { bookProcess, courseProcess, decisionProcess, enrollmentProcess, sqlProcess } from './processes'
-import { getIBMTables, initializeDB } from './processes/helpers/sqlDatabase'
-import { logger } from './utils/logger'
+import { initializeDB } from './processes/helpers/sqlDatabase'
 import { appProcess } from './processes/app'
 
 export const isProd = process.env.NODE_ENV === 'production'
-let dbLoaded = false
 
 if (isProd) {
   serve({ directory: 'app' })
@@ -25,7 +24,7 @@ let tray: Tray
     mainWindow = createWindow('main', {
       width: 830,
       height: 630,
-      icon: paths.iconPath,
+      icon: paths.windowIconPath,
       frame: false,
       titleBarStyle: 'hidden',
       webPreferences: {
@@ -33,14 +32,14 @@ let tray: Tray
       },
     })
 
-    tray = new Tray(nativeImage.createFromPath(paths.iconPath).resize({ width: 16 }))
+    tray = new Tray(nativeImage.createFromPath(paths.trayIconPath).resize({ width: 16 }))
     tray.setToolTip('OwlGuide')
 
     // Check app version to determine if database needs to be created/recreated
     const appVer = await fileManager.config.read('appVersion', false)
     if (isProd && appVer !== app.getVersion()) {
       try {
-        await bSQLDB.all.createDB()
+        await initializeDB()
         await fileManager.config.write('appVersion', app.getVersion(), false)
       } catch (error) {
         dialog.showErrorBox('Database Error', `${error}\n\nContact dev for assistance.`)
@@ -90,7 +89,7 @@ ipcMain.on('close-child', () => {
 })
 
 ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
-  logger.newLog({ logType: 'main-event', process, method, term: (data && data['term'] as string) ?? '' })
+  logger.addNewLog("main", [process, method, data?.["term"] ?? "", data?.["isbn"] ?? ""])
 
   try {
     switch (process) {
@@ -120,46 +119,15 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
     }
   } catch (error) {
     console.error(error)
-    logger.newLog({ logType: 'main-error', process, method, text: `${error}` })
+    logger.addNewLog("error", [process, method, error])
     dialog.showErrorBox(`${process[0].toUpperCase() + process.slice(1)}`, `${error}\n\nContact dev for assistance.`)
   }
 })
 
-ipcMain.on('acs', async (event) => {
-  try {
-    await getIBMTables('1234', '1234')
-  } catch (error) {
-    console.error(error)
-  }
-})
-
-ipcMain.on('config', async (event, { method, data }) => {
+ipcMain.on('dev', async (event, { method, data }: ProcessArgs) => {
   switch (method) {
-    case 'write':
-      try {
-        await fileManager.config.write(data.key, data.value, false)
-        console.log("Write Success")
-      } catch (error) {
-        console.error(error)
-      }
-      break
-
-    case 'read':
-      try {
-        const configValue = await fileManager.config.read(data.key, false)
-        console.log(configValue)
-      } catch (error) {
-        console.error(error)
-      }
-      break
-
-    case 'delete':
-      try {
-        await fileManager.config.delete(data.key)
-        console.log("Delete Success")
-      } catch (error) {
-        console.error(error)
-      }
+    case 'open-user-dir':
+      shell.openPath(paths.userDataPath)
       break
   }
 })
