@@ -13,5 +13,8 @@ export const paths = {
     userDataPath: app.getPath('userData'),
     configPath: path.join(userData, 'config.json'),
     logPath: app.getPath('logs'),
-    dbPath: !isProd ? path.join(__dirname, '..', 'main', 'db/owlguide.db') : path.join(app.getPath('userData'), 'db/owlguide.db')
+    tempPath: path.join(userData, 'tmp'),
+    dbPath: !isProd ? path.join(app.getAppPath(), 'main', 'db/owlguide.db') : path.join(app.getPath('userData'), 'db/owlguide.db'),
+    windowIconPath: path.join(app.getAppPath(), 'renderer', 'public', 'images', 'owl.ico'),
+    trayIconPath: path.join(process.resourcesPath, 'images', 'owl.png')
 }

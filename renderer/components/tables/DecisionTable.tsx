@@ -22,7 +22,7 @@ export default function DecisionTable({ data, handleRowClick, activeBook, active
 
     return (
         <div className="flex flex-col mx-2">
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-8.5rem)]">
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-10rem)]">
                 <table className="w-full text-sm text-left rtl:text-right text-white" ref={tableRef}>
                     <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                         <tr>

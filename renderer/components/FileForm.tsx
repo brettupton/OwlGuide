@@ -9,7 +9,6 @@ interface FileFormProps {
 }
 
 export default function FileForm({ process, label, accept, multiple = false }: FileFormProps) {
-    const [filePaths, setFilePaths] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
@@ -28,7 +27,7 @@ export default function FileForm({ process, label, accept, multiple = false }: F
                 fileArr.push(newFile.path)
             }
             setIsLoading(true)
-            window.ipc.send(`${process}`, { method: "file-upload", data: fileArr })
+            window.ipc.send('main', { process, method: "file-upload", data: fileArr })
         }
     }
 

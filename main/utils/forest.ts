@@ -62,3 +62,5 @@ const encodeFeatures = async (book: Features) => {
         throw error
     }
 }
+
+export const forest = { getPredictions }

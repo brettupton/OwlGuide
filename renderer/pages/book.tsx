@@ -6,41 +6,28 @@ import BookDisplay from "../components/BookDisplay"
 export default function BookPage() {
     const [searchISBN, setSearchISBN] = useState<string>("")
     const [resultBook, setResultBook] = useState<BookResult>()
+    const [isInvalid, setIsInvalid] = useState<boolean>(false)
 
     useEffect(() => {
-        window.ipc.on('data', ({ book }: { book: BookResult }) => {
+        window.ipc.on('book-data', ({ book }: { book: BookResult }) => {
             setResultBook(book)
             setSearchISBN("")
-            if (document.getElementById('search')) {
-                const inputEle = document.getElementById('search') as HTMLInputElement
-                inputEle.value = ""
-                inputEle.focus()
-            }
         })
-
-        const clickAction = (e: KeyboardEvent) => {
-            if (e.key === "Enter") {
-                e.preventDefault()
-                document.getElementById('searchBtn')?.click()
-            }
-        }
-        window.addEventListener('keydown', clickAction)
-
-        return () => {
-            window.removeEventListener('keydown', clickAction)
-        }
     }, [])
 
     const handleISBNChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { value } = e.currentTarget
         setSearchISBN(value)
         setResultBook(undefined)
+        setIsInvalid(false)
     }
 
     const handleSearch = () => {
-        if (searchISBN) {
-            window.ipc.send('book', { method: 'search', data: searchISBN })
+        if (!searchISBN || searchISBN.length < 10) {
+            setIsInvalid(true)
+            return
         }
+        window.ipc.send('main', { process: 'book', method: 'search-isbn', data: { isbn: searchISBN } })
     }
 
     return (
@@ -55,24 +42,27 @@ export default function BookPage() {
                         </svg>
                     </div>
                     <input type="text" id="search"
-                        defaultValue={searchISBN}
+                        value={searchISBN}
                         onChange={handleISBNChange}
+                        onKeyDown={(e) => e.key === "Enter" ? handleSearch() : ''}
                         minLength={10}
                         maxLength={17}
                         className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full ps-8 p-2" placeholder="ISBN" />
                 </div>
-                <button onClick={handleSearch} id="searchBtn" className="p-2.5 ms-2 text-sm font-medium bg-white hover:bg-gray-300 text-gray-800 rounded-lg border focus:outline-none">
+                <button onClick={handleSearch}
+                    className="p-2.5 ms-2 text-sm font-medium bg-white hover:bg-gray-300 text-gray-800 rounded-lg border focus:outline-none">
                     <svg className="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
                         <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
                     </svg>
                     <span className="sr-only">Search</span>
                 </button>
             </div>
+            {isInvalid && <div className="flex items-center mx-auto mt-1 text-xs text-red-500">Invalid Search.</div>}
             {resultBook ?
                 Object.keys(resultBook).length > 0 ?
                     <BookDisplay book={resultBook} />
                     :
-                    <div className="flex mt-2 text-rose-700 text-xs justify-center">No matching book found.</div>
+                    <div className="flex mt-2 text-red-500 text-xs justify-center">No matching book found.</div>
                 :
                 <div></div>
             }

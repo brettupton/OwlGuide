@@ -7,10 +7,19 @@ declare global {
         [key: string]: string
     }
 
-    type JSONParse =
-        string | number | boolean | {
-            [x: string]: JSONParse
-        } | JSONParse[]
+    type JSObj =
+        | string
+        | number
+        | boolean
+        | { [key: string]: JSObj }
+        | JSObj[]
+
+    type ProcessArgs = {
+        event?: Electron.IpcMainEvent
+        process?: string
+        method: string
+        data: JSObj
+    }
 
 }
 

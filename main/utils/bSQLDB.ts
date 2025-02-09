@@ -1,21 +1,15 @@
 import Database from "better-sqlite3"
-import fs from 'fs'
 import tables from "../db/tables"
 import { regex, paths, fileManager } from "./"
-import { SQLHeader } from "../../types/Database"
+import { TableData, TableName } from "../../types/Database"
 
 const createDB = async (): Promise<void[]> => {
-    if (fs.existsSync(paths.dbPath)) {
-        await fileManager.files.delete(paths.dbPath)
-    }
-
     return await Promise.all(
         Object.keys(tables).map((tableName): Promise<void> => {
             return new Promise((resolve, reject) => {
                 const db = new Database(paths.dbPath)
-                const table = tables[tableName as keyof typeof tables]
-                const sqlHeader = table["SQLHeaders"]
-                const tableSchema = buildTableSchema(sqlHeader, table["CompKey"], false)
+                const table = tables[tableName as TableName]
+                const tableSchema = buildTableSchema(table, false)
 
                 db.prepare(`DROP TABLE IF EXISTS ${tableName}`).run()
                 db.prepare(`CREATE TABLE IF NOT EXISTS ${tableName} ${tableSchema}`).run()
@@ -44,11 +38,14 @@ const createDB = async (): Promise<void[]> => {
         }))
 }
 
-const buildTableSchema = (sqlHeader: SQLHeader, compKey: string[], update: boolean) => {
-    const columns = Object.entries(sqlHeader)
+const buildTableSchema = (table: TableData, isSync: boolean) => {
+    const compKey = table["CompKey"]
+    // Map each column key with its associated type
+    const columns = Object.entries(table["Columns"])
         .map(([key, { type }]) => `${key} ${type}`)
         .join(", ")
-    const foreignKeys = Object.entries(sqlHeader)
+    // Map foreign keys with its references & onDelete and onUpdate properties
+    const foreignKeys = Object.entries(table["Columns"])
         .map(([key, { foreignKey }]) => {
             return foreignKey
                 ? `FOREIGN KEY (${key}) REFERENCES ${foreignKey.references}` +
@@ -59,18 +56,26 @@ const buildTableSchema = (sqlHeader: SQLHeader, compKey: string[], update: boole
         .filter(Boolean)
         .join(", ")
 
-    return `(${columns}${!update && foreignKeys ? `, ${foreignKeys}` : ""}${!update && compKey.length > 0 ? `, PRIMARY KEY (${compKey.join(", ")})` : ""})`
+    // Syncing table doesn't require including foreign or primary keys
+    return `(${columns}${!isSync && foreignKeys ? `, ${foreignKeys}` : ""}${!isSync && compKey.length > 0 ? `, PRIMARY KEY (${compKey.join(", ")})` : ""})`
         .replace(/,\s*$/, "")
 }
 
-const buildInsertStmt = (tableName: string, sqlHeader: SQLHeader, compKey: string[], temp: boolean) => {
-    const insertKeys = Object.keys(sqlHeader)
+const buildInsertStmt = (tableName: TableName, temp: boolean) => {
+    const columns = tables[tableName]["Columns"]
+    const compKey = tables[tableName]["CompKey"]
+
+    // Create insert keys and respective placeholders for values 
+    const insertKeys = Object.keys(columns)
     const placeholders = insertKeys.map(() => "?").join(", ")
+
+    // Retrieve insert keys that aren't composite key
     const conflictKeys = compKey.length > 0
         ? insertKeys.filter(key => !compKey.includes(key))
         : insertKeys.filter(key => key !== "ID")
     const placeholderID = 0
 
+    // Check for foreign key existence in refTable, resolving to placeholderID if it doesn't exist
     const resolveForeignKey = (key: string, refTable: string): string => `
         CASE 
             WHEN EXISTS (SELECT 1 FROM ${refTable} WHERE ID = temp_${tableName}.${key}) 
@@ -89,6 +94,7 @@ const buildInsertStmt = (tableName: string, sqlHeader: SQLHeader, compKey: strin
         return `temp_${tableName}.${key}`
     }).join(", ")
 
+    // If not temp table, select all values from temporary table and handle conflicts
     return `
         INSERT INTO ${temp ? "temp_" : ""}${tableName} (${insertKeys.join(", ")}) 
         ${temp
@@ -100,36 +106,63 @@ const buildInsertStmt = (tableName: string, sqlHeader: SQLHeader, compKey: strin
                 : tableName === "Sales"
                     ? `BookID IN (SELECT ID FROM Books)`
                     : "true"}
-                ON CONFLICT(${sqlHeader["ID"] ? "ID" : compKey.join(", ")}) 
+                ON CONFLICT(${columns["ID"] ? "ID" : compKey.join(", ")}) 
                 DO ${conflictKeys.length > 0
                 ? `UPDATE SET ${conflictKeys.map((key) => `${key} = excluded.${key}`).join(", ")}`
                 : `NOTHING`}`
         }`
 }
 
+const buildSelectStmt = async (table: TableData) => {
+    let lastUpdate = await fileManager.config.read('dbUpdateTime', false)
+
+    // If column reference is an array, concat elements together
+    const columns = Object.entries(table.Columns)
+        .map(([colName, colData]) => Array.isArray(colData.bncRef) ? `CONCAT(${colData.bncRef.join(', ')}) AS ${colName}` : colData.bncRef)
+        .join(', ')
+
+    let statement = `SELECT ${columns} FROM T2DB00622.${table.BNCName}`
+
+    if (table.Timestamp?.length) {
+        // Handle special case for ADP006 table, which uses a date instead of a timestamp
+        if (table.BNCName === 'ADP006') {
+            // Format date to 'YYYYMMDD' format
+            lastUpdate = lastUpdate.substring(0, lastUpdate.lastIndexOf('-')).replace(/-/g, '')
+
+            statement += ` WHERE ${table.Timestamp[0]} >= '${lastUpdate}'`
+        } else {
+            const conditions = table.Timestamp
+                .map((col, index) => `${index > 0 ? 'OR ' : ''}${col} >= TIMESTAMP('${lastUpdate}')`)
+                .join(' ')
+
+            statement += ` WHERE ${conditions}`
+        }
+    }
+
+    return statement
+}
+
 const updateDB = async (files: string[]) => {
     const db = new Database(paths.dbPath)
-    for (const tableName of Object.keys(tables)) {
+    for (const tableName of Object.keys(tables) as TableName[]) {
         await new Promise<void>(async (resolve, reject) => {
-            const table = tables[tableName as keyof typeof tables]
-            const sqlHeader: SQLHeader = table["SQLHeaders"]
-            const tableSchema = buildTableSchema(sqlHeader, table["CompKey"], true)
+            const table = tables[tableName]
+            const tableSchema = buildTableSchema(table, true)
 
             db.prepare(`DROP TABLE IF EXISTS temp_${tableName}`).run()
             db.prepare(`CREATE TEMP TABLE temp_${tableName} ${tableSchema}`).run()
 
-            const insertTemp = db.prepare(buildInsertStmt(tableName, sqlHeader, table["CompKey"], true))
-            const upsertStmt = db.prepare(buildInsertStmt(tableName, sqlHeader, table["CompKey"], false))
+            const insertTemp = db.prepare(buildInsertStmt(tableName, true))
+            const upsertStmt = db.prepare(buildInsertStmt(tableName, false))
 
-            const filePath = files.find((file) => file.includes(table["CSVName"]))
+            const filePath = files.find((file) => file.includes(tableName))
 
             try {
                 const csv = await fileManager.csv.read(filePath)
                 db.transaction(() => {
                     for (const row of csv) {
                         try {
-                            const values = mapCSVHeader(table["SQLHeaders"], table["CSVHeaders"], row)
-                            insertTemp.run(values)
+                            insertTemp.run(row)
                         } catch (error) {
                             console.error(`Error row:`, row)
                             console.error(`Error details:`, error)
@@ -149,17 +182,6 @@ const updateDB = async (files: string[]) => {
     db.close()
 }
 
-const mapCSVHeader = (sqlHeader: SQLHeader, csvHeader: string[], row: { [field: string]: string | number }) => {
-    const values = Object.keys(sqlHeader).map(key => {
-        const csvRefIndex = Array.isArray(sqlHeader[key].csvRef)
-            ? sqlHeader[key]["csvRef"].map((ref) => csvHeader.findIndex((header) => header === ref))
-            : csvHeader.findIndex((header) => header === sqlHeader[key].csvRef)
-        return Array.isArray(csvRefIndex) ? csvRefIndex.map(index => row[index] || "").join("") : row[csvRefIndex]
-    })
-
-    return values
-}
-
 const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
@@ -168,12 +190,12 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
             const queryStmt = db.prepare(`
                 SELECT 
                     Sales.BookID, Books.ISBN, Books.Title,
-                    SUM(CASE WHEN Sales.Year != :year THEN Sales.TotalEstEnrl ELSE 0 END) AS PrevEstEnrl,
-                    SUM(CASE WHEN Sales.Year != :year THEN Sales.TotalActEnrl ELSE 0 END) AS PrevActEnrl,
+                    SUM(CASE WHEN Sales.Year != :year THEN Sales.EstEnrl ELSE 0 END) AS PrevEstEnrl,
+                    SUM(CASE WHEN Sales.Year != :year THEN Sales.ActEnrl ELSE 0 END) AS PrevActEnrl,
                     SUM(CASE WHEN Sales.Year != :year THEN Sales.UsedSales + Sales.NewSales ELSE 0 END) AS PrevTotalSales,
-                    MAX(CASE WHEN Sales.Year = :year THEN Sales.TotalEstEnrl ELSE NULL END) AS CurrEstEnrl,
-                    MAX(CASE WHEN Sales.Year = :year THEN Sales.TotalActEnrl ELSE NULL END) AS CurrActEnrl,
-                    MAX(CASE WHEN Sales.Year = :year THEN Sales.TotalEstSales ELSE NULL END) AS CurrEstSales
+                    MAX(CASE WHEN Sales.Year = :year THEN Sales.EstEnrl ELSE NULL END) AS CurrEstEnrl,
+                    MAX(CASE WHEN Sales.Year = :year THEN Sales.ActEnrl ELSE NULL END) AS CurrActEnrl,
+                    MAX(CASE WHEN Sales.Year = :year THEN Sales.EstSales ELSE NULL END) AS CurrEstSales
                 FROM 
                     Sales
                 JOIN 
@@ -187,11 +209,9 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
 
             db.close()
             resolve(results)
-
         } catch (error) {
             db.close()
             reject(error)
-            throw error
         }
     })
 }
@@ -285,7 +305,6 @@ const getPrevSalesByBook = (isbn: string, title: string, term: string, year: str
         } catch (error) {
             db.close()
             reject(error)
-            throw error
         }
     })
 }
@@ -331,6 +350,7 @@ const getBookByISBN = (ISBN: string): Promise<DBRow[]> => {
                 JOIN Sales ON Books.ID = Sales.BookID
                 AND ISBN LIKE ?
                 AND Sales.Term NOT IN ('I', 'Q')
+                AND Sales.Unit = '1'
                 ORDER BY Sales.Year DESC, Sales.Term`)
 
             const result = queryStmt.all('%' + ISBN + '%') as DBRow[]
@@ -419,44 +439,57 @@ const getCoursesByBook = (isbn: string, title: string, term: string, year: strin
     })
 }
 
-const getCoursesByTerm = (term: string, year: string, limit?: number, lastCourse?: { ID: number, Dept: string, Course: string, Section: string }): Promise<{ queryResult: DBRow[], totalRowCount: number }> => {
+const getCoursesByTerm = (term: string, year: string, limit: number, isForward: boolean, isSearch: boolean,
+    pivotCourse: { Dept: string, Course: string, Section: string }): Promise<{ queryResult: DBRow[], totalRows: number }> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
 
-        // Base query
+        const direction = isForward ? '>' : '<'
+        const order = isForward ? '' : ' DESC'
+
+        // 1=1 ensures condition is filled even if not provided 
+        const queryCondition = isSearch ? `AND 
+            (
+                ${pivotCourse.Dept ? "Courses.Dept >= :dept" : "1=1"}
+                AND ${pivotCourse.Course ? "Courses.Course >= :course" : "1=1"}
+                AND ${pivotCourse.Section ? "Courses.Section >= :section" : "1=1"}
+            )`
+            :
+            `AND (Courses.Dept, Courses.Course, Courses.Section) ${direction} (:dept, :course, :section)`
+
         let coursesQuery = `
-            SELECT 
-                Courses.ID, Courses.Dept, 
-                SUBSTR(CONCAT('000', Courses.Course), LENGTH(CONCAT('000', Courses.Course))-3+1, 3) AS Course, 
-                SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3) AS Section, 
-                Courses.Title,
-                Courses.Prof,
-                Courses.EstEnrl,
-                Courses.ActEnrl, 
-                Courses.CRN, 
-                Courses.NoText,
-                CASE 
-                    WHEN EXISTS (SELECT 1 FROM Course_Book WHERE Course_Book.CourseID = Courses.ID) THEN 'Y'
-                    ELSE 'N'
-                END AS Adoptions
-            FROM 
-                Courses
-            WHERE Courses.Term = ?
-                AND Courses.Year = ?
-        `
+                SELECT 
+                    Courses.ID, 
+                    Courses.Dept, 
+                    SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course, 
+                    SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section, 
+                    Courses.Title, 
+                    Courses.Prof, 
+                    Courses.EstEnrl, 
+                    Courses.ActEnrl, 
+                    Courses.NoText, 
+                    CASE 
+                        WHEN EXISTS (SELECT 1 FROM Course_Book WHERE Course_Book.CourseID = Courses.ID) THEN 'Y'
+                        ELSE 'N'
+                    END AS Adopt
+                FROM 
+                    Courses
+                WHERE 
+                    Courses.Term = :term 
+                    AND Courses.Year = :year 
+                    AND Courses.Unit = '1' 
+                    ${queryCondition}
+                ORDER BY 
+                    Courses.Dept${order}, Courses.Course${order}, Courses.Section${order}
+                LIMIT :limit
+            `
 
-        // Only add `Courses.Unit = '1'` and greater than condition if `limit` and `lastCourse` are present
-        const params: (string | number)[] = [term, year]
-        if (lastCourse !== undefined) {
-            coursesQuery += ` AND Courses.Unit = '1'`
-            coursesQuery += ` AND (Courses.Dept, Courses.Course, Courses.Section, Courses.ID) > (?, ?, ?, ?)`
-            coursesQuery += ` ORDER BY Courses.Dept, Courses.Course, Courses.Section, Courses.ID`
-            params.push(lastCourse.Dept, lastCourse.Course, lastCourse.Section, lastCourse.ID)
-
-            if (limit !== undefined) {
-                coursesQuery += ` LIMIT ?`
-                params.push(limit)
-            }
+        // Wrap in a reverse-order query if moving backward
+        if (!isForward) {
+            coursesQuery = `
+                SELECT * FROM (${coursesQuery}) AS Courses 
+                ORDER BY Courses.Dept, Courses.Course, Courses.Section
+            `
         }
 
         try {
@@ -472,17 +505,16 @@ const getCoursesByTerm = (term: string, year: string, limit?: number, lastCourse
                 `)
 
             const transaction = db.transaction(() => {
-                const queryResult = queryStmt.all(...params) as DBRow[]
+                const queryResult = queryStmt.all({ term, year, dept: pivotCourse.Dept, course: pivotCourse.Course, section: pivotCourse.Section, limit }) as DBRow[]
                 const countResult = countStmt.get(term, year) as DBRow
 
-                resolve({ queryResult, totalRowCount: countResult.Count as number })
+                resolve({ queryResult, totalRows: countResult.Count as number })
             })
 
             transaction()
+            db.close()
         } catch (error) {
             reject(error)
-        } finally {
-            db.close()
         }
     })
 }
@@ -531,7 +563,6 @@ const getAllTerms = (): Promise<DBRow[]> => {
         } catch (error) {
             db.close()
             reject(error)
-            throw error
         }
     })
 }
@@ -569,7 +600,7 @@ const getTablePage = (name: string, offset: number, limit: number): Promise<{ qu
 }
 
 export const bSQLDB = {
-    all: { createDB, updateDB, getAllTerms, getTablePage },
+    all: { createDB, updateDB, buildSelectStmt, getAllTerms, getTablePage },
     sales: { getPrevSalesByTerm, getPrevSalesByBook, getTermModelFeatures },
     books: { getBooksByTerm, getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm }

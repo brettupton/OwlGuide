@@ -26,8 +26,8 @@ export default function BuyingDecision() {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ipc) {
       window.ipc.on('decision-data', (data: any) => {
-        const sorted = data.decisions.sort((a, b) => a["Title"].localeCompare(b["Title"]))
-        setDecision(sorted)
+        // const sorted = data.decisions.sort((a, b) => a["Title"].localeCompare(b["Title"]))
+        setDecision(data.decisions)
         setTerm(data.term)
       })
     }
@@ -38,12 +38,20 @@ export default function BuyingDecision() {
       ISBN: isbn,
       Title: title
     })
-    window.ipc.send('decision', { method: 'child-decision', data: { term, isbn, title } })
+    window.ipc.send('child', { process: 'decision', data: { term, isbn, title } })
   }
 
   const handleTabClick = (tab: TableTab) => {
     setActiveTab(tab)
     tableRef.current.scrollIntoView({ behavior: "auto" })
+  }
+
+  const handleReset = () => {
+    setDecision([])
+    setTerm("")
+    setActiveBook(undefined)
+    setActiveTab("All")
+    window.ipc.send('close-child')
   }
 
   return (
@@ -53,9 +61,6 @@ export default function BuyingDecision() {
         ?
         <div className="flex flex-col">
           <div className="flex mx-2 border-b border-white text-sm font-medium justify-between">
-            <div className="flex">
-              Term: {term}
-            </div>
             <ul className="flex">
               {Object.keys(tabs).map((tab: TableTab, index) => {
                 return (
@@ -65,6 +70,14 @@ export default function BuyingDecision() {
                 )
               })}
             </ul>
+            <div className="flex gap-2">
+              <div className="flex text-md font-bold border border-white rounded px-2 py-1">{term}</div>
+              <div className="flex">
+                <button
+                  className="bg-white hover:bg-gray-300 text-gray-800 font-semibold py-1 px-1 border border-gray-400 rounded shadow text-center active:scale-95 transition-transform duration-75"
+                  onClick={handleReset}>Change</button>
+              </div>
+            </div>
           </div>
           <DecisionTable
             data={decision}

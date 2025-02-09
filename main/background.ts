@@ -1,19 +1,14 @@
+require("dotenv").config()
 import path from 'path'
-import fs from 'fs'
 import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'electron'
 import serve from 'electron-serve'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
-import { regex, fileManager, bSQLDB, paths } from './utils'
-import { matchEnrollment, submitEnrollment } from './processes/enrollment'
-import { getTermDecisions, getFileDecisions, getDecisions } from './processes/decision'
-import { initializeDB, updateTables } from './processes/sql'
-import { apiSearch, formatBookSearch } from './processes/book'
+import { bSQLDB, fileManager, paths, regex, logger } from './utils'
+import { bookProcess, courseProcess, decisionProcess, enrollmentProcess, sqlProcess } from './processes'
+import { initializeDB } from './processes/helpers/sqlDatabase'
+import { appProcess } from './processes/app'
 
-const isProd = process.env.NODE_ENV === 'production'
-
-const iconPath = path.join(__dirname, '..', 'renderer', 'public', 'images', 'owl.ico')
-const appHomeURL = isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`
-let dbLoaded = false
+export const isProd = process.env.NODE_ENV === 'production'
 
 if (isProd) {
   serve({ directory: 'app' })
@@ -29,7 +24,7 @@ let tray: Tray
     mainWindow = createWindow('main', {
       width: 830,
       height: 630,
-      icon: iconPath,
+      icon: paths.windowIconPath,
       frame: false,
       titleBarStyle: 'hidden',
       webPreferences: {
@@ -37,15 +32,23 @@ let tray: Tray
       },
     })
 
-    // Tray
-    const icon = nativeImage.createFromPath(iconPath)
-    tray = new Tray(icon)
+    tray = new Tray(nativeImage.createFromPath(paths.trayIconPath).resize({ width: 16 }))
     tray.setToolTip('OwlGuide')
 
-    await mainWindow.loadURL(appHomeURL)
+    // Check app version to determine if database needs to be created/recreated
+    const appVer = await fileManager.config.read('appVersion', false)
+    if (isProd && appVer !== app.getVersion()) {
+      try {
+        await initializeDB()
+        await fileManager.config.write('appVersion', app.getVersion(), false)
+      } catch (error) {
+        dialog.showErrorBox('Database Error', `${error}\n\nContact dev for assistance.`)
+      }
+    }
+
+    await mainWindow.loadURL(isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`)
 
     if (!isProd) {
-      // Load React DevTools only if in development
       const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer')
       installExtension(REACT_DEVELOPER_TOOLS)
         .catch((err: Error) => console.log('An error occurred: ', err))
@@ -55,19 +58,6 @@ let tray: Tray
 
 app.on('window-all-closed', () => {
   app.quit()
-})
-
-// On app initialization, copy DB to read-write directory
-ipcMain.on('initialize', async (event) => {
-  if (isProd && !dbLoaded) {
-    try {
-      await initializeDB()
-      dbLoaded = true
-    } catch (error) {
-      dialog.showMessageBox(mainWindow, { type: "info", title: "OwlGuide", message: `${error}\n\nContact dev for assistance.` })
-    }
-  }
-  event.reply('initialize-success', { isDev: !isProd, appVer: app.getVersion(), console: paths })
 })
 
 // Header Processes
@@ -98,179 +88,53 @@ ipcMain.on('close-child', () => {
   }
 })
 
-ipcMain.on('config', async (event, { method, data }) => {
+ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
+  logger.addNewLog("main", [process, method, data?.["term"] ?? "", data?.["isbn"] ?? ""])
+
+  try {
+    switch (process) {
+      case 'app':
+        await appProcess({ event, method, data })
+        break
+
+      case 'book':
+        await bookProcess({ event, method, data })
+        break
+
+      case 'course':
+        await courseProcess({ event, method, data })
+        break
+
+      case 'decision':
+        await decisionProcess({ event, method, data })
+        break
+
+      case 'enrollment':
+        await enrollmentProcess({ event, method, data })
+        break
+
+      case 'sql':
+        await sqlProcess({ event, method, data })
+        break
+    }
+  } catch (error) {
+    console.error(error)
+    logger.addNewLog("error", [process, method, error])
+    dialog.showErrorBox(`${process[0].toUpperCase() + process.slice(1)}`, `${error}\n\nContact dev for assistance.`)
+  }
+})
+
+ipcMain.on('dev', async (event, { method, data }: ProcessArgs) => {
   switch (method) {
-    case 'update':
-      try {
-        const key = Object.keys(data)[0]
-        const value = data[key]
-
-        await fileManager.config.write(key, value)
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Config", `${error}\n\nContact dev for assistance.`)
-      }
-      break
-
-    case 'get':
-      try {
-        const username = await fileManager.config.read(data)
-        console.log(username)
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Config", `${error}\n\nContact dev for assistance.`)
-      }
+    case 'open-user-dir':
+      shell.openPath(paths.userDataPath)
       break
   }
 })
 
-ipcMain.on('sql', async (event, { method, data }) => {
-  switch (method) {
-    case "get-table-page":
-      try {
-        const { queryResult, totalRowCount } = await bSQLDB.all.getTablePage(data.name, data.offset, data.limit)
-        event.reply('table-page', { rows: queryResult, total: totalRowCount })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("SQL", `Check the console.`)
-      }
-      break
-
-    case "get-terms":
-      try {
-        const terms = await bSQLDB.all.getAllTerms()
-        event.reply("term-list", { terms: terms.map((term) => term.Term) })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("SQL", `Check the console.`)
-      }
-      break
-
-    case "update-table":
-      console.log("Updating tables.")
-      const files = data.files as string[]
-
-      try {
-        const timeStart = Date.now()
-        await updateTables(files)
-        const timeEnd = Date.now()
-        dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `Tables Replaced in ${(timeEnd - timeStart) / 1000}s`, type: "info" })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("SQL", "Check console.")
-      }
-      break
-    case "recreate-db":
-      try {
-        const timeStart = Date.now()
-        await initializeDB()
-        const timeEnd = Date.now()
-        dialog.showMessageBox(mainWindow, { title: "OwlGuide", message: `DB Recreated in ${(timeEnd - timeStart) / 1000}s`, type: "info" })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("SQL", "Check console.")
-      }
-      break
-  }
-})
-
-ipcMain.on('enrollment', async (event, { method, data }) => {
-  switch (method) {
-    case 'file-upload':
-      try {
-        const { enrollment, filePath } = await matchEnrollment(data[0])
-        event.reply('enrollment-data', { enrollment, filePath })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance.`)
-        event.reply('file-error')
-      }
-      break
-
-    case 'file-download':
-      try {
-        const { fileName, csv } = await submitEnrollment(data.enrollment, data.filePath)
-
-        dialog.showSaveDialog({
-          defaultPath: path.join(app.getPath('downloads'), `${fileName}_Formatted`),
-          filters: [{ name: 'CSV Files', extensions: ['csv'] }]
-        })
-          .then(async (result) => {
-            if (!result.canceled && result.filePath) {
-              fs.writeFile(result.filePath, csv, (err) => {
-                if (err) {
-                  throw Error("Couldn't write CSV to selected path.")
-                }
-                event.reply('enrl-success')
-              })
-            }
-          })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Enrollment", `${error}\n\nContact dev for assistance.`)
-      }
-      break
-  }
-})
-
-ipcMain.on('decision', async (event, { method, data }) => {
-  switch (method) {
-    case 'file-upload':
-      try {
-        const { decisions, term } = await getFileDecisions(data[0])
-        event.reply('decision-data', { decisions, term })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)
-        event.reply('file-error')
-      }
-      break
-
-    case "get-term-decision":
-      try {
-        const decisions = await getDecisions(data.term)
-        event.reply('decision-data', { decisions, term: data.term })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)
-        event.reply('decision-data', [])
-      }
-      break
-
-    case "child-decision":
-      try {
-        if (!childWindow) {
-          childWindow = await createChildWindow(mainWindow, "decision-data", "right")
-        }
-
-        const [term, year] = data.term.match(/[a-zA-z]|\d+/g)
-        const salesHistory = await bSQLDB.sales.getPrevSalesByBook(data.isbn, data.title, term, year)
-        const courses = await bSQLDB.courses.getCoursesByBook(data.isbn, data.title, term, year)
-
-        childWindow.webContents.send('data', { salesHistory, courses, isbn: data.isbn, title: data.title })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)
-      }
-      break
-  }
-})
-
-ipcMain.on('course', async (event, { method, data }) => {
-  switch (method) {
-    case 'get-term-course':
-      try {
-        const [term, year] = regex.splitFullTerm(data.term)
-        const { queryResult, totalRowCount } = await bSQLDB.courses.getCoursesByTerm(term, year, data.limit, data.lastCourse)
-
-        event.reply('course-data', { courses: queryResult, total: totalRowCount, term: term + year })
-      } catch (error) {
-        console.error(error)
-        dialog.showErrorBox("Course", `${error}\n\nContact dev for assistance.`)
-      }
-      break
-
-    case 'child-course':
+ipcMain.on('child', async (event, { process, data }) => {
+  switch (process) {
+    case 'course':
       try {
         if (!childWindow) {
           childWindow = await createChildWindow(mainWindow, "course-data", "bottom")
@@ -283,26 +147,21 @@ ipcMain.on('course', async (event, { method, data }) => {
         dialog.showErrorBox("Course", `${error}\n\nContact dev for assistance.`)
       }
       break
-  }
-})
 
-ipcMain.on('book', async (event, { method, data }) => {
-  switch (method) {
-    case 'search':
+    case 'decision':
       try {
-        const isbn = data as string
-        const search = regex.createSearchISBN(isbn)
-        // Query SQL DB for book term & vendor data
-        const sqlResults = await bSQLDB.books.getBookByISBN(search)
-        // Query Google API for book information data
-        const apiResults = await apiSearch(isbn)
-        // Join both results
-        const book = formatBookSearch(sqlResults, apiResults)
+        if (!childWindow) {
+          childWindow = await createChildWindow(mainWindow, "decision-data", "right")
+        }
 
-        event.reply('data', { book })
+        const [term, year] = regex.splitFullTerm(data.term)
+        const salesHistory = await bSQLDB.sales.getPrevSalesByBook(data.isbn, data.title, term, year)
+        const courses = await bSQLDB.courses.getCoursesByBook(data.isbn, data.title, term, year)
+
+        childWindow.webContents.send('data', { salesHistory, courses, isbn: data.isbn, title: data.title })
       } catch (error) {
         console.error(error)
-        dialog.showErrorBox("Book", `${error}\n\nContact dev for assistance.`)
+        dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)
       }
       break
   }

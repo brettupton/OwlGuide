@@ -5,7 +5,7 @@ interface PageTableProps {
     totalRows: number
     page: number
     limit: number
-    updatePage: (newPage: number) => void
+    updatePage: (forward: boolean) => void
     tableRef: MutableRefObject<HTMLTableElement>
     handleRowClick?: (courseID: number) => void
     activeRow?: number
@@ -16,14 +16,14 @@ export default function PageTable({ pageData, totalRows, page, limit, updatePage
 
     const rowClass = (header: string) => {
         // Certain headers need to be centered and set fixed width for professor column
-        const centerHeaders = ['Course', 'Section', 'EstEnrl', 'ActEnrl', 'NoText', 'Adoptions']
+        const centerHeaders = ['Course', 'Section', 'EstEnrl', 'ActEnrl', 'NoText', 'Adopt']
 
-        return `p-2 ${header === 'Prof' ? 'w-52' : centerHeaders.includes(header) ? 'text-center' : ''}`
+        return `p-2 ${header === 'Prof' ? 'w-24 truncate' : header === 'Title' ? 'w-52 truncate' : centerHeaders.includes(header) ? 'text-center' : ''}`
     }
 
     return (
         <div className="w-full">
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-9rem)]">
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-12.5rem)]">
                 <table className="w-full text-sm text-left rtl:text-right text-white" ref={tableRef}>
                     <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                         <tr>
@@ -41,11 +41,13 @@ export default function PageTable({ pageData, totalRows, page, limit, updatePage
                         {pageData.map((row) => {
                             return (
                                 <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row['ID'] as number)}>
-                                    {headers.map((header, index) => {
+                                    {headers.map((header) => {
                                         return (
                                             header !== "ID" &&
-                                            <td className={rowClass(header) + ` ${activeRow === row['ID'] ? 'bg-gray-400' : ''}`} key={`${row['ID']}-${header}`}>
-                                                {typeof (row[header]) === 'string' ? row[header].length > 12 ? row[header].slice(0, 12) + "..." : row[header] : row[header]}
+                                            <td key={`${row['ID']}-${header}`}>
+                                                <div className={rowClass(header) + ` ${activeRow === row['ID'] ? 'bg-gray-400' : ''}`}>
+                                                    {row[header]}
+                                                </div>
                                             </td>
                                         )
                                     })}
@@ -68,7 +70,7 @@ export default function PageTable({ pageData, totalRows, page, limit, updatePage
                 </span>
                 <div className="flex">
                     <button
-                        onClick={() => updatePage(page - 1)}
+                        onClick={() => updatePage(false)}
                         className="flex items-center justify-center px-3 h-8 me-3 text-sm font-medium border rounded-lg  bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
                         <svg className="w-3.5 h-3.5 me-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
                             <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5H1m0 0 4 4M1 5l4-4" />
@@ -76,7 +78,7 @@ export default function PageTable({ pageData, totalRows, page, limit, updatePage
                         Previous
                     </button>
                     <button
-                        onClick={() => updatePage(page + 1)}
+                        onClick={() => updatePage(true)}
                         className="flex items-center justify-center px-3 h-8 me-3 text-sm font-medium border rounded-lg  bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
                         Next
                         <svg className="w-3.5 h-3.5 ms-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">

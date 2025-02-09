@@ -1,38 +1,77 @@
-import { useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 
 import '../styles/globals.css'
 import Header from '../components/Header'
+import Footer from '../components/Footer'
+import Login from '../components/Login'
 
 function App({ Component, pageProps }: AppProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false)
+  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState<boolean>(false)
   const [isHelpMenuOpen, setIsHelpMenuOpen] = useState<boolean>(false)
+  const [isLoginMenuOpen, setIsLoginMenuOpen] = useState<boolean>(false)
   const [isChildWindow, setIsChildWindow] = useState<boolean>(false)
-  const [isDev, setIsDev] = useState<boolean>(false)
   const [appVer, setAppVer] = useState<string>("")
+  const [dbUpdateTime, setDBUpdateTime] = useState<string>("")
+  const [userInfo, setUserInfo] = useState({ userId: "", password: "" })
+  const [isPassShow, setIsPassShow] = useState<boolean>(false)
+  const [isDBUpdating, setIsDBUpdating] = useState<boolean>(false)
+
+  const HeaderMenuRef = useRef(null)
+  const LoginMenuRef = useRef(null)
+  const router = useRouter()
 
   const handleMenuToggle = () => {
-    setIsMenuOpen(!isMenuOpen)
+    setIsHeaderMenuOpen(!isHeaderMenuOpen)
   }
 
   const handleHelpMenuToggle = () => {
     setIsHelpMenuOpen(!isHelpMenuOpen)
   }
 
-  const HeaderMenuRef = useRef(null)
+  const handleLoginMenuToggle = () => {
+    setIsLoginMenuOpen(!isLoginMenuOpen)
+    setIsPassShow(false)
+    setUserInfo({
+      userId: "",
+      password: ""
+    })
+  }
 
-  const router = useRouter()
+  const handleUserChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.currentTarget
+
+    const newUser = {
+      ...userInfo,
+      [id]: value
+    }
+    setUserInfo(newUser)
+  }
+
+  const handleDBUpdate = () => {
+    if (Object.values(userInfo).every((ele) => ele !== "")) {
+      setIsDBUpdating(true)
+      window.ipc.send('main', { process: 'sql', method: 'update-db', data: { userInfo } })
+    }
+  }
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ipc) {
-      window.ipc.send('initialize')
+      window.ipc.send('main', { process: 'app', method: 'get-values' })
     }
 
-    window.ipc.on('initialize-success', (reply: { isDev: boolean, appVer: string, console: string[] }) => {
-      setIsDev(reply.isDev)
-      setAppVer(reply.appVer)
-      console.log(reply.console)
+    window.ipc.on('appData', ({ appVer, dbUpdateTime }: { appVer: string, dbUpdateTime: string }) => {
+      setAppVer(appVer)
+      setDBUpdateTime(dbUpdateTime)
+    })
+
+    window.ipc.on('update-success', () => {
+      router.reload()
+    })
+
+    window.ipc.on('update-fail', () => {
+      setIsDBUpdating(false)
     })
 
     const handleContextMenu = (event: MouseEvent) => {
@@ -48,8 +87,12 @@ function App({ Component, pageProps }: AppProps) {
 
     const handleClickOutsideMenu = (event: MouseEvent) => {
       if (HeaderMenuRef.current && !HeaderMenuRef.current.contains(event.target)) {
-        setIsMenuOpen(false)
+        setIsHeaderMenuOpen(false)
         setIsHelpMenuOpen(false)
+      }
+
+      if (LoginMenuRef.current && !LoginMenuRef.current.contains(event.target)) {
+        setIsLoginMenuOpen(false)
       }
     }
 
@@ -67,7 +110,7 @@ function App({ Component, pageProps }: AppProps) {
       window.ipc.send('close-child')
     }
 
-    setIsMenuOpen(false)
+    setIsHeaderMenuOpen(false)
     setIsChildWindow(router.pathname.startsWith('/child'))
 
     router.events.on('routeChangeStart', handleCloseChild)
@@ -80,15 +123,30 @@ function App({ Component, pageProps }: AppProps) {
   return (
     <div className="flex flex-col h-screen">
       <Header
-        isMenuOpen={isMenuOpen}
+        isHeaderMenuOpen={isHeaderMenuOpen}
         handleMenuToggle={handleMenuToggle}
         isHelpMenuOpen={isHelpMenuOpen}
         handleHelpMenuToggle={handleHelpMenuToggle}
         isChildWindow={isChildWindow}
         appVer={appVer}
         HeaderMenuRef={HeaderMenuRef} />
-      <Component {...pageProps}
-        isDev={isDev} />
+      <Component {...pageProps} />
+      <Login
+        isLoginMenuOpen={isLoginMenuOpen}
+        handleLoginMenuToggle={handleLoginMenuToggle}
+        handleUserChange={handleUserChange}
+        userInfo={userInfo}
+        isPassShow={isPassShow}
+        handlePassToggle={() => setIsPassShow(!isPassShow)}
+        handleDBUpdate={handleDBUpdate}
+        isDBUpdating={isDBUpdating}
+        LoginMenuRef={LoginMenuRef} />
+      <Footer
+        syncDB={handleLoginMenuToggle}
+        dbUpdateTime={dbUpdateTime}
+        isDBUpdating={isDBUpdating}
+        isChildWindow={isChildWindow}
+      />
     </div>
   )
 }

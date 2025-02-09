@@ -47,7 +47,7 @@ const updateChildWindowPos = (mainWindow: BrowserWindow, childWindow: BrowserWin
   if (mainWindow && childWindow) {
     const mainBounds = mainWindow.getContentBounds()
     const childBounds = childWindow.getBounds()
-    const childX = location === "right" ? mainBounds.x + (mainBounds.width - 4) : location === "bottom" ? mainBounds.x : 0
+    const childX = location === "right" ? mainBounds.x + (mainBounds.width - 2) : location === "bottom" ? mainBounds.x : 0
     const childY = location === "right" ? mainBounds.y : location === "bottom" ? mainBounds.y + mainBounds.height : 0
 
     childWindow.setBounds({
