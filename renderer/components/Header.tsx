@@ -13,6 +13,9 @@ interface HeaderProps {
 }
 
 export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWindow, isHelpMenuOpen, handleHelpMenuToggle, appVer, HeaderMenuRef }: HeaderProps) {
+    const routes = ["home", "course", "book", "decision", "enrollment", "report"]
+    const plurals = ["course", "decision", "book", "report"]
+
     const handleMinimize = () => {
         window.ipc.send('minimize-app')
     }
@@ -64,25 +67,19 @@ export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWind
                         </div>
                     </div>
                 </div>
-                <div
-                    className={`absolute text-black font-medium top-full left-10 mt-2 bg-white border border-gray-300 shadow-lg rounded-md ${isHeaderMenuOpen ? 'block' : 'hidden'}`}
+                <ul
+                    className={`absolute flex flex-col text-black font-medium top-full left-10 mt-2 bg-white border border-gray-300 shadow-lg rounded-md ${isHeaderMenuOpen ? 'block' : 'hidden'}`}
                     style={{ zIndex: 50 }} >
-                    <Link href="/home">
-                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Home</div>
-                    </Link>
-                    <Link href="/course">
-                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Courses</div>
-                    </Link>
-                    <Link href="/book">
-                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Books</div>
-                    </Link>
-                    <Link href="/decision">
-                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Decisions</div>
-                    </Link>
-                    <Link href="enrollment">
-                        <div className="px-2 py-1 cursor-pointer hover:bg-gray-100">Enrollment</div>
-                    </Link>
-                </div>
+                    {routes.map((route, index) => (
+                        <Link
+                            href={`${route}`}
+                            key={index}
+                            className="px-2 py-1 cursor-pointer hover:bg-gray-100"
+                        >
+                            {`${route[0].toUpperCase()}${route.slice(1)}${plurals.includes(route) ? 's' : ''}`}
+                        </Link>
+                    ))}
+                </ul>
                 <div
                     className={`flex flex-col absolute text-black text-sm top-full right-20 mt-2 bg-white border border-gray-300 shadow-lg rounded-md ${isHelpMenuOpen ? 'block' : 'hidden'}`}
                     style={{ zIndex: 50 }}>

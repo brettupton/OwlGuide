@@ -4,9 +4,8 @@ import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'e
 import serve from 'electron-serve'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
 import { bSQLDB, fileManager, paths, regex, logger } from './utils'
-import { bookProcess, courseProcess, decisionProcess, enrollmentProcess, sqlProcess } from './processes'
+import { appProcess, bookProcess, courseProcess, decisionProcess, enrollmentProcess, reportProcess, sqlProcess } from './processes'
 import { initializeDB } from './processes/helpers/sqlDatabase'
-import { appProcess } from './processes/app'
 
 export const isProd = process.env.NODE_ENV === 'production'
 
@@ -111,6 +110,10 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
 
       case 'enrollment':
         await enrollmentProcess({ event, method, data })
+        break
+
+      case 'report':
+        await reportProcess({ event, method, data })
         break
 
       case 'sql':

@@ -112,6 +112,14 @@ const ISOtoDb2Time = (iso: string) => {
     return iso.replace('T', '-').replace(/:/g, '.').replace('Z', '').slice(0, 26) + '000'
 }
 
+const fileNameTimeStamp = () => {
+    // Construct filesafe timestamp string in MMDDYYTHHMMSSMSZ format
+    const now = new Date()
+
+    return `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${now.getFullYear().toString().slice(-2)}`
+        + `T${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}-${String(now.getSeconds()).padStart(2, "0")}-${now.getMilliseconds()}Z`
+}
+
 export const regex = {
     matchFileName,
     matchFileTermYear,
@@ -120,5 +128,6 @@ export const regex = {
     toProperCase,
     usedBarcodeToISBN,
     db2TimeToLocal,
-    ISOtoDb2Time
+    ISOtoDb2Time,
+    fileNameTimeStamp
 }

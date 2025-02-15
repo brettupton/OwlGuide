@@ -216,56 +216,6 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
     })
 }
 
-const getTermModelFeatures = (termYear: string): Promise<DBRow[]> => {
-    return new Promise((resolve, reject) => {
-        const db = new Database(paths.dbPath)
-        const [term, year] = regex.splitFullTerm(termYear)
-
-        try {
-            const queryStmt = db.prepare(`
-                SELECT
-                    Books.ID,
-                    Books.ISBN,
-                    Books.Title,
-                    Sales.EstSales,
-                    Sales.Term,
-                    Sales.Year,
-                    Books.Publisher,
-                    Courses.Dept,
-                    Courses.Course,
-                    Sales.EstEnrl,
-                    Sales.ActEnrl,
-                    (Prices.UnitPrice * (1 - (CAST(Prices.Discount AS REAL) - 30) / 100)) AS Price
-                FROM Sales
-                JOIN Books ON Sales.BookID = Books.ID
-                JOIN Prices ON Books.ID = Prices.BookID
-                JOIN Course_Book ON Books.ID = Course_Book.BookID
-                JOIN Courses ON Course_Book.CourseID = Courses.ID
-                WHERE Sales.Term = :term
-                    AND Sales.Year = :year
-                    AND Sales.Unit = 1
-					AND Courses.Term = Sales.Term
-					AND Courses.Year = Sales.Year
-                    AND Sales.NumCourses > 0
-                    AND Books.Publisher NOT IN ('VST', 'XX SUPPLY')
-                    AND Dept NOT IN ('CANC', 'SPEC')
-                    AND Course NOT IN ('CANC', 'SPEC')
-                    AND Prices.UnitPrice > 0
-                GROUP BY Sales.Term, Sales.Year, Sales.BookID
-                ORDER BY Sales.BookID
-                `)
-
-            const queryResult = queryStmt.all({ term, year }) as DBRow[]
-
-            db.close()
-            resolve(queryResult)
-        } catch (error) {
-            db.close()
-            reject(error)
-        }
-    })
-}
-
 const getPrevSalesByBook = (isbn: string, title: string, term: string, year: string) => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
@@ -299,35 +249,6 @@ const getPrevSalesByBook = (isbn: string, title: string, term: string, year: str
                 ORDER BY Sales.Term`)
 
             const results = queryStmt.all(isbn, title, term, year) as DBRow[]
-
-            db.close()
-            resolve(results)
-        } catch (error) {
-            db.close()
-            reject(error)
-        }
-    })
-}
-
-const getBooksByTerm = (term: string, year: string): Promise<DBRow[]> => {
-    return new Promise((resolve, reject) => {
-        const db = new Database(paths.dbPath)
-
-        try {
-            const queryStmt = db.prepare(`
-                SELECT 
-                    Books.ISBN, Books.Title 
-                FROM 
-                    Books 
-                JOIN 
-                    Sales on Books.ID = Sales.BookID
-                WHERE
-                    Sales.BookID != '0'
-                    AND Sales.Unit = '1'
-                    AND Sales.Term=:term 
-                    AND Sales.Year=:year`)
-
-            const results = queryStmt.all({ term, year }) as DBRow[]
 
             db.close()
             resolve(results)
@@ -599,9 +520,120 @@ const getTablePage = (name: string, offset: number, limit: number): Promise<{ qu
     })
 }
 
+const getLibraryReport = (term: string, year: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT 
+                    Books.Title, 
+                    Books.ISBN, 
+                    (CASE WHEN Course_Book.Unit = '1' THEN 'MPC' ELSE 'MCV' END) AS Str,
+                    Courses.Dept, 
+                    SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course, 
+                    SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section, 
+                    Courses.Prof,
+                    Books.Author, 
+                    Books.Edition, 
+                    Books.Publisher
+                FROM 
+                    Course_Book
+                JOIN 
+                    Courses ON Course_Book.CourseID = Courses.ID
+                JOIN 
+                    Books ON Course_Book.BookID = Books.ID
+                WHERE 
+                    Course_Book.Term = ?
+                        AND Course_Book.Year = ?
+                        AND Courses.Dept NOT IN ('CANC', 'SPEC')
+                        AND SUBSTR(Books.ISBN, 1, 3) != '822'
+                        AND Books.ISBN != '0'
+                        AND Books.Publisher != 'VST'
+                ORDER BY Courses.Dept, Courses.Course, Courses.Section, Books.ISBN
+                `)
+
+            const queryResult = queryStmt.all(term, year) as DBRow[]
+
+            db.close()
+            resolve(queryResult)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
+const getReconReport = (term: string, year: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT 
+                    Courses.Dept,
+                    SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course, 
+                    SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section,
+                    Books.Title, 
+                    Books.ISBN,
+                    MAX(CASE WHEN Inventory.NewUsed = 'NW' THEN Inventory.OnHand ELSE 0 END) AS NewOH,
+                    MAX(CASE WHEN Inventory.NewUsed = 'NW' THEN Inventory.Reserved ELSE 0 END) AS NewRsvd,
+                    MAX(CASE WHEN Inventory.NewUsed = 'US' THEN Inventory.OnHand ELSE 0 END) AS UsedOH,
+                    MAX(CASE WHEN Inventory.NewUsed = 'US' THEN Inventory.Reserved ELSE 0 END) AS UsedRsvd,
+                    (
+                    SELECT GROUP_CONCAT(Dept || ' ' || Course, CHAR(10))
+                    FROM (
+                        SELECT DISTINCT C2.Dept, 
+                            SUBSTR('000' || C2.Course, LENGTH('000' || C2.Course) - 3 + 1, 3) AS Course
+                        FROM Course_Book CB2
+                        JOIN Courses C2 ON CB2.CourseID = C2.ID
+                        WHERE CB2.BookID = Course_Book.BookID
+                        AND (C2.Dept <> Courses.Dept OR C2.Course <> Courses.Course)
+                        AND CB2.Unit = '1' 
+                        AND CB2.Term = :term 
+                        AND CB2.Year = :year
+                        AND C2.Dept NOT IN ('CANC', 'SPEC')
+                        ORDER BY C2.Dept, C2.Course
+                    )
+                ) AS CXL
+                FROM Course_Book
+                JOIN Courses ON Course_Book.CourseID = Courses.ID
+                JOIN Books ON Course_Book.BookID = Books.ID
+                LEFT JOIN Inventory ON Course_Book.BookID = Inventory.BookID
+                WHERE 
+                    Course_Book.Unit = '1'
+                    AND Course_Book.Term = :term
+                    AND Course_Book.Year = :year
+                    AND Courses.Dept NOT IN ('CANC', 'SPEC')
+                    AND Books.Publisher NOT IN ('XX SUPPLY', 'VST')
+                GROUP BY 
+                    Courses.Dept, 
+                    Courses.Course, 
+                    Courses.Section,
+                    Books.ID, 
+                    Books.ISBN, 
+                    Books.Title
+                ORDER BY 
+                    Courses.Dept, 
+                    Course, 
+                    Section
+                `)
+
+            const queryResult = queryStmt.all({ term, year }) as DBRow[]
+
+            db.close()
+            resolve(queryResult)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
 export const bSQLDB = {
     all: { createDB, updateDB, buildSelectStmt, getAllTerms, getTablePage },
-    sales: { getPrevSalesByTerm, getPrevSalesByBook, getTermModelFeatures },
-    books: { getBooksByTerm, getBooksByCourse, getBookByISBN },
-    courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm }
+    sales: { getPrevSalesByTerm, getPrevSalesByBook },
+    books: { getBooksByCourse, getBookByISBN },
+    courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm },
+    reports: { libr: getLibraryReport, recon: getReconReport }
 }

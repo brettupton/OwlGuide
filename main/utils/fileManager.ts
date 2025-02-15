@@ -32,6 +32,37 @@ const parseXLSX = (filePath: string): Promise<{ [key: string]: string | number }
     })
 }
 
+const createXLSX = (data: DBRow[]): Promise<Buffer> => {
+    return new Promise((resolve, reject) => {
+        try {
+            const wb = XLSX.utils.book_new()
+            const ws = XLSX.utils.json_to_sheet(data)
+
+            // Calculate max width for each column and set on worksheet
+            const columns = Object.keys(data[0] || {})
+            const columnWidths = columns.map(column => {
+                return {
+                    wch: Math.max(
+                        column.length, // Header width
+                        ...data.map(row => String(row[column] ?? "").length), // Max data length
+
+                    ) + 2
+                }
+            })
+            ws["!cols"] = columnWidths
+
+            XLSX.utils.book_append_sheet(wb, ws, "Report")
+
+            // Write workbook as binary data
+            const xlsxBuffer: Buffer = XLSX.write(wb, { bookType: "xlsx", type: "buffer", cellStyles: true })
+
+            resolve(xlsxBuffer)
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
 const updateConfigValue = (key: string, value: string, encrypt: boolean): Promise<void> => {
     return new Promise(async (resolve, reject) => {
         if (encrypt) {
@@ -183,7 +214,8 @@ export const fileManager = {
         read: parseCSV
     },
     xlsx: {
-        read: parseXLSX
+        read: parseXLSX,
+        write: createXLSX
     },
     files: {
         create: createDir,
