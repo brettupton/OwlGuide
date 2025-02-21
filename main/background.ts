@@ -6,6 +6,7 @@ import { createWindow, createChildWindow, rightClickMenu } from './electron-util
 import { bSQLDB, fileManager, paths, regex, logger } from './utils'
 import { appProcess, bookProcess, courseProcess, decisionProcess, enrollmentProcess, reportProcess, sqlProcess } from './processes'
 import { initializeDB } from './processes/helpers/sqlDatabase'
+import { orderProcess } from './processes/order'
 
 export const isProd = process.env.NODE_ENV === 'production'
 
@@ -112,6 +113,10 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
         await enrollmentProcess({ event, method, data })
         break
 
+      case 'order':
+        await orderProcess({ event, method, data })
+        break
+
       case 'report':
         await reportProcess({ event, method, data })
         break
@@ -165,6 +170,26 @@ ipcMain.on('child', async (event, { process, data }) => {
       } catch (error) {
         console.error(error)
         dialog.showErrorBox("Decision", `${error}\n\nContact dev for assistance.`)
+      }
+      break
+
+    case 'order':
+      try {
+        const { reqId } = data
+        const order = await bSQLDB.orders.getOrderByID(reqId)
+
+        if (!childWindow) {
+          childWindow = await createChildWindow(mainWindow, "order-data", "bottom")
+
+          // Wait for renderer to signal it's ready
+          ipcMain.on("ready-to-receive", (event) => {
+            event.reply("data", { order })
+          })
+        } else {
+          childWindow.webContents.send("data", { order });
+        }
+      } catch (error) {
+        console.error(error)
       }
       break
   }

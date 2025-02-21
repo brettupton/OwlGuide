@@ -2,30 +2,56 @@ import Image from "next/image"
 import { BookResult } from "../../types/Book"
 
 export default function BookDisplay({ book }: { book: BookResult }) {
+    const newPrice = parseInt(book.Discount) > 25 ? parseFloat(book.UnitPrice) : parseFloat(book.UnitPrice) / (1 - (25 / 100))
+    const usedPrice = (newPrice * (1 - (25 / 100))).toFixed(2)
+
     return (
         <div className="flex flex-col">
-            <div className="flex bg-gray-300 rounded-xl border border-white m-4 p-3 text-black">
-                <div className="flex">
-                    <Image
-                        src={`${book.Image ?? '/images/placeholder.jpg'}`}
-                        width={130}
-                        height={130}
-                        alt="Book Thumbnail"
-                    />
-                </div>
-                <div className="flex flex-col ml-2 w-full">
-                    <div className="flex text-xl">{book.Title}</div>
-                    <div className="flex">{book.ISBN}</div>
-                    <div className="flex">{book.AuthorLast}</div>
-                    <div className="flex">{book.Author}</div>
-                    <div className="flex">{book.Edition}</div>
-                    <div className="flex">{book.Vendor}</div>
-                    <div className="flex">{book.Publisher}</div>
-                    <div className="flex text-sm place-self-end translate-y-3 translate-x-1">{book.ID}</div>
+            <div className="flex bg-gray-300 rounded-xl border border-white m-4 p-2 text-black h-[calc(50vh-4rem)]">
+                <div className="flex flex-col md:flex-row bg-gray-800 text-white shadow-lg rounded-lg p-3 border border-gray-700 w-full">
+                    <div className="w-32 h-48 flex-shrink-0 relative">
+                        <Image
+                            src={book.Image ?? '/images/placeholder.jpg'}
+                            alt={book.Title}
+                            layout="fill"
+                            objectFit="cover"
+                            className="rounded-md shadow-md"
+                        />
+                    </div>
+                    <div className="flex flex-col justify-between px-4 w-full">
+                        <div>
+                            <h2 className="text-lg font-semibold">{book.Title}</h2>
+                            {book.Subtitle && <p className="text-sm text-gray-400">{book.Subtitle}</p>}
+                            <p className="text-sm text-gray-300">
+                                By <span className="font-medium">{book.Author}</span> ({book.AuthorLast})
+                            </p>
+                            <p className="text-xs text-gray-500">Edition: {book.Edition}</p>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-400">
+                            <p><span className="font-semibold">Vendor:</span> {book.Vendor}</p>
+                            <p><span className="font-semibold">Publisher:</span> {book.Publisher}</p>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-400">
+                            <p><span className="font-semibold">ISBN:</span> {book.ISBN}</p>
+                            <p><span className="font-semibold">ID:</span> {book.ID}</p>
+                        </div>
+                        <div className="mt-1 flex justify-between items-center">
+                            <div className="grid grid-cols-2 mt-2 text-xs text-gray-400">
+                                <p className="font-semibold">Unit Price: <span className="text-gray-200">${book.UnitPrice}</span></p>
+                                <p className="font-semibold">New Price: <span className="text-gray-200">${newPrice.toFixed(2)}</span></p>
+                                <p className="font-semibold">Discount: <span className="text-gray-200">{book.Discount}%</span></p>
+                                <p className="font-semibold">Used Price: <span className="text-gray-200">${usedPrice}</span></p>
+                            </div>
+                            <div className="text-xs text-gray-400">
+                                <p>New: <span className="font-semibold text-gray-200">{book.NewOH}</span> in stock</p>
+                                <p>Used: <span className="font-semibold text-gray-200">{book.UsedOH}</span> in stock</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div className="flex bg-gray-300 rounded-xl border border-white mx-4 p-3">
-                <div className="flex relative max-h-[calc(50vh-6.5rem)] w-full overflow-x-auto">
+            <div className="flex bg-gray-300 rounded-xl border border-white mx-4 p-2 max-h-[calc(25vh)]">
+                <div className="flex relative w-full overflow-x-auto">
                     <table className="w-full text-sm text-left rtl:text-right text-white text-center">
                         <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                             <tr>

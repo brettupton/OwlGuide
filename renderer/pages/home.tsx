@@ -2,8 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 export default function HomePage() {
-  const routes = ["course", "book", "decision", "enrollment", "report"]
-  const plurals = ["course", "decision", "book", "report"]
+  const routes = ["course", "book", "decision", "enrollment", "order", "report"]
+  const plurals = ["course", "decision", "book", "order", "report"]
 
   return (
     <div className="flex flex-grow items-center justify-center">

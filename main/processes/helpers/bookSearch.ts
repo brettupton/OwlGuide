@@ -2,12 +2,14 @@ import { BookResult, GVolInfo, APIResult } from "../../../types/Book"
 import axios from "axios"
 import { regex } from "../../utils"
 
-const formatBookSearch = (sqlResults: DBRow[], apiResults: APIResult | {}) => {
+const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResults: APIResult | {}) => {
     let book: BookResult | {} = {}
-    if (sqlResults.length > 0) {
+
+    if (sqlResults.info[0].ID) {
         // Convert all object values to proper case
-        Object.keys(sqlResults[0]).forEach((key) => sqlResults[0][key] = regex.toProperCase(sqlResults[0][key]))
-        const firstResult = sqlResults[0]
+        Object.keys(sqlResults.info[0]).forEach((key) => sqlResults.info[0][key] = regex.toProperCase(sqlResults.info[0][key]))
+
+        const firstResult = sqlResults.info[0]
         book = {
             ID: firstResult["ID"] as number,
             ISBN: firstResult["ISBN"] || apiResults["ISBN"],
@@ -19,7 +21,11 @@ const formatBookSearch = (sqlResults: DBRow[], apiResults: APIResult | {}) => {
             Vendor: firstResult["Publisher"],
             Publisher: apiResults["Publisher"] || "",
             Image: apiResults["PreviewImg"],
-            Terms: sqlResults.map((result) => {
+            UnitPrice: firstResult["UnitPrice"],
+            Discount: firstResult["Discount"],
+            NewOH: firstResult["NewOH"],
+            UsedOH: firstResult["UsedOH"],
+            Terms: sqlResults.sales.map((result) => {
                 return {
                     Term: (result["Term"].toString()) + (result["Year"].toString()),
                     EstEnrl: result["EstEnrl"],

@@ -6,7 +6,7 @@ import tables from "../../db/tables"
 import { TableData } from "../../../types/Database"
 
 export const updateDB = async (files: string[]) => {
-    if (files.length === 6) {
+    if (files.length === Object.keys(tables).length) {
         try {
             const timeStart = Date.now()
             await bSQLDB.all.updateDB(files)
@@ -18,7 +18,7 @@ export const updateDB = async (files: string[]) => {
             throw error
         }
     } else {
-        throw "Update requires six files: MRP008, ADP001, ADP006, ADP003, MRP009, MRP012"
+        throw `Incorrect number of files: Expected ${Object.keys(tables).length}, Received ${files.length}`
     }
 }
 

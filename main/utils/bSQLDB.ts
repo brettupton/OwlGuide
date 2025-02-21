@@ -22,9 +22,9 @@ const createDB = async (): Promise<void[]> => {
                         })
                     })()
 
-                    // Placeholder ID for missing Book IDs in foreign tables
-                    if (tableName === "Books") {
-                        db.prepare(`INSERT INTO Books (ID) VALUES (0)`).run()
+                    // Placeholder ID for missing Book and Order IDs in foreign tables
+                    if (tableName === "Books" || tableName === "Orders") {
+                        db.prepare(`INSERT INTO ${tableName} (ID) VALUES (0)`).run()
                     }
 
                     db.close()
@@ -88,7 +88,7 @@ const buildInsertStmt = (tableName: TableName, temp: boolean) => {
         if (tableName === "Course_Book" && key === "CourseID") {
             return resolveForeignKey("CourseID", "Courses")
         }
-        if ((["Sales", "Course_Book", "Prices", "Inventory"].includes(tableName)) && key === "BookID") {
+        if ((["Sales", "Course_Book", "Prices", "Inventory", "Order_Book"].includes(tableName)) && key === "BookID") {
             return resolveForeignKey("BookID", "Books")
         }
         return `temp_${tableName}.${key}`
@@ -259,24 +259,43 @@ const getPrevSalesByBook = (isbn: string, title: string, term: string, year: str
     })
 }
 
-const getBookByISBN = (ISBN: string): Promise<DBRow[]> => {
+const getBookByISBN = (ISBN: string): Promise<{ info: DBRow[], sales: DBRow[] }> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
 
         try {
-            const queryStmt = db.prepare(`
-                SELECT Books.ID, Books.ISBN, Books.Title, Books.Author, Books.Edition, Books.Publisher, 
-                Sales.Term, Sales.Year, Sales.EstEnrl, Sales.ActEnrl, Sales.EstSales, Sales.UsedSales, Sales.NewSales, Sales.Reorders
-                FROM Books
-                JOIN Sales ON Books.ID = Sales.BookID
-                AND ISBN LIKE ?
-                AND Sales.Term NOT IN ('I', 'Q')
-                AND Sales.Unit = '1'
-                ORDER BY Sales.Year DESC, Sales.Term`)
+            const infoStmt = db.prepare(`
+                SELECT 
+                    Books.ID, Books.ISBN, Books.Title, Books.Author, Books.Edition, Books.Publisher, 
+                    Prices.UnitPrice, Prices.Discount,
+                    COALESCE(MAX(CASE WHEN Inventory.Unit = '1' AND Inventory.NewUsed = 'NW' THEN Inventory.OnHand ELSE 0 END), 0) AS NewOH,
+                    COALESCE(MAX(CASE WHEN Inventory.Unit = '1' AND Inventory.NewUsed = 'US' THEN Inventory.OnHand ELSE 0 END), 0) AS UsedOH
+                FROM 
+                    Books
+                JOIN 
+                    Prices ON Books.ID = Prices.BookID
+                LEFT JOIN 
+                    Inventory ON Books.ID = Inventory.BookID
+                WHERE Books.ISBN LIKE ?
+                `)
 
-            const result = queryStmt.all('%' + ISBN + '%') as DBRow[]
+            const salesStmt = db.prepare(`
+                SELECT 
+                    Sales.Term, Sales.Year, Sales.EstEnrl, Sales.ActEnrl, Sales.EstSales, Sales.UsedSales, Sales.NewSales, Sales.Reorders
+                FROM 
+                    Books
+                JOIN 
+                    Sales ON Books.ID = Sales.BookID
+                WHERE Books.ISBN LIKE ?
+                    AND Sales.Term NOT IN ('I', 'Q')
+                    AND Sales.Unit = '1'
+                ORDER BY Sales.Year DESC, Sales.Term
+                `)
+
+            const infoResult = infoStmt.all('%' + ISBN + '%') as DBRow[]
+            const salesResult = salesStmt.all('%' + ISBN + '%') as DBRow[]
             db.close()
-            resolve(result)
+            resolve({ info: infoResult, sales: salesResult })
         } catch (error) {
             db.close()
             reject(error)
@@ -488,6 +507,31 @@ const getAllTerms = (): Promise<DBRow[]> => {
     })
 }
 
+const getAllVendors = (): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const vendors = db.prepare(`
+                SELECT DISTINCT
+                    Vendor
+                FROM 
+                    Orders
+				WHERE
+					Vendor IS NOT NULL
+                ORDER BY
+                    Vendor
+                `).all() as DBRow[]
+
+            db.close()
+            resolve(vendors)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
 const getTablePage = (name: string, offset: number, limit: number): Promise<{ queryResult: DBRow[], totalRowCount: number }> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
@@ -513,6 +557,93 @@ const getTablePage = (name: string, offset: number, limit: number): Promise<{ qu
 
             db.close()
             resolve({ queryResult, totalRowCount: countResult.Count as number })
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
+const getOrdersByTerm = (term: string, year: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT 
+                    Orders.ID, Orders.Number AS PO, Orders.Vendor, Orders.CreatedOn, Orders.Status, Orders.SentBy, Orders.Sent, 
+                    Orders.NumItemsOrd AS NumOrd, Orders.NumItemsRcvd AS NumRcvd, Orders.QtyItemsOrd AS QtyOrd, Orders.QtyItemsRcvd AS QtyRcvd
+                FROM 
+                    Orders
+                WHERE Orders.Unit = '1'
+                    AND Orders.Term = ?
+                    AND Orders.Year = ?
+                ORDER BY Orders.Number 
+                `)
+
+            const queryResult = queryStmt.all(term, year) as DBRow[]
+
+            db.close()
+            resolve(queryResult)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
+const getOrdersByPOVendor = (PO: string, vendor: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT 
+                    Orders.ID, Orders.Term, Orders.Year, Orders.Number, Orders.Vendor, Orders.Status, Orders.SentBy, Orders.Sent, 
+                    Orders.NumItemsOrd AS NumOrd, Orders.NumItemsRcvd AS NumRcvd, Orders.QtyItemsOrd AS QtyOrd, Orders.QtyItemsRcvd AS QtyRcvd
+                FROM 
+                    Orders
+                WHERE 
+                    Orders.ID != '0'
+                    AND Orders.Number LIKE ? AND Orders.Vendor LIKE ?
+                ORDER BY 
+                    Orders.Term, Orders.Year
+                `)
+
+            const queryResult = queryStmt.all('%' + PO + '%', '%' + vendor + '%') as DBRow[]
+
+            db.close()
+            resolve(queryResult)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
+const getOrderByID = (reqId: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT 
+                    Books.ISBN, Books.Title,
+                    Order_Book.NewUsed AS "Cond.", Order_Book.Ordered, Order_Book.Received,
+                    Order_Book.UnitPrice, Order_Book.Discount
+                FROM 
+                    Order_Book
+                JOIN 
+                    Books ON Order_Book.BookID = Books.ID
+                WHERE 
+                    Order_Book.OrderID = ?
+                ORDER BY Books.Title
+                `)
+
+            const queryResult = queryStmt.all(reqId) as DBRow[]
+
+            db.close()
+            resolve(queryResult)
         } catch (error) {
             db.close()
             reject(error)
@@ -631,9 +762,10 @@ const getReconReport = (term: string, year: string): Promise<DBRow[]> => {
 }
 
 export const bSQLDB = {
-    all: { createDB, updateDB, buildSelectStmt, getAllTerms, getTablePage },
+    all: { createDB, updateDB, buildSelectStmt, getAllTerms, getAllVendors, getTablePage },
     sales: { getPrevSalesByTerm, getPrevSalesByBook },
     books: { getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm },
+    orders: { getOrdersByTerm, getOrdersByPOVendor, getOrderByID },
     reports: { libr: getLibraryReport, recon: getReconReport }
 }

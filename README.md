@@ -12,8 +12,9 @@ A user-friendly application designed to simplify various aspects of managing tex
 - ISBN lookup for term data
 - Support for adoption processes
 - Easy enrollment file conversion
+- Export frequently used reports
 
 ## Installation
 
 - Download the latest release from the link above and run the setup executable to install the application.
-- Login with credentials to sync with database
+- Login with credentials to sync with database.

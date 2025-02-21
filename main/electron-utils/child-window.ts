@@ -16,13 +16,17 @@ export const createChildWindow = async (mainWindow: BrowserWindow, childPath: st
     }
   })
 
-  await childWindow.loadURL(
-    process.env.NODE_ENV === 'production'
-      ?
-      `app://./child/${childPath}`
-      :
-      `http://localhost:${process.argv[2]}/child/${childPath}`
-  )
+  try {
+    await childWindow.loadURL(
+      process.env.NODE_ENV === 'production'
+        ?
+        `app://./child/${childPath}`
+        :
+        `http://localhost:${process.argv[2]}/child/${childPath}`
+    )
+  } catch (error) {
+    throw error
+  }
 
   // Move child window to position on first load
   updateChildWindowPos(mainWindow, childWindow, location)
@@ -48,7 +52,7 @@ const updateChildWindowPos = (mainWindow: BrowserWindow, childWindow: BrowserWin
     const mainBounds = mainWindow.getContentBounds()
     const childBounds = childWindow.getBounds()
     const childX = location === "right" ? mainBounds.x + (mainBounds.width - 2) : location === "bottom" ? mainBounds.x : 0
-    const childY = location === "right" ? mainBounds.y : location === "bottom" ? mainBounds.y + mainBounds.height : 0
+    const childY = location === "right" ? mainBounds.y : location === "bottom" ? mainBounds.y + (mainBounds.height - 2) : 0
 
     childWindow.setBounds({
       x: childX,

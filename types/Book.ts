@@ -9,6 +9,10 @@ export type BookResult = {
     Vendor: string
     Publisher: string
     Image: string
+    UnitPrice: string
+    Discount: string
+    NewOH: string
+    UsedOH: string
     Terms: {
         Term: string
         EstEnrl: string

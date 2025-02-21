@@ -122,14 +122,16 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <div className="flex flex-col h-screen">
-      <Header
-        isHeaderMenuOpen={isHeaderMenuOpen}
-        handleMenuToggle={handleMenuToggle}
-        isHelpMenuOpen={isHelpMenuOpen}
-        handleHelpMenuToggle={handleHelpMenuToggle}
-        isChildWindow={isChildWindow}
-        appVer={appVer}
-        HeaderMenuRef={HeaderMenuRef} />
+      {!isChildWindow &&
+        <Header
+          isHeaderMenuOpen={isHeaderMenuOpen}
+          handleMenuToggle={handleMenuToggle}
+          isHelpMenuOpen={isHelpMenuOpen}
+          handleHelpMenuToggle={handleHelpMenuToggle}
+          isChildWindow={isChildWindow}
+          appVer={appVer}
+          HeaderMenuRef={HeaderMenuRef} />
+      }
       <Component {...pageProps} />
       <Login
         isLoginMenuOpen={isLoginMenuOpen}
