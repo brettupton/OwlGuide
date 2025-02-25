@@ -38,7 +38,7 @@ export default function TermSelect({ process, latest }: { process: string, lates
     const handleTermChoice = (e: ChangeEvent<HTMLSelectElement>) => {
         if (e.currentTarget.value) {
             const term = e.currentTarget.value
-            const method = process === 'decision' ? 'get-term-decision' : process === 'course' ? 'get-term-course' : process === 'order' ? 'get-term-order' : ""
+            const method = `get-term-${process}`
 
             window.ipc.send('main', { process, method, data: { term, limit: 30, isForward: true, isSearch: false, pivotCourse: { Dept: "", Course: "", Section: "" } } })
             setSelectedTerm(term)

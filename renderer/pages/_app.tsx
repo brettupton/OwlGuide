@@ -107,10 +107,11 @@ function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     const handleCloseChild = () => {
-      window.ipc.send('close-child')
+      window.ipc.send('close-child', { childId: router.pathname.split('\\').pop().split('/').pop(), promptClose: false })
     }
 
     setIsHeaderMenuOpen(false)
+    setIsLoginMenuOpen(false)
     setIsChildWindow(router.pathname.startsWith('/child'))
 
     router.events.on('routeChangeStart', handleCloseChild)

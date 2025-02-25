@@ -32,9 +32,9 @@ export default function OrdersTable({ orders, status, isComplete, tableRef, acti
     })
 
     const handleOrderWindow = (e: MouseEvent<HTMLTableRowElement>) => {
-        const { id } = e.currentTarget
+        const id = Number(e.currentTarget.id)
 
-        setActiveRow(Number(id))
+        setActiveRow(id)
         window.ipc.send('child', { process: 'order', data: { reqId: id } })
     }
 

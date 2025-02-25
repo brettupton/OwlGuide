@@ -2,6 +2,7 @@ import Database from "better-sqlite3"
 import tables from "../db/tables"
 import { regex, paths, fileManager } from "./"
 import { TableData, TableName } from "../../types/Database"
+import { NoAdoption } from "../../types/Adoption"
 
 const createDB = async (): Promise<void[]> => {
     return await Promise.all(
@@ -651,6 +652,89 @@ const getOrderByID = (reqId: string): Promise<DBRow[]> => {
     })
 }
 
+const getNoAdoptionsByTerm = (term: string, year: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const startTime = Date.now()
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT Courses.CRN, Courses.Dept, 
+                    SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course, 
+                    SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section, 
+                    Courses.Prof, Courses.Title,
+                    -- Subquery to check if Dept,Course,Section existed in prior years
+                    EXISTS (
+                            SELECT 1 
+                            FROM Courses AS C
+                            WHERE C.Year != :year
+                            AND C.Dept = Courses.Dept
+                            AND C.Course = Courses.Course
+                            AND C.Section = Courses.Section
+                        ) AS HasPrev
+                FROM 
+                    Courses
+                WHERE Courses.Unit = '1'
+                    AND Courses.Term = :term
+                    AND Courses.Year = :year
+                    AND Courses.NoText = 'N'
+                    -- Check if Course already has Book for term
+                    AND NOT EXISTS(
+                        SELECT 1 FROM Course_Book
+                        WHERE Courses.ID = Course_Book.CourseID
+                            AND Course_Book.Unit = '1'
+                        AND Course_Book.Term = :term
+                        AND Course_Book.Year = :year
+                    )
+                ORDER BY 
+                    Courses.Dept, Courses.Course, Courses.Section
+                `)
+
+            const queryResult = queryStmt.all({ term, year }) as DBRow[]
+
+            db.close()
+            console.log("QUERY TIME:", `${(Date.now() - startTime)}ms`)
+            resolve(queryResult)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
+const getPrevAdoptionsByCourse = (year: string, course: NoAdoption): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT 
+                    C.Term, C.Year, C.Prof, C.NoText, 
+                    GROUP_CONCAT(Books.Title, ',') AS Book, GROUP_CONCAT(Books.ISBN, ',') AS ISBN FROM Courses AS C
+                LEFT JOIN 
+                    Course_Book ON C.ID = Course_Book.CourseID
+                LEFT JOIN 
+                    Books ON Course_Book.BookID = Books.ID
+                WHERE C.Year != ?
+                    AND C.Dept = ?
+                    AND C.Course = ?
+                    AND C.Section = ?
+                GROUP BY C.Term, C.Year
+                ORDER BY C.Year DESC
+                LIMIT 2
+                `)
+
+            const queryResult = queryStmt.all(year, course["Dept"], course["Course"], course["Section"]) as DBRow[]
+
+            db.close()
+            resolve(queryResult)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
 const getLibraryReport = (term: string, year: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
@@ -767,5 +851,6 @@ export const bSQLDB = {
     books: { getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm },
     orders: { getOrdersByTerm, getOrdersByPOVendor, getOrderByID },
-    reports: { libr: getLibraryReport, recon: getReconReport }
+    reports: { libr: getLibraryReport, recon: getReconReport },
+    adoptions: { getNoAdoptionsByTerm, getPrevAdoptionsByCourse }
 }

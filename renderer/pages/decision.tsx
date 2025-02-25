@@ -51,7 +51,7 @@ export default function BuyingDecision() {
     setTerm("")
     setActiveBook(undefined)
     setActiveTab("All")
-    window.ipc.send('close-child')
+    window.ipc.send('close-child', { childId: "decision-data", promptClose: false })
   }
 
   return (

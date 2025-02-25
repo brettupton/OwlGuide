@@ -15,6 +15,8 @@ export default function DecisionData() {
     const [data, setData] = useState<DecisionData>()
 
     useEffect(() => {
+        window.ipc.send('ready-to-receive')
+
         window.ipc.on('data', ({ salesHistory, courses, isbn, title }: { salesHistory: DBRow[], courses: DBRow[], isbn: string, title: string }) => {
             const numTerms = salesHistory.length
             if (numTerms > 0) {

@@ -69,7 +69,7 @@ export default function Course() {
     }
 
     const handleReset = () => {
-        window.ipc.send('close-child')
+        window.ipc.send('close-child', { childId: "course-data", promptClose: false })
         setTerm("")
         setCourses([])
         setPage(1)

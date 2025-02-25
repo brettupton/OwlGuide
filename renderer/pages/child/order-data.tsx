@@ -7,12 +7,12 @@ export default function OrderDetailPage() {
     const [isLoading, setIsLoading] = useState<boolean>(true)
 
     useEffect(() => {
+        window.ipc.send('ready-to-receive')
+
         window.ipc.on('data', ({ order }: { order: OrderInfo[] }) => {
             setOrder([...order])
             setIsLoading(false)
         })
-
-        window.ipc.send("ready-to-receive")
     }, [])
 
     return (

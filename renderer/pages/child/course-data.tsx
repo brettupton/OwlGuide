@@ -6,6 +6,8 @@ export default function CourseData() {
     const [course, setCourse] = useState<string>("")
 
     useEffect(() => {
+        window.ipc.send('ready-to-receive')
+
         window.ipc.on('data', ({ books, course }: { books: DBRow[], course: string }) => {
             setData(books)
             setCourse(course)
@@ -21,7 +23,7 @@ export default function CourseData() {
                     </div>
                     {data.length > 0 ?
                         <div className="flex w-full">
-                            <AdoptionTable adoptions={data} />
+                            {/* <AdoptionTable adoptions={data} />  */}
                         </div>
                         :
                         <div>No Titles Adopted</div>
