@@ -1,4 +1,4 @@
-import { fileManager } from "../utils"
+import { config } from "../utils"
 import { matchEnrollment, submitEnrollment } from "./helpers/enrlmntFile"
 import { dialog, app } from 'electron'
 import path from 'path'
@@ -11,7 +11,7 @@ export const enrollmentProcess = async ({ event, method, data }: ProcessArgs) =>
                 const filePath: string = data[0]
                 const enrollment = await matchEnrollment(filePath)
                 // Write filepath to config for later retrieval
-                await fileManager.config.write('enrollmentPath', filePath, false)
+                await config.write('enrollmentPath', filePath, false)
                 event.reply('data', { enrollment })
             } catch (error) {
                 throw error
@@ -20,7 +20,7 @@ export const enrollmentProcess = async ({ event, method, data }: ProcessArgs) =>
 
         case 'file-download':
             try {
-                const prevFile = await fileManager.config.read('enrollmentPath', false)
+                const prevFile = await config.read('enrollmentPath', false)
 
                 if (typeof data === 'object') {
                     const { fileName, csv } = await submitEnrollment(data["enrollment"], prevFile)

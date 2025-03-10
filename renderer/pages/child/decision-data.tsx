@@ -1,90 +1,95 @@
 import { useState, useEffect } from 'react'
-import { Spinner, SalesTable } from "../../components"
-import CoursesTable from '../../components/tables/CoursesTable'
+import { Spinner, SalesTable, CoursesTable } from "../../components"
+import { DecisionSales } from '../../../types/Decision'
 
-type DecisionData = {
-    history: DBRow[]
-    courses: DBRow[]
-    book: {
-        isbn: string
-        title: string
-    }
+type BookData = {
+    ISBN: string
+    Title: string
+    History: DecisionSales[]
+    Courses: DBRow[]
 }
 
 export default function DecisionData() {
-    const [data, setData] = useState<DecisionData>()
+    const [bookData, setBookData] = useState<BookData>()
 
     useEffect(() => {
         window.ipc.send('ready-to-receive')
 
-        window.ipc.on('data', ({ salesHistory, courses, isbn, title }: { salesHistory: DBRow[], courses: DBRow[], isbn: string, title: string }) => {
-            const numTerms = salesHistory.length
-            if (numTerms > 0) {
-                let totalEnrl = 0
-                let totalEst = 0
-                let totalSales = 0
-                let totalSE = 0
-                // Calculate Sales/Enrl for each term and averages for each field
-                salesHistory.forEach((term) => {
-                    const SE = (term["ActEnrl"] as number) !== 0 ? ((term["Sales"] as number) / (term["ActEnrl"] as number)) : 0
-                    term["S/E"] = SE !== 0 ? SE.toFixed(3) : 0
-                    totalEnrl += (term["ActEnrl"] as number)
-                    totalEst += (term["EstEnrl"] as number)
-                    totalSales += (term["Sales"] as number)
-                    totalSE += SE
-                })
-                salesHistory.push({
-                    "ISBN": 0,
-                    "Title": "",
-                    "Term": "Avg",
-                    "EstEnrl": Math.round(totalEst / numTerms) ?? 0,
-                    "ActEnrl": Math.round(totalEnrl / numTerms) ?? 0,
-                    "Sales": Math.round(totalSales / numTerms) ?? 0,
-                    "S/E": totalSE / numTerms !== 0 ? (totalSE / numTerms).toFixed(3) : 0
-                })
-            }
-            setData({
-                history: salesHistory,
-                courses,
-                book: {
-                    isbn,
-                    title
-                }
+        window.ipc.on('data', ({ salesHistory, courses, ISBN, Title }: { salesHistory: DecisionSales[], courses: DBRow[], ISBN: string, Title: string }) => {
+            const updatedHistory = calculateSalesHistory(salesHistory)
+
+            setBookData({
+                ISBN,
+                Title,
+                History: updatedHistory,
+                Courses: courses
             })
         })
     }, [])
 
+    const calculateSalesHistory = (salesHistory: DecisionSales[]): DecisionSales[] => {
+        if (!salesHistory || salesHistory.length === 0) return salesHistory
+
+        let totalEnrl = 0
+        let totalEst = 0
+        let totalSales = 0
+        let totalSE = 0
+
+        const updatedHistory: DecisionSales[] = salesHistory.map((term) => {
+            const actEnrl = term["ActEnrl"] as number
+            const sales = term["Sales"] as number
+            const SE = actEnrl !== 0 ? sales / actEnrl : 0
+
+            totalEnrl += actEnrl
+            totalEst += (term["EstEnrl"] as number)
+            totalSales += sales
+            totalSE += SE
+
+            return {
+                ...term,
+                "S/E": SE !== 0 ? SE.toFixed(3) : 0
+            }
+        })
+
+        const numTerms = salesHistory.length
+        updatedHistory.push({
+            "Term": "Avg",
+            "EstEnrl": Math.round(totalEst / numTerms) || 0,
+            "ActEnrl": Math.round(totalEnrl / numTerms) || 0,
+            "Sales": Math.round(totalSales / numTerms) || 0,
+            "S/E": totalSE / numTerms !== 0 ? (totalSE / numTerms).toFixed(3) : 0,
+        })
+
+        return updatedHistory
+    }
+
     return (
-        <div className="mt-5 ml-1">
-            {
-                data && Object.keys(data).length > 0
-                    ?
+        <div className="flex flex-col h-full px-1 border border-t-[42px] rounded-2xl border-gray-800">
+            {bookData ?
+                <div className="flex flex-col w-full p-2 h-full">
                     <div className="flex flex-col">
-                        <div className="flex flex-col m-2">
-                            <div className="flex">
-                                {data.book.isbn}
-                            </div>
-                            <div className="flex">
-                                {data.book.title.length > 28 ? data.book.title.slice(0, 27) + "..." : data.book.title}
-                            </div>
+                        <div className="flex font-semibold overflow-hidden truncate whitespace-nowrap">
+                            {bookData.Title}
                         </div>
-                        {data.history.length > 0
-                            ?
-                            <SalesTable sales={data.history} />
-                            :
-                            <div>No Prior History for Title</div>
-                        }
-                        {data.courses.length > 0
-                            ?
-                            <CoursesTable courses={data.courses} />
-                            :
-                            <div>No Course Data Available</div>
-                        }
+                        <div className="mt-1 text-xs text-gray-400">
+                            <span className="font-semibold">ISBN:</span> {bookData.ISBN}
+                        </div>
                     </div>
-                    :
-                    <div>
-                        <Spinner />
+                    <div className="flex flex-col h-5/6">
+                        <div className="flex h-1/2">
+                            <CoursesTable courses={bookData.Courses} />
+                        </div>
+                        <div className="flex h-1/2">
+                            {bookData.History.length > 0 ?
+                                <SalesTable sales={bookData.History} />
+                                :
+                                <p className="font-semibold text-sm">No Previous History</p>
+                            }
+                        </div>
                     </div>
+                </div>
+                :
+                <Spinner />
             }
         </div>
     )

@@ -1,13 +1,13 @@
 require("dotenv").config()
 import path from 'path'
-import { app, ipcMain, dialog, BrowserWindow, shell, Tray } from 'electron'
+import { app, ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import serve from 'electron-serve'
-import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
-import { bSQLDB, fileManager, paths, regex, logger } from './utils'
+import { createWindow, createChildWindow, rightClickMenu, createTray } from './electron-utils'
+import { bSQLDB, paths, regex, logger, config, createZipBlob } from './utils'
 import { adoptionProcess, appProcess, bookProcess, courseProcess, decisionProcess, enrollmentProcess, orderProcess, reportProcess, sqlProcess } from './processes'
 import { initializeDB } from './processes/helpers/sqlDatabase'
 import { ChildPath, ChildWindow, ChildWindowLocation } from '../types/ChildWin'
-import { createTray } from './electron-utils/create-tray'
+import fs from 'fs'
 
 export const isProd = process.env.NODE_ENV === 'production'
 
@@ -35,11 +35,11 @@ let childWindows: ChildWindow[] = []
     createTray(paths.windowIconPath)
 
     // Check app version to determine if database needs to be created/recreated
-    const appVer = await fileManager.config.read('appVersion', false)
+    const appVer = await config.read('appVersion', false)
     if (isProd && appVer !== app.getVersion()) {
       try {
         await initializeDB()
-        await fileManager.config.write('appVersion', app.getVersion(), false)
+        await config.write('appVersion', app.getVersion(), false)
       } catch (error) {
         dialog.showErrorBox('Database Error', `${error}\n\nContact dev for assistance.`)
       }
@@ -174,6 +174,30 @@ ipcMain.on('dev', async (event, { method, data }: ProcessArgs) => {
     case 'open-user-dir':
       shell.openPath(paths.userDataPath)
       break
+
+    case 'dump-files':
+      try {
+        const filesBlob = await createZipBlob()
+
+        dialog.showSaveDialog({
+          defaultPath: path.join(app.getPath('downloads'), `${regex.fileNameTimeStamp()}`),
+          filters: [{ name: 'Zip File', extensions: ['zip'] }]
+        })
+          .then(async (result) => {
+            if (!result.canceled && result.filePath) {
+              fs.writeFile(result.filePath, Buffer.from(await filesBlob.arrayBuffer()), (err) => {
+                if (err) {
+                  throw new Error("Unable to write ZIP to selected path.")
+                }
+                event.reply('success')
+              })
+            }
+          })
+      } catch (error) {
+        console.error(error)
+        dialog.showErrorBox('Dev', `${error}`)
+      }
+      break
   }
 })
 
@@ -243,10 +267,10 @@ ipcMain.on('child', async (event, { process, data }) => {
           childName = "decision-data"
           childLocation = "right"
           const [term, year] = regex.splitFullTerm(data["term"])
-          const salesHistory = await bSQLDB.sales.getPrevSalesByBook(data["isbn"], data["title"], term, year)
-          const courses = await bSQLDB.courses.getCoursesByBook(data["isbn"], data["title"], term, year)
+          const salesHistory = await bSQLDB.sales.getPrevSalesByBook(data["bookId"], term, year)
+          const courses = await bSQLDB.courses.getCoursesByBook(data["bookId"], term, year)
 
-          childData = { salesHistory, courses, isbn: data["isbn"], title: data["title"] }
+          childData = { salesHistory, courses, ISBN: data["ISBN"], Title: data["Title"] }
         } catch (error) {
           throw error
         }

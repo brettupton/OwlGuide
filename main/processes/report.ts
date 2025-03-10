@@ -2,7 +2,7 @@ import Papa from 'papaparse'
 import { dialog, app } from 'electron'
 import fs from 'fs'
 import path from 'path'
-import { fileManager, regex } from '../utils'
+import { fileHandler, regex } from '../utils'
 import { generateReport } from "./helpers/reportGen"
 
 export const reportProcess = async ({ event, method, data }: ProcessArgs) => {
@@ -57,7 +57,7 @@ export const reportProcess = async ({ event, method, data }: ProcessArgs) => {
                 } else {
                     for (const report of reportData) {
                         try {
-                            const xlsx = await fileManager.xlsx.write(report.report)
+                            const xlsx = await fileHandler.xlsx.write(report.report)
                             const reportName = report.id[0].toUpperCase() + report.id.substring(1)
 
                             dialog.showSaveDialog({

@@ -1,10 +1,10 @@
 import Database from "better-sqlite3"
 import tables from "../db/tables"
-import { regex, paths, fileManager } from "./"
+import { config, paths, fileHandler } from "./"
 import { TableData, TableName } from "../../types/Database"
 import { NoAdoption } from "../../types/Adoption"
 
-const createDB = async (): Promise<void[]> => {
+const createDB = async (startTime: number): Promise<void[]> => {
     return await Promise.all(
         Object.keys(tables).map((tableName): Promise<void> => {
             return new Promise((resolve, reject) => {
@@ -29,6 +29,7 @@ const createDB = async (): Promise<void[]> => {
                     }
 
                     db.close()
+                    console.log(`${tableName} Updated in ${(Date.now() - startTime) / 1000}s`)
                     resolve()
                 } catch (error) {
                     console.error("Error creating indexes:", error)
@@ -115,7 +116,7 @@ const buildInsertStmt = (tableName: TableName, temp: boolean) => {
 }
 
 const buildSelectStmt = async (table: TableData) => {
-    let lastUpdate = await fileManager.config.read('dbUpdateTime', false)
+    let lastUpdate = await config.read('dbUpdateTime', false)
 
     // If column reference is an array, concat elements together
     const columns = Object.entries(table.Columns)
@@ -125,25 +126,32 @@ const buildSelectStmt = async (table: TableData) => {
     let statement = `SELECT ${columns} FROM T2DB00622.${table.BNCName}`
 
     if (table.Timestamp?.length) {
-        // Handle special case for ADP006 table, which uses a date instead of a timestamp
-        if (table.BNCName === 'ADP006') {
+        // Handle special case for tables that use a date instead of a timestamp, will always be array of length 1
+        if (table.Timestamp.length < 2) {
             // Format date to 'YYYYMMDD' format
             lastUpdate = lastUpdate.substring(0, lastUpdate.lastIndexOf('-')).replace(/-/g, '')
 
             statement += ` WHERE ${table.Timestamp[0]} >= '${lastUpdate}'`
         } else {
+            // Check timestamp array and create query conditions based on columns
+            // Secondary condition selects where both timestamp values are default
             const conditions = table.Timestamp
                 .map((col, index) => `${index > 0 ? 'OR ' : ''}${col} >= TIMESTAMP('${lastUpdate}')`)
                 .join(' ')
 
-            statement += ` WHERE ${conditions}`
+            const secondaryCond = table.Timestamp
+                .map((col, index) => `${index > 0 ? 'AND ' : ''}${col} >= TIMESTAMP('0001-01-01 00:00:00.000000')`)
+                .join(' ')
+
+            statement += ` WHERE ${conditions} OR (${secondaryCond})`
+
         }
     }
 
     return statement
 }
 
-const updateDB = async (files: string[]) => {
+const updateDB = async (files: string[], startTime: number) => {
     const db = new Database(paths.dbPath)
     for (const tableName of Object.keys(tables) as TableName[]) {
         await new Promise<void>(async (resolve, reject) => {
@@ -159,7 +167,7 @@ const updateDB = async (files: string[]) => {
             const filePath = files.find((file) => file.includes(tableName))
 
             try {
-                const csv = await fileManager.csv.read(filePath)
+                const csv = await fileHandler.csv.read(filePath)
                 db.transaction(() => {
                     for (const row of csv) {
                         try {
@@ -173,6 +181,7 @@ const updateDB = async (files: string[]) => {
                 })()
 
                 upsertStmt.run()
+                console.log(`${tableName} Updated in ${(Date.now() - startTime) / 1000}s`)
                 resolve()
             } catch (error) {
                 db.close()
@@ -189,21 +198,50 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
+                WITH PrevTwoTerms AS (
+                    -- Get the last two distinct years
+                    SELECT DISTINCT Sales.Year
+                    FROM Sales
+                    WHERE Sales.Term = :term AND Sales.Year < :year
+                    ORDER BY Sales.Year DESC
+                    LIMIT 2
+                ),
+                PrevSales AS (
+                    SELECT 
+                        Sales.BookID AS BookID, 
+                        SUM(Sales.EstEnrl) AS PrevEstEnrl, 
+                        SUM(Sales.ActEnrl) AS PrevActEnrl, 
+                        SUM(Sales.EstSales) AS PrevEstSales,
+                        SUM(Sales.UsedSales) AS UsedSales, 
+                        SUM(Sales.NewSales) AS NewSales
+                FROM Sales
+                WHERE Sales.Term = :term
+                AND Sales.Year IN (SELECT Year FROM PrevTwoTerms) -- Only previous two terms
+                GROUP BY Sales.BookID
+                )
                 SELECT 
                     Sales.BookID, Books.ISBN, Books.Title,
-                    SUM(CASE WHEN Sales.Year != :year THEN Sales.EstEnrl ELSE 0 END) AS PrevEstEnrl,
-                    SUM(CASE WHEN Sales.Year != :year THEN Sales.ActEnrl ELSE 0 END) AS PrevActEnrl,
-                    SUM(CASE WHEN Sales.Year != :year THEN Sales.UsedSales + Sales.NewSales ELSE 0 END) AS PrevTotalSales,
-                    MAX(CASE WHEN Sales.Year = :year THEN Sales.EstEnrl ELSE NULL END) AS CurrEstEnrl,
-                    MAX(CASE WHEN Sales.Year = :year THEN Sales.ActEnrl ELSE NULL END) AS CurrActEnrl,
-                    MAX(CASE WHEN Sales.Year = :year THEN Sales.EstSales ELSE NULL END) AS CurrEstSales
+                    PrevSales.PrevEstEnrl, PrevSales.PrevActEnrl, PrevSales.PrevEstSales, 
+                    (PrevSales.UsedSales + PrevSales.NewSales) AS PrevTotalSales,
+                    MAX(Sales.EstEnrl) AS CurrEstEnrl,
+                    MAX(Sales.ActEnrl) AS CurrActEnrl,
+                    MAX(Sales.EstSales) AS CurrEstSales
                 FROM 
                     Sales
                 JOIN 
                     Books on Sales.BookID = Books.ID
+                JOIN
+                    Course_Book ON Books.ID = Course_Book.BookID
+                JOIN
+                    Courses ON Course_Book.CourseID = Courses.ID
+                LEFT JOIN
+                    PrevSales ON Books.ID = PrevSales.BookID
                 WHERE Sales.Unit = '1'
-                    AND Sales.BookID != '0'
                     AND Sales.Term = :term
+                    AND Sales.Year = :year
+                    AND Courses.Dept NOT IN ('SPEC', 'CANC')
+                    AND SUBSTR(Books.ISBN, 1, 3) != '822'
+                    AND SUBSTR(Books.Title, 1, 3) != 'EBK'
                 GROUP BY Sales.BookID`)
 
             const results = queryStmt.all({ term, year }) as DBRow[]
@@ -217,39 +255,25 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
     })
 }
 
-const getPrevSalesByBook = (isbn: string, title: string, term: string, year: string) => {
+const getPrevSalesByBook = (bookID: number, term: string, year: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
 
         try {
             const queryStmt = db.prepare(`
-                SELECT 
-                    CONCAT(Sales.Term, Sales.Year) AS Term, 
-                    Books.ISBN, 
-                    Books.Title,
-                    SUM(Courses.EstEnrl) AS EstEnrl,
-                    SUM(Courses.ActEnrl) AS ActEnrl,
-                    Sales.UsedSales + Sales.NewSales AS Sales
-                FROM 
-                    Courses
-                JOIN 
-                    Course_Book ON Course_Book.CourseID = Courses.ID
-                JOIN 
-                    Books ON Course_Book.BookID = Books.ID
-                JOIN 
-                    Sales ON Books.ID = Sales.BookID
-                        AND Sales.Term = Courses.Term
-                        AND Sales.Year = Courses.Year
-                    WHERE Books.ISBN = ? AND Books.Title = ?
-                        AND Courses.Unit = '1'
-                        AND Sales.Unit = '1'
-                        AND Courses.Term = ? 
-                        AND Courses.Year != ?
-                        AND Courses.Dept NOT IN ('SPEC', 'CANC')
-                GROUP BY Sales.Year
-                ORDER BY Sales.Term`)
+                SELECT CONCAT(Sales.Term, Sales.Year) AS Term,
+                        SUM(Sales.EstEnrl) AS EstEnrl,
+                        SUM(Sales.ActEnrl) AS ActEnrl,
+                        SUM(Sales.UsedSales) + SUM(Sales.NewSales) AS Sales
+                FROM Sales
+                JOIN Books ON Sales.BookID = Books.ID
+                WHERE Books.ID = ?
+                    AND CONCAT(Sales.Term, Sales.Year) != ?
+                GROUP BY Sales.Term,
+                            Sales.Year
+                ORDER BY Sales.Year DESC`)
 
-            const results = queryStmt.all(isbn, title, term, year) as DBRow[]
+            const results = queryStmt.all(bookID, term + year) as DBRow[]
 
             db.close()
             resolve(results)
@@ -345,7 +369,7 @@ const getBooksByCourse = (courseID: number): Promise<{ booksResult: DBRow[], cou
     })
 }
 
-const getCoursesByBook = (isbn: string, title: string, term: string, year: string): Promise<DBRow[]> => {
+const getCoursesByBook = (bookID: number, term: string, year: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
 
@@ -355,21 +379,19 @@ const getCoursesByBook = (isbn: string, title: string, term: string, year: strin
                     CONCAT(Courses.Dept, ' ', 
                         SUBSTR(CONCAT('000', Courses.Course), LENGTH(CONCAT('000', Courses.Course))-3+1, 3), ' ', 
                         SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3)) AS Course, 
-                    Courses.EstEnrl, Courses.ActEnrl 
-                FROM 
-                    Courses 
-                JOIN 
-                    Course_Book ON Courses.ID = Course_Book.CourseID
-                JOIN 
-                    Books on Course_Book.BookID = Books.ID
-                WHERE Books.ISBN = ?
-                    AND Books.Title = ?
+                    Courses.EstEnrl, 
+                    Courses.ActEnrl 
+                FROM Courses 
+                JOIN Course_Book ON Courses.ID = Course_Book.CourseID
+                JOIN Books on Course_Book.BookID = Books.ID
+                WHERE Books.ID = ?
                     AND Courses.Term = ?
                     AND Courses.Year = ?
-                ORDER BY 
-                    Courses.Dept, Courses.Course, Courses.Section`)
+                ORDER BY Courses.Dept, 
+                            Courses.Course, 
+                            Courses.Section`)
 
-            const results = queryStmt.all(isbn, title, term, year) as DBRow[]
+            const results = queryStmt.all(bookID, term, year) as DBRow[]
 
             db.close()
             resolve(results)
@@ -466,11 +488,13 @@ const getSectionsByTerm = (term: string, year: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
-                SELECT SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3) AS Section,
-                Courses.CRN
-                FROM Courses
-                WHERE Term = ?
-                AND Year = ?
+                SELECT 
+                    SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3) AS Section,
+                    Courses.CRN
+                FROM 
+                    Courses
+                WHERE Courses.Term = ?
+                    AND Courses.Year = ?
                 `)
 
             const queryResult = queryStmt.all(term, year) as DBRow[]
@@ -495,9 +519,9 @@ const getAllTerms = (): Promise<DBRow[]> => {
                 FROM 
                     Courses
                 WHERE 
-                    Term != ''
+                    Courses.Term != ''
                 ORDER BY 
-                    Term, Year`).all() as DBRow[]
+                    Courses.Term, Courses.Year`).all() as DBRow[]
 
             db.close()
             resolve(terms)
@@ -526,38 +550,6 @@ const getAllVendors = (): Promise<DBRow[]> => {
 
             db.close()
             resolve(vendors)
-        } catch (error) {
-            db.close()
-            reject(error)
-        }
-    })
-}
-
-const getTablePage = (name: string, offset: number, limit: number): Promise<{ queryResult: DBRow[], totalRowCount: number }> => {
-    return new Promise((resolve, reject) => {
-        const db = new Database(paths.dbPath)
-
-        try {
-            const queryStmt = db.prepare(`
-                SELECT 
-                    * 
-                FROM 
-                    ${name}
-                LIMIT ?, ?
-                `)
-
-            const countStmt = db.prepare(`
-                SELECT
-                    COUNT(*) AS Count 
-                FROM 
-                    ${name}
-                `)
-
-            const queryResult = queryStmt.all(offset * limit, limit) as DBRow[]
-            const countResult = countStmt.get() as DBRow
-
-            db.close()
-            resolve({ queryResult, totalRowCount: countResult.Count as number })
         } catch (error) {
             db.close()
             reject(error)
@@ -654,23 +646,22 @@ const getOrderByID = (reqId: string): Promise<DBRow[]> => {
 
 const getNoAdoptionsByTerm = (term: string, year: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
-        const startTime = Date.now()
         const db = new Database(paths.dbPath)
 
         try {
             const queryStmt = db.prepare(`
-                SELECT Courses.CRN, Courses.Dept, 
+                SELECT Courses.ID, Courses.CRN, Courses.Dept, 
                     SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course, 
                     SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section, 
                     Courses.Prof, Courses.Title,
                     -- Subquery to check if Dept,Course,Section existed in prior years
                     EXISTS (
-                            SELECT 1 
+                            SELECT 1
                             FROM Courses AS C
                             WHERE C.Year != :year
-                            AND C.Dept = Courses.Dept
-                            AND C.Course = Courses.Course
-                            AND C.Section = Courses.Section
+                                AND C.Dept = Courses.Dept
+                                AND C.Course = Courses.Course
+                                AND C.Section = Courses.Section
                         ) AS HasPrev
                 FROM 
                     Courses
@@ -693,7 +684,6 @@ const getNoAdoptionsByTerm = (term: string, year: string): Promise<DBRow[]> => {
             const queryResult = queryStmt.all({ term, year }) as DBRow[]
 
             db.close()
-            console.log("QUERY TIME:", `${(Date.now() - startTime)}ms`)
             resolve(queryResult)
         } catch (error) {
             db.close()
@@ -846,7 +836,7 @@ const getReconReport = (term: string, year: string): Promise<DBRow[]> => {
 }
 
 export const bSQLDB = {
-    all: { createDB, updateDB, buildSelectStmt, getAllTerms, getAllVendors, getTablePage },
+    all: { createDB, updateDB, buildSelectStmt, getAllTerms, getAllVendors },
     sales: { getPrevSalesByTerm, getPrevSalesByBook },
     books: { getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm },

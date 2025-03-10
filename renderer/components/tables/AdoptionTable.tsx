@@ -16,14 +16,17 @@ export default function AdoptionTable({ adoptions, status, selectedTerm, tableRe
     const noTextDept = ["APPL", "ARTF", "BIOS", "BRND", "CHEB", "COAR", "FRLG", "GDES", "HEMS", "HGEN", "INNO", "PAPR", "PATC", "PCEU", "PESC", "PHAR", "REAL", "SBHD", "SCPT", "SCTS", "SPCH", "SPTL", "SSOR", "STUA", "SYSM"]
     const noTextTitle = ["ASSISTANTSHIP", "CANDIDACY", "CAP SEM", "CAPSTONE", "DIRECTED", "DISSERTATION", "DOCTORAL", "EXPERIENCE", "EXTERNS", "EXTERNSHIP", "FIELD", "GRADUATE", "GUIDED", "INDEPDNT", "INDEPENDENT", "INDIVIDUAL", "INTERNS", "INTERNSH", "INTERNSHIP", "INTRNSHP", "PORTFOLIO", "PRAC", "PRACTICE", "PRACTICUM", "PRECEPTOR", "PRECEPTORSHIP", "RESEARCH", "RSCH", "RSRCH", "SEMINAR", "SR SEM", "STUDIO", "THESIS", "UNDERGRADUATE", "WORKSHOP"]
 
-    const filtered = adoptions.filter((adoption) => {
-        if (status === "NoText") {
-            return noTextDept.includes(adoption["Dept"])
-                || noTextTitle.some(title => adoption["Title"].includes(title))
-                || adoption["Section"].indexOf("Q") >= 0
-        }
-        return true
-    })
+    const filtered = adoptions
+        .filter((adoption) => {
+            if (status === "NoText") {
+                return noTextDept.includes(adoption["Dept"])
+                    || noTextTitle.some(title => adoption["Title"].includes(title))
+                    || adoption["Section"].indexOf("Q") >= 0
+            } else if (status === "Prev") {
+                return adoption["HasPrev"].toString() === "1"
+            }
+            return true
+        })
 
     const handleAdoptionWindow = (e: MouseEvent<HTMLTableCellElement>) => {
         const reqId = Number(e.currentTarget.id)
@@ -69,7 +72,7 @@ export default function AdoptionTable({ adoptions, status, selectedTerm, tableRe
                                                     onClick={handleAdoptionWindow}
                                                     id={`${adoption["ID"]}`}
                                                 >
-                                                    {adoption[key]}
+                                                    {key === "HasPrev" ? (adoption[key].toString() === "0" ? "N" : "Y") : adoption[key]}
                                                 </td>
                                             )
                                         })}

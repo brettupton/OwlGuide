@@ -1,12 +1,13 @@
-import { NoAdoption } from "../../../types/Adoption"
+import { AdoptionCSV, NoAdoption } from "../../../types/Adoption"
 import Papa from 'papaparse'
 import { regex } from "../../utils"
 
 const formatToCSV = (courses: NoAdoption[], fullTerm: string) => {
     const [term, year] = regex.splitFullTerm(fullTerm)
     const stringTerm = term === "F" ? "Fall" : term === "W" ? "Spring" : term === "A" ? "Summer" : ""
+    const aipLimit = 1000 // AIP has limit of amount of courses per CSV
 
-    const csv = courses.map((course) => {
+    const csvCourses = courses.map((course) => {
         const isNoText = course["NoText"]
         const rejectMessage: string = isNoText ? undefined : findRejectCourse(course)
 
@@ -25,7 +26,20 @@ const formatToCSV = (courses: NoAdoption[], fullTerm: string) => {
         }
     })
 
-    return Papa.unparse(csv)
+    // Split array into chunks based on limit
+    const csvChunkArr: AdoptionCSV[][] = csvCourses.reduce((resultArr, course, index) => {
+        const chunkIndex = Math.floor(index / aipLimit)
+
+        if (!resultArr[chunkIndex]) {
+            resultArr[chunkIndex] = [] // Start a new chunk
+        }
+
+        resultArr[chunkIndex].push(course)
+
+        return resultArr
+    }, [])
+
+    return csvChunkArr.map((csv) => Papa.unparse(csv))
 }
 
 const findRejectCourse = (course: NoAdoption): string => {

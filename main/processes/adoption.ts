@@ -4,6 +4,7 @@ import path from "path"
 import { bSQLDB, regex } from "../utils"
 import { formatToCSV } from "./helpers/adoptConv"
 import { NoAdoption } from "../../types/Adoption"
+import { downloadFiles } from "../electron-utils/download-file"
 
 export const adoptionProcess = async ({ event, method, data }: ProcessArgs) => {
     switch (method) {
@@ -25,21 +26,9 @@ export const adoptionProcess = async ({ event, method, data }: ProcessArgs) => {
             if (typeof data === "object" && data !== null && !Array.isArray(data)) {
                 try {
                     const csv = formatToCSV(data["adoptions"] as NoAdoption[], data["term"] as string)
+                    const csvFiles = csv.map((file) => { return { data: file, extension: "csv" } })
 
-                    dialog.showSaveDialog({
-                        defaultPath: path.join(app.getPath('downloads'), `AIP - ${regex.fileNameTimeStamp()}`),
-                        filters: [{ name: 'CSV Files', extensions: ['csv'] }]
-                    })
-                        .then(async (result) => {
-                            if (!result.canceled && result.filePath) {
-                                fs.writeFile(result.filePath, csv, (err) => {
-                                    if (err) {
-                                        throw "Unable to write CSV to selected path."
-                                    }
-                                    event.reply('download-success')
-                                })
-                            }
-                        })
+                    await downloadFiles(event, "AIP", csvFiles)
                 } catch (error) {
                     throw error
                 }

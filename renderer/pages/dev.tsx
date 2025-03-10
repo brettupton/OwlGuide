@@ -34,6 +34,10 @@ export default function Development() {
         window.ipc.send('main', { process: 'sql', method: 'recreate-db' })
     }
 
+    const handleDumpFiles = () => {
+        window.ipc.send('dev', { method: 'dump-files' })
+    }
+
     const handleReset = () => {
         router.refresh()
     }
@@ -62,6 +66,9 @@ export default function Development() {
                 </div>
                 <div className="flex">
                     <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleOpenUserPath}>Open</button>
+                </div>
+                <div className="flex">
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDumpFiles}>Dump</button>
                 </div>
             </div>
         </div>

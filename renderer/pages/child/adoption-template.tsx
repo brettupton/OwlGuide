@@ -1,4 +1,4 @@
-import { ChangeEvent, MutableRefObject, useEffect, useRef, useState } from "react"
+import { ChangeEvent, useEffect, useState, useRef } from "react"
 import { NoAdoption } from "../../../types/Adoption"
 import Image from "next/image"
 
@@ -6,8 +6,9 @@ export default function AdoptionTemplate() {
     const [tempAdoptions, setTempAdoptions] = useState<NoAdoption[]>([])
     const [selectedTerm, setSelectedTerm] = useState<string>("")
 
-    // const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
-    const filterHeaders = ["ID", "Prof", "CRN", "Title"]
+    const filterHeaders = ["ID", "Prof", "CRN", "Title", "HasPrev", "TempID"]
+    // TempID handles multiple duplicate courses existing by ensuring each have unique TempID
+    const tempIDRef = useRef(0)
 
     useEffect(() => {
         window.ipc.send('ready-to-receive')
@@ -25,13 +26,18 @@ export default function AdoptionTemplate() {
                 const newCourseArr = Array.isArray(course) ? [...prev, ...course] : [...prev, course]
                 return newCourseArr
                     .map((course) => {
-                        // Initialize both keys that are missing from sent courses
+                        // Initialize keys that are missing from sent courses
                         course["NoText"] = false
                         course["ISBN"] = ""
+                        course["TempID"] = course["TempID"] ?? tempIDRef.current++
 
                         return course
                     })
-                    .sort((a, b) => a["Dept"].localeCompare((b["Dept"])) || a["Course"].localeCompare(b["Course"]) || a["Section"].localeCompare(b["Section"]))
+                    .sort((a, b) =>
+                        a["Dept"].localeCompare((b["Dept"])) ||
+                        a["Course"].localeCompare(b["Course"]) ||
+                        a["Section"].localeCompare(b["Section"]) ||
+                        a["TempID"] - b["TempID"])
             })
 
             setSelectedTerm(term)
@@ -43,18 +49,20 @@ export default function AdoptionTemplate() {
     }
 
     const handleClose = () => {
-        window.ipc.send('close-child', { childId: "adoption-template", promptClose: true })
+        // Only show close prompt if there are adoptions
+        window.ipc.send('close-child', { childId: "adoption-template", promptClose: tempAdoptions.length > 0 })
     }
 
     const handleSend = (course: NoAdoption) => {
         // Remove initially set properties before sending
         delete course["NoText"]
         delete course["ISBN"]
+        delete course["TempID"]
         window.ipc.send('window-sync', { fromWindow: 'child', process: 'adoption', data: { course } })
         // Filter sent course from state
         setTempAdoptions((prev) => {
             return [...prev]
-                .filter((adoption) => adoption["ID"] !== course["ID"])
+                .filter((adoption) => adoption["TempID"] !== course["TempID"])
         })
     }
 
@@ -63,6 +71,8 @@ export default function AdoptionTemplate() {
             const updatedCourses = prev.map((course) => {
                 delete course["NoText"]
                 delete course["ISBN"]
+                delete course["TempID"]
+
                 return course
             })
 
@@ -72,6 +82,21 @@ export default function AdoptionTemplate() {
             // If not closing, update state normally
             return closeWindow ? prev : prev.filter(course => !prev.includes(course))
         })
+    }
+
+    const handleNoTextAll = () => {
+        let noText = [...tempAdoptions]
+
+        if (noText.every((adoption) => adoption["NoText"] === false)) {
+            noText = [...tempAdoptions].map(adoption => {
+                return { ...adoption, NoText: true }
+            })
+        } else if (noText.every((adoption) => adoption["NoText"] === true)) {
+            noText = [...tempAdoptions].map(adoption => {
+                return { ...adoption, NoText: false }
+            })
+        }
+        setTempAdoptions([...noText])
     }
 
     const handleCourseUpdate = (e: ChangeEvent<HTMLInputElement>, courseId: number) => {
@@ -85,7 +110,9 @@ export default function AdoptionTemplate() {
     }
 
     const handleDownloadCSV = () => {
-        window.ipc.send('main', { process: 'adoption', method: 'download-csv', data: { adoptions: tempAdoptions, term: selectedTerm } })
+        if (tempAdoptions.length > 0 && (tempAdoptions.some((course) => course["ISBN"].length > 0) || tempAdoptions.some((course) => course["NoText"]))) {
+            window.ipc.send('main', { process: 'adoption', method: 'download-csv', data: { adoptions: tempAdoptions, term: selectedTerm } })
+        }
     }
 
     return (
@@ -117,7 +144,7 @@ export default function AdoptionTemplate() {
                     </div>
                 </div>
             </header>
-            <div className="flex flex-col m-3 relative overflow-x-auto max-h-[calc(100vh-5rem)]">
+            <div className="flex flex-col mx-3 my-2 relative overflow-x-auto max-h-[calc(100vh-6rem)]">
                 {tempAdoptions.length > 0 &&
                     <table className="w-full text-sm text-left rtl:text-right text-white">
                         <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
@@ -126,7 +153,16 @@ export default function AdoptionTemplate() {
                                     return (
                                         !filterHeaders.includes(header) &&
                                         <th className={`p-2 ${header !== "ISBN" ? "text-center" : ""}`} key={header}>
-                                            {header}
+                                            {header === "NoText" ?
+                                                <button
+                                                    onClick={handleNoTextAll}
+                                                    title="Check All"
+                                                >
+                                                    NOTEXT
+                                                </button>
+                                                :
+                                                header
+                                            }
                                         </th>
                                     )
                                 })}
@@ -150,17 +186,18 @@ export default function AdoptionTemplate() {
                             {tempAdoptions.map((adoption) => {
                                 return (
                                     <tr
-                                        className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={`${adoption["ID"]}`}
+                                        className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={`${adoption["TempID"]}-${adoption["ID"]}`}
                                         id={`${adoption["ID"]}`}
                                     >
                                         {Object.keys(adoption).map((key, index) => {
                                             return (
                                                 !filterHeaders.includes(key) &&
-                                                <td className={`p-2 ${key !== "ISBN" ? "text-center" : ""}`} key={`${adoption["ID"]}-${index}`}>
+                                                <td className={`p-2 ${key !== "ISBN" ? "text-center" : ""}`} key={`${adoption["ID"]}-${adoption["TempID"]}-${index}`}>
                                                     {key === "NoText" ?
                                                         <input
                                                             type="checkbox"
                                                             id="NoText"
+                                                            className={`${adoption["ISBN"].length > 0 ? "cursor-not-allowed" : ""}`}
                                                             checked={adoption["NoText"]}
                                                             disabled={adoption["ISBN"].length > 0}
                                                             value={String(!adoption["NoText"])}
@@ -170,7 +207,7 @@ export default function AdoptionTemplate() {
                                                             <input
                                                                 type="text"
                                                                 id="ISBN"
-                                                                className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
+                                                                className={`bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1 ${adoption["NoText"] ? "cursor-not-allowed" : ""}`}
                                                                 disabled={adoption["NoText"]}
                                                                 value={adoption["ISBN"]}
                                                                 maxLength={13}
@@ -196,6 +233,7 @@ export default function AdoptionTemplate() {
                     </table>
                 }
             </div>
+            <div className="flex justify-end text-sm pr-3">Adoptions: {tempAdoptions.length}</div>
         </div>
     )
 }

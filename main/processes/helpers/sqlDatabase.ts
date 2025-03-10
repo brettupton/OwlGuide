@@ -1,4 +1,4 @@
-import { bSQLDB, paths, fileManager, regex, logger } from "../../utils"
+import { bSQLDB, paths, config, regex, logger } from "../../utils"
 import fs from 'fs'
 import path from 'path'
 import { spawn } from "child_process"
@@ -8,12 +8,9 @@ import { TableData } from "../../../types/Database"
 export const updateDB = async (files: string[]) => {
     if (files.length === Object.keys(tables).length) {
         try {
-            const timeStart = Date.now()
-            await bSQLDB.all.updateDB(files)
-            await fileManager.config.write("dbUpdateTime", regex.ISOtoDb2Time(new Date().toISOString()), false)
-            const timeEnd = Date.now()
-
-            console.log(`DB Updated in ${(timeEnd - timeStart) / 1000}s`)
+            const updateStart = Date.now()
+            await bSQLDB.all.updateDB(files, updateStart)
+            await config.write("dbUpdateTime", regex.ISOtoDb2Time(new Date().toISOString()), false)
         } catch (error) {
             throw error
         }
@@ -24,13 +21,14 @@ export const updateDB = async (files: string[]) => {
 
 export const initializeDB = async (): Promise<void> => {
     return new Promise(async (resolve, reject) => {
-        await fileManager.config.write('dbUpdateTime', "0001-01-01-00.00.00.000000", false)
+        const initializeStart = Date.now()
+        await config.write('dbUpdateTime', "0001-01-01-00.00.00.000000", false)
 
         if (!fs.existsSync(paths.dbPath)) {
             fs.mkdir(path.join(paths.userDataPath, 'db'), { recursive: true }, async (err) => {
                 if (err) { reject(err) }
                 try {
-                    await bSQLDB.all.createDB()
+                    await bSQLDB.all.createDB(initializeStart)
                     resolve()
                 } catch (error) {
                     reject(error)
@@ -38,7 +36,7 @@ export const initializeDB = async (): Promise<void> => {
             })
         } else {
             try {
-                await bSQLDB.all.createDB()
+                await bSQLDB.all.createDB(initializeStart)
                 resolve()
             } catch (error) {
                 reject(error)
@@ -54,6 +52,7 @@ export const getIBMTables = async (userId: string, password: string) => {
         return new Promise<void>(async (resolve, reject) => {
             const table = tables[tableName] as TableData
             const statement = await bSQLDB.all.buildSelectStmt(table)
+
             const clientFile = path.join(paths.tempPath, `${tableName}.csv`)
             const command = `${acsExec} /plugin=cldownload /system=STORES01.BNCOLLEGE.COM /sql="${statement}" /clientfile="${clientFile}"`
             const devBatch = path.join(__dirname, '..', 'main', 'db', 'dev-acs.bat')

@@ -6,16 +6,17 @@ export type NoAdoption = {
     Section: string
     Prof: string
     Title: string
+    HasPrev: 0 | 1
+    TempID?: number
     NoText?: boolean
     ISBN?: string
-    HasPrev?: boolean
 }
 
 export type AdoptionCSV = {
     'CampusName': string
     'TermTitle': string
     'SectionCode': string
-    'ISBN': number
+    'ISBN': string
     'SKU-First Day Sections Only': null
     'AdoptionCondition ( Non-First Day Sections Only)': string | null
     'AdoptionType ( Non-First Day Sections Only)': string | null

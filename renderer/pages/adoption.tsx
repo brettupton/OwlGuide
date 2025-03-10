@@ -16,15 +16,15 @@ export default function AdoptionPage() {
             setSelectedTerm(term)
         })
 
-        window.ipc.on('sync-data', ({ course }: { course: NoAdoption | NoAdoption[] }) => {
-            setAdoptions((prev) => {
-                const newCourseArr = Array.isArray(course) ? [...prev, ...course] : [...prev, course]
-                const sorted = newCourseArr.sort((a, b) => a["Dept"].localeCompare((b["Dept"])) || a["Course"].localeCompare(b["Course"]) || a["Section"].localeCompare(b["Section"]))
+        // window.ipc.on('sync-data', ({ course }: { course: NoAdoption | NoAdoption[] }) => {
+        //     setAdoptions((prev) => {
+        //         const newCourseArr = Array.isArray(course) ? [...prev, ...course] : [...prev, course]
+        //         const sorted = newCourseArr.sort((a, b) => a["Dept"].localeCompare((b["Dept"])) || a["Course"].localeCompare(b["Course"]) || a["Section"].localeCompare(b["Section"]))
+        //         const unique: NoAdoption[] = Array.from(new Set(sorted.map((course) => JSON.stringify(course)))).map((course) => JSON.parse((course)))
 
-                return sorted
-
-            })
-        })
+        //         return unique
+        //     })
+        // })
     }, [])
 
     const handleAsstStatusChange = (status: "All" | "NoText" | "Prev") => {
@@ -35,18 +35,18 @@ export default function AdoptionPage() {
     const handleSend = (course: NoAdoption) => {
         window.ipc.send('window-sync', { fromWindow: 'main', process: 'adoption', data: { course, term: selectedTerm } })
         // Filter sent course from array
-        setAdoptions((prev) => {
-            return [...prev]
-                .filter((adoption) => adoption["ID"] !== course["ID"])
-        })
+        // setAdoptions((prev) => {
+        //     return [...prev]
+        //         .filter((adoption) => adoption["ID"] !== course["ID"])
+        // })
     }
 
     const handleSendAll = (courses: NoAdoption[]) => {
         window.ipc.send('window-sync', { fromWindow: 'main', process: 'adoption', data: { course: courses, term: selectedTerm } })
-        setAdoptions((prev) => {
-            return [...prev]
-                .filter(course => !courses.includes(course))
-        })
+        // setAdoptions((prev) => {
+        //     return [...prev]
+        //         .filter(course => !courses.includes(course))
+        // })
     }
 
     return (
