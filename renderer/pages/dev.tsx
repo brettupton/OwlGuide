@@ -32,6 +32,13 @@ export default function Development() {
 
     const handleDBRecreate = () => {
         window.ipc.send('main', { process: 'sql', method: 'recreate-db' })
+<<<<<<< HEAD
+=======
+    }
+
+    const handleDumpFiles = () => {
+        window.ipc.send('dev', { method: 'dump-files' })
+>>>>>>> main
     }
 
     const handleReset = () => {
@@ -63,6 +70,12 @@ export default function Development() {
                 <div className="flex">
                     <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleOpenUserPath}>Open</button>
                 </div>
+<<<<<<< HEAD
+=======
+                <div className="flex">
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDumpFiles}>Dump</button>
+                </div>
+>>>>>>> main
             </div>
         </div>
     )

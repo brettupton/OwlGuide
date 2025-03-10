@@ -1,10 +1,18 @@
 import { CSVCourse, XLSXCourse } from "../../../types/Enrollment"
+<<<<<<< HEAD
 import { fileManager, bSQLDB, regex } from "../../utils"
+=======
+import { fileHandler, bSQLDB, regex } from "../../utils"
+>>>>>>> main
 import Papa from 'papaparse'
 
 const matchEnrollment = async (filePath: string) => {
     try {
+<<<<<<< HEAD
         const courses = await fileManager.xlsx.read(filePath) as XLSXCourse[]
+=======
+        const courses = await fileHandler.xlsx.read(filePath) as XLSXCourse[]
+>>>>>>> main
         const newEnrl: string[][] = []
 
         const [term = null, year = null] = regex.matchFileTermYear(filePath) || []

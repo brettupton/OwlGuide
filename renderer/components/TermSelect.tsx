@@ -3,6 +3,7 @@ import Spinner from "./Spinner"
 
 export default function TermSelect({ process, latest }: { process: string, latest?: boolean }) {
     const [terms, setTerms] = useState<string[]>([])
+    const [selectedTerm, setSelectedTerm] = useState<string>("")
 
     useEffect(() => {
         if (typeof window !== undefined && window.ipc) {
@@ -37,9 +38,13 @@ export default function TermSelect({ process, latest }: { process: string, lates
     const handleTermChoice = (e: ChangeEvent<HTMLSelectElement>) => {
         if (e.currentTarget.value) {
             const term = e.currentTarget.value
-            const method = process === 'decision' ? 'get-term-decision' : process === 'course' ? 'get-term-course' : ""
+            const method = `get-term-${process}`
 
             window.ipc.send('main', { process, method, data: { term, limit: 30, isForward: true, isSearch: false, pivotCourse: { Dept: "", Course: "", Section: "" } } })
+<<<<<<< HEAD
+=======
+            setSelectedTerm(term)
+>>>>>>> main
         }
     }
 
@@ -49,7 +54,7 @@ export default function TermSelect({ process, latest }: { process: string, lates
                 <Spinner />
                 :
                 <select
-                    className="border text-sm rounded-lg block p-1 bg-gray-700 border-gray-600 text-white"
+                    className={`border text-sm rounded-lg block p-1 bg-gray-700 border-gray-600 text-white ${selectedTerm ? "ring-2 ring-white" : ""}`}
                     onChange={handleTermChoice}
                 >
                     <option value="">Term</option>

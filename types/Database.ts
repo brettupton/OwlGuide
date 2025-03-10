@@ -1,8 +1,16 @@
+<<<<<<< HEAD
 export type TableName = "Books" | "Courses" | "Sales" | "Course_Book" | "Prices" | "Inventory"
 
 export type Column = {
     [column: string]: {
         type: string
+=======
+export type TableName = "Books" | "Courses" | "Sales" | "Course_Book" | "Prices" | "Inventory" | "Orders" | "Order_Book"
+
+export type Column = {
+    [column: string]: {
+        type: "TEXT" | "INTEGER" | "INTEGER PRIMARY KEY"
+>>>>>>> main
         bncRef: string | string[]
         foreignKey?: {
             references: string

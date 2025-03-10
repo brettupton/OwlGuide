@@ -7,7 +7,7 @@ const matchFileName = (path: string): string => {
 
 const matchFileTermYear = (path: string): string[] => {
     const fileName = matchFileName(path)
-    // Finds term and year from file name, based on either F - Fall, W/Sp - Spring, A/Su - Summer
+    // Finds term and year from file name, based on either F -> Fall, W/Sp -> Spring, A/Su -> Summer
     const match = fileName.match(/(F|W|Sp|A|Su).*?20(\d{2})/i)
 
     if (match) {
@@ -112,6 +112,17 @@ const ISOtoDb2Time = (iso: string) => {
     return iso.replace('T', '-').replace(/:/g, '.').replace('Z', '').slice(0, 26) + '000'
 }
 
+<<<<<<< HEAD
+=======
+const fileNameTimeStamp = () => {
+    // Construct filesafe timestamp string in MMDDYYTHHMMSSMSZ format
+    const now = new Date()
+
+    return `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${now.getFullYear().toString().slice(-2)}`
+        + `T${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}-${String(now.getSeconds()).padStart(2, "0")}-${now.getMilliseconds()}Z`
+}
+
+>>>>>>> main
 export const regex = {
     matchFileName,
     matchFileTermYear,
@@ -120,5 +131,10 @@ export const regex = {
     toProperCase,
     usedBarcodeToISBN,
     db2TimeToLocal,
+<<<<<<< HEAD
     ISOtoDb2Time
+=======
+    ISOtoDb2Time,
+    fileNameTimeStamp
+>>>>>>> main
 }

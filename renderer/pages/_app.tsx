@@ -107,10 +107,14 @@ function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     const handleCloseChild = () => {
-      window.ipc.send('close-child')
+      window.ipc.send('close-child', { childId: router.pathname.split('\\').pop().split('/').pop(), promptClose: false })
     }
 
     setIsHeaderMenuOpen(false)
+<<<<<<< HEAD
+=======
+    setIsLoginMenuOpen(false)
+>>>>>>> main
     setIsChildWindow(router.pathname.startsWith('/child'))
 
     router.events.on('routeChangeStart', handleCloseChild)
@@ -122,6 +126,7 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <div className="flex flex-col h-screen">
+<<<<<<< HEAD
       <Header
         isHeaderMenuOpen={isHeaderMenuOpen}
         handleMenuToggle={handleMenuToggle}
@@ -146,6 +151,34 @@ function App({ Component, pageProps }: AppProps) {
         dbUpdateTime={dbUpdateTime}
         isDBUpdating={isDBUpdating}
         isChildWindow={isChildWindow}
+=======
+      {!isChildWindow &&
+        <Header
+          isHeaderMenuOpen={isHeaderMenuOpen}
+          handleMenuToggle={handleMenuToggle}
+          isHelpMenuOpen={isHelpMenuOpen}
+          handleHelpMenuToggle={handleHelpMenuToggle}
+          isChildWindow={isChildWindow}
+          appVer={appVer}
+          HeaderMenuRef={HeaderMenuRef} />
+      }
+      <Component {...pageProps} />
+      <Login
+        isLoginMenuOpen={isLoginMenuOpen}
+        handleLoginMenuToggle={handleLoginMenuToggle}
+        handleUserChange={handleUserChange}
+        userInfo={userInfo}
+        isPassShow={isPassShow}
+        handlePassToggle={() => setIsPassShow(!isPassShow)}
+        handleDBUpdate={handleDBUpdate}
+        isDBUpdating={isDBUpdating}
+        LoginMenuRef={LoginMenuRef} />
+      <Footer
+        syncDB={handleLoginMenuToggle}
+        dbUpdateTime={dbUpdateTime}
+        isDBUpdating={isDBUpdating}
+        isChildWindow={isChildWindow}
+>>>>>>> main
       />
     </div>
   )

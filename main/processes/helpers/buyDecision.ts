@@ -1,7 +1,13 @@
 import { Decision, SQLDecision } from "../../../types/Decision"
+<<<<<<< HEAD
 import { Features } from "../../../types/LGBModel"
 import { regex, bSQLDB, forest } from "../../utils"
 
+=======
+import { regex, bSQLDB } from "../../utils"
+
+/*
+>>>>>>> main
 const getDecisions = async (term: string) => {
     try {
         const books = await bSQLDB.sales.getTermModelFeatures(term) as Features[]
@@ -24,6 +30,10 @@ const getDecisions = async (term: string) => {
         throw error
     }
 }
+<<<<<<< HEAD
+=======
+*/
+>>>>>>> main
 
 const getTermDecisions = async (termYear: string) => {
     try {
@@ -33,6 +43,7 @@ const getTermDecisions = async (termYear: string) => {
         let decisions: Decision[] = []
 
         termData.forEach((book) => {
+<<<<<<< HEAD
             if (book["CurrEstSales"]) {
 
                 const decision = calculateDecision(book as SQLDecision)
@@ -41,6 +52,12 @@ const getTermDecisions = async (termYear: string) => {
         })
 
         decisions = decisions.sort((a, b) => a.Title.localeCompare(b.Title))
+=======
+            const decision = calculateDecision(book as SQLDecision)
+            decisions.push(decision)
+        })
+
+>>>>>>> main
         return decisions
     } catch (error) {
         throw error
@@ -48,6 +65,7 @@ const getTermDecisions = async (termYear: string) => {
 }
 
 const calculateDecision = (book: SQLDecision) => {
+<<<<<<< HEAD
     // Get previous semester sales over enrollment
     const salesEnrl = book.PrevActEnrl && (book.PrevActEnrl !== 0) ? book.PrevTotalSales / book.PrevActEnrl : 0.2
 
@@ -62,16 +80,46 @@ const calculateDecision = (book: SQLDecision) => {
 
     const newDec = Math.round(book.CurrActEnrl * salesEnrl)
     const newDecision: Decision = {
+=======
+    // Get previous semester sales over enrollment (default to 1/5 if no previous data)
+    const salesEnrl = book.PrevActEnrl && (book.PrevActEnrl !== 0) ? book.PrevTotalSales / book.PrevActEnrl : 0.2
+
+    // // If no current Actual Enrollment, calculate based on past percent change from Estimated to Actual
+    /*
+    if (book.CurrActEnrl === 0 && book.CurrEstEnrl !== 0) {
+        // Calculate previous percentage change as a multiplier
+        const prevPerChange = book.PrevEstEnrl ? (book.PrevActEnrl - book.PrevEstEnrl) / book.PrevEstEnrl : 0
+
+        // Apply the percentage change to current estimated enrollment
+        book.CurrActEnrl = Math.round(book.CurrEstEnrl * (1 + prevPerChange))
+    }
+        */
+
+
+    const newDec = Math.round(book.CurrActEnrl * salesEnrl)
+    const newDecision: Decision = {
+        ID: book.BookID,
+>>>>>>> main
         ISBN: book.ISBN,
         Title: book.Title,
         EstEnrl: book.CurrEstEnrl,
         ActEnrl: book.CurrActEnrl,
         EstSales: book.CurrEstSales,
+<<<<<<< HEAD
         Decision: newDec,
         Diff: Math.abs(book.CurrEstSales - newDec)
+=======
+        EstDec: Math.round(book.CurrEstEnrl * salesEnrl),
+        ActDec: newDec,
+        ActDiff: Math.abs(book.CurrEstSales - newDec)
+>>>>>>> main
     }
 
     return newDecision
 }
 
+<<<<<<< HEAD
 export { getTermDecisions, getDecisions }
+=======
+export { getTermDecisions }
+>>>>>>> main
