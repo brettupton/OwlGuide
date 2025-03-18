@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, useEffect, useRef } from "react"
+import { useState, ChangeEvent, useEffect, useRef, MutableRefObject } from "react"
 import { NoAdoption } from "../../types/Adoption"
 import { AdoptionTable, BackArrow, TermSelect } from "../components"
 
@@ -8,7 +8,7 @@ export default function AdoptionPage() {
     const [activeCourseId, setActiveCourseId] = useState<number>(0)
     const [selectedTerm, setSelectedTerm] = useState<string>("")
 
-    const tableRef = useRef(null)
+    const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
 
     useEffect(() => {
         window.ipc.on('adoption-data', ({ noAdoptions, term }: { noAdoptions: NoAdoption[], term: string }) => {
@@ -28,7 +28,7 @@ export default function AdoptionPage() {
     }, [])
 
     const handleAsstStatusChange = (status: "All" | "NoText" | "Prev") => {
-        tableRef.current.scrollIntoView({ behaviour: 'auto' })
+        tableRef.current.scrollIntoView({ behavior: 'auto' })
         setAsstStatus(status)
     }
 

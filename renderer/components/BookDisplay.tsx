@@ -37,7 +37,7 @@ export default function BookDisplay({ book }: { book: BookResult }) {
                         </div>
                         <div className="mt-1 flex justify-between items-center">
                             <div className="grid grid-cols-2 mt-2 text-xs text-gray-400">
-                                <p className="font-semibold">Unit Price: <span className="text-gray-200">${book.UnitPrice}</span></p>
+                                <p className="font-semibold">Unit Price: <span className="text-gray-200">${Number(book.UnitPrice).toFixed(2)}</span></p>
                                 <p className="font-semibold">New Price: <span className="text-gray-200">${newPrice.toFixed(2)}</span></p>
                                 <p className="font-semibold">Discount: <span className="text-gray-200">{book.Discount}%</span></p>
                                 <p className="font-semibold">Used Price: <span className="text-gray-200">${usedPrice}</span></p>
@@ -52,34 +52,40 @@ export default function BookDisplay({ book }: { book: BookResult }) {
             </div>
             <div className="flex bg-gray-300 rounded-xl border border-white mx-4 p-2 max-h-[calc(25vh)]">
                 <div className="flex relative w-full overflow-x-auto">
-                    <table className="w-full text-sm text-left rtl:text-right text-white text-center">
-                        <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
-                            <tr>
-                                {Object.keys(book.Terms[0]).map((header, index) => {
+                    {book.Terms.length > 0 ?
+                        <table className="w-full text-sm text-left rtl:text-right text-white text-center">
+                            <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
+                                <tr>
+                                    {Object.keys(book.Terms[0]).map((header, index) => {
+                                        return (
+                                            <th key={index} className="p-2">
+                                                {header}
+                                            </th>
+                                        )
+                                    })}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {book.Terms.map((term, index) => {
                                     return (
-                                        <th key={index} className="p-2">
-                                            {header}
-                                        </th>
+                                        <tr key={index} className="odd:bg-gray-900 even:bg-gray-800 hover:bg-gray-600 border-b border-gray-700">
+                                            {Object.keys(term).map((data, index) => {
+                                                return (
+                                                    <td key={`${term["Term"]}${index}`} className="px-2 py-1">
+                                                        {term[data]}
+                                                    </td>
+                                                )
+                                            })}
+                                        </tr>
                                     )
                                 })}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {book.Terms.map((term, index) => {
-                                return (
-                                    <tr key={index} className="odd:bg-gray-900 even:bg-gray-800 hover:bg-gray-600 border-b border-gray-700">
-                                        {Object.keys(term).map((data, index) => {
-                                            return (
-                                                <td key={`${term["Term"]}${index}`} className="px-2 py-1">
-                                                    {term[data]}
-                                                </td>
-                                            )
-                                        })}
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                        :
+                        <div className="flex text-sm justify-center text-black">
+                            No Previous Terms Found
+                        </div>
+                    }
                 </div>
             </div>
         </div>

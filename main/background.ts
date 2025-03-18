@@ -2,12 +2,16 @@ require("dotenv").config()
 import path from 'path'
 import { app, ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import serve from 'electron-serve'
-import { createWindow, createChildWindow, rightClickMenu, createTray } from './electron-utils'
-import { bSQLDB, paths, regex, logger, config, createZipBlob } from './utils'
-import { adoptionProcess, appProcess, bookProcess, courseProcess, decisionProcess, enrollmentProcess, orderProcess, reportProcess, sqlProcess } from './processes'
-import { initializeDB } from './processes/helpers/sqlDatabase'
-import { ChildPath, ChildWindow, ChildWindowLocation } from '../types/ChildWin'
 import fs from 'fs'
+import { createWindow, createChildWindow, rightClickMenu, createTray } from './electron-utils'
+import { bSQLDB, paths, regex, logger, createZipBlob } from './utils'
+import { adoptionProcess, appProcess, bookProcess, courseProcess, decisionProcess, enrollmentProcess, orderProcess, reportProcess, sqlProcess } from './processes'
+import { ChildPath, ChildWindow, ChildWindowLocation } from '../types/ChildWin'
+import tables from './db/tables'
+import { TableData } from '../types/Database'
+import { formatPrevAdoptions } from './processes/helpers/adoptConv'
+import { PrevAdoption } from '../types/Adoption'
+import { initializeApp } from './electron-utils/init-app'
 
 export const isProd = process.env.NODE_ENV === 'production'
 
@@ -32,27 +36,26 @@ let childWindows: ChildWindow[] = []
       },
     })
 
-    createTray(paths.windowIconPath)
+    // Close any remaining child windows if main window is closed
+    mainWindow.on('closed', () => {
+      childWindows.forEach((window) => window.browserWin.close())
+    })
 
-    // Check app version to determine if database needs to be created/recreated
-    const appVer = await config.read('appVersion', false)
-    if (isProd && appVer !== app.getVersion()) {
+    createTray(paths.trayIconPath)
+
+    if (isProd) {
       try {
-        await initializeDB()
-        await config.write('appVersion', app.getVersion(), false)
+        await initializeApp()
       } catch (error) {
-        dialog.showErrorBox('Database Error', `${error}\n\nContact dev for assistance.`)
+        dialog.showErrorBox('App', `${error}\n\nContact dev for assistance.`)
       }
-    }
-
-    await mainWindow.loadURL(isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`)
-
-    if (!isProd) {
+    } else {
       const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer')
       installExtension(REACT_DEVELOPER_TOOLS)
         .catch((err: Error) => console.log('An error occurred: ', err))
     }
 
+    await mainWindow.loadURL(isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`)
   })()
 
 app.on('window-all-closed', () => {
@@ -61,13 +64,12 @@ app.on('window-all-closed', () => {
 
 // Header Processes
 ipcMain.on('minimize-app', (event) => {
-  const window = BrowserWindow.getFocusedWindow()
-  if (window) window.minimize()
+  if (mainWindow) mainWindow.minimize()
 })
 
 ipcMain.on('close-app', (event) => {
-  const window = BrowserWindow.getFocusedWindow()
-  if (window) window.close()
+  childWindows.forEach((window) => window.browserWin.close())
+  if (mainWindow) mainWindow.close()
 })
 
 ipcMain.on('open-github', (event) => {
@@ -198,6 +200,18 @@ ipcMain.on('dev', async (event, { method, data }: ProcessArgs) => {
         dialog.showErrorBox('Dev', `${error}`)
       }
       break
+
+    case 'log-statement':
+      try {
+        Object.keys(tables).forEach(async (tableName) => {
+          const table = tables[tableName] as TableData
+          const statement = await bSQLDB.all.buildSelectStmt(table)
+          console.log(`${tableName}: ${statement}\n`)
+        })
+      } catch (error) {
+        console.error(error)
+      }
+      break
   }
 })
 
@@ -243,8 +257,9 @@ ipcMain.on('child', async (event, { process, data }) => {
           childName = "adoption-data"
           childLocation = "bottom"
           const [term, year] = regex.splitFullTerm(data["term"])
+          const prevCourseAdoptions = await bSQLDB.adoptions.getPrevAdoptionsByCourse(year, data["course"]) as PrevAdoption[]
 
-          childData = { prevAdoptions: await bSQLDB.adoptions.getPrevAdoptionsByCourse(year, data["course"]) }
+          childData = { prevAdoptions: formatPrevAdoptions(prevCourseAdoptions) }
         } catch (error) {
           throw error
         }
@@ -254,9 +269,9 @@ ipcMain.on('child', async (event, { process, data }) => {
         try {
           childName = "course-data"
           childLocation = "bottom"
-          const { booksResult, course } = await bSQLDB.books.getBooksByCourse(data["courseID"])
+          const { booksResult } = await bSQLDB.books.getBooksByCourse(data["course"])
 
-          childData = { books: booksResult, course }
+          childData = { books: booksResult, course: data["course"] }
         } catch (error) {
           throw error
         }

@@ -1,12 +1,13 @@
 import { ChangeEvent, MutableRefObject, useEffect, useRef, useState } from "react"
 import { BackArrow, PageTable, TermSelect } from "../components"
+import { CourseData } from "../../types/Course"
 
 export default function Course() {
-    const [courses, setCourses] = useState<DBRow[]>([])
+    const [courses, setCourses] = useState<CourseData[]>([])
     const [totalRows, setTotalRows] = useState<number>(0)
-    const [term, setTerm] = useState<string>("")
+    const [selectedTerm, setSelectedTerm] = useState<string>("")
     const [limit, setLimit] = useState<number>(30)
-    const [page, setPage] = useState<number>(1)
+    const [pageNum, setPageNum] = useState<number>(1)
     const [activeCourse, setActiveCourse] = useState<number>(0)
     const [searchCourse, setSearchCourse] = useState<{ Dept: string, Course: string, Section: string }>({
         Dept: "",
@@ -17,16 +18,18 @@ export default function Course() {
     const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
 
     useEffect(() => {
-        if (typeof window !== undefined && window.ipc) {
-            window.ipc.on('course-data', ({ courses, total, term }: { courses: DBRow[], total: number, term: string }) => {
-                if (courses.length > 0) {
-                    setCourses(courses)
-                }
-                setTerm(term)
-                setTotalRows(total)
+        window.ipc.on('course-data', ({ courses, total, term }: { courses: CourseData[], total: number, term: string }) => {
+            if (courses.length > 0) {
+                setCourses(courses)
+            }
+            setSelectedTerm(term)
+            setTotalRows(total)
+            if (tableRef.current) {
                 tableRef.current.scrollIntoView({ behavior: "auto" })
-            })
-        }
+            }
+
+            window.ipc.send('close-child', { prompt: false })
+        })
     }, [])
 
     const updatePage = (forward: boolean) => {
@@ -36,18 +39,18 @@ export default function Course() {
             {
                 process: 'course',
                 method: 'get-term-course',
-                data: { term, limit, isForward: forward, isSearch: false, pivotCourse: { Dept: pivot.Dept, Course: pivot.Course, Section: pivot.Section } }
+                data: { term: selectedTerm, limit, isForward: forward, isSearch: false, pivotCourse: { Dept: pivot.Dept, Course: pivot.Course, Section: pivot.Section } }
             })
         // Calculate new page number within constraints
-        let newPage = page + (forward ? 1 : -1)
+        let newPage = pageNum + (forward ? 1 : -1)
         if (newPage >= 1 && newPage < Math.floor(totalRows / limit)) {
-            setPage(newPage)
+            setPageNum(newPage)
         }
     }
 
-    const handleRowClick = (courseID: number) => {
-        setActiveCourse(courseID)
-        window.ipc.send('child', { process: 'course', data: { courseID } })
+    const handleRowClick = (row: DBRow) => {
+        setActiveCourse(row["ID"] as number)
+        window.ipc.send('child', { process: 'course', data: { course: row } })
     }
 
     const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -60,87 +63,72 @@ export default function Course() {
     }
 
     const handleSearch = () => {
-        window.ipc.send('main',
-            {
-                process: 'course',
-                method: 'get-term-course',
-                data: { term, limit, isForward: true, isSearch: true, pivotCourse: { Dept: searchCourse.Dept, Course: searchCourse.Course, Section: searchCourse.Section } }
-            })
-    }
-
-    const handleReset = () => {
-        window.ipc.send('close-child', { childId: "course-data", promptClose: false })
-        setTerm("")
-        setCourses([])
-        setPage(1)
-        setActiveCourse(0)
+        if (Object.values(searchCourse).some((searchVal) => searchVal !== "")) {
+            window.ipc.send('main',
+                {
+                    process: 'course',
+                    method: 'get-term-course',
+                    data: { term: selectedTerm, limit, isForward: true, isSearch: true, pivotCourse: { Dept: searchCourse.Dept, Course: searchCourse.Course, Section: searchCourse.Section } }
+                })
+        }
     }
 
     return (
-        <div className="flex flex-col w-full">
-            <BackArrow path="home" />
-            <div className="flex">
-                {courses.length > 0
-                    ?
-                    <div className="flex flex-col w-full px-2">
-                        <div className="flex text-sm mb-1 p-2 gap-1">
-                            <div className="flex w-1/12">
-                                <input
-                                    type="text"
-                                    id="Dept"
-                                    className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
-                                    placeholder="Dept"
-                                    defaultValue={searchCourse["Dept"]}
-                                    minLength={4}
-                                    maxLength={4}
-                                    onChange={handleSearchChange}
-                                />
-                            </div>
-                            <div className="flex w-1/12">
-                                <input
-                                    type="text"
-                                    id="Course"
-                                    defaultValue={searchCourse["Course"]}
-                                    className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
-                                    placeholder="Course"
-                                    minLength={3}
-                                    maxLength={3}
-                                    onChange={handleSearchChange}
-                                />
-                            </div>
-                            <div className="flex w-1/12">
-                                <input
-                                    type="text"
-                                    id="Section"
-                                    defaultValue={searchCourse["Section"]}
-                                    className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full p-1"
-                                    placeholder="Section"
-                                    minLength={3}
-                                    maxLength={3}
-                                    onChange={handleSearchChange}
-                                />
-                            </div>
-                            <div className="flex w-1/12">
-                                <button
-                                    className="bg-white hover:bg-gray-300 text-gray-800 font-semibold w-full py-1 px-1 border border-gray-400 rounded shadow text-center active:scale-95 transition-transform duration-75"
-                                    onClick={handleSearch}
-                                >
-                                    Search
-                                </button>
-                            </div>
-                            <div className="flex w-2/3 justify-end gap-2">
-                                <div className="flex text-md font-bold border border-white rounded px-2 py-1">{term}</div>
-                                <div className="flex">
-                                    <button
-                                        className="bg-white hover:bg-gray-300 text-gray-800 font-semibold py-1 px-1 border border-gray-400 rounded shadow text-center active:scale-95 transition-transform duration-75"
-                                        onClick={handleReset}>Change</button>
-                                </div>
-                            </div>
+        <div className="flex flex-col">
+            <BackArrow />
+            <div className="flex flex-col m-4">
+                <div className="flex w-full gap-2">
+                    <div className="flex">
+                        <TermSelect process="course" />
+                    </div>
+                    <div className="flex gap-2 w-1/3">
+                        <div className="flex">
+                            <input type="text"
+                                className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full px-2 py-1"
+                                id="Dept"
+                                placeholder="Dept"
+                                value={searchCourse["Dept"]}
+                                maxLength={4}
+                                onChange={handleSearchChange}
+                            />
                         </div>
+                        <div className="flex">
+                            <input type="text"
+                                className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full px-2 py-1"
+                                id="Course"
+                                placeholder="Course"
+                                value={searchCourse["Course"]}
+                                maxLength={3}
+                                onChange={handleSearchChange}
+                            />
+                        </div>
+                        <div className="flex">
+                            <input type="text"
+                                className="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-gray-500 focus:border-gray-500 block w-full px-2 py-1"
+                                id="Section"
+                                placeholder="Section"
+                                value={searchCourse["Section"]}
+                                maxLength={3}
+                                onChange={handleSearchChange}
+                            />
+                        </div>
+                        <div className="flex">
+                            <button className="bg-white hover:bg-gray-300 text-gray-800 font-semibold px-1 border border-gray-400 rounded shadow text-center active:scale-95 transition-transform duration-75"
+                                onClick={handleSearch}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {selectedTerm &&
+                    <div className="flex mt-3">
                         <PageTable
                             pageData={courses}
                             totalRows={totalRows}
-                            page={page}
+                            pageNum={pageNum}
                             limit={limit}
                             updatePage={updatePage}
                             tableRef={tableRef}
@@ -148,8 +136,6 @@ export default function Course() {
                             activeRow={activeCourse}
                         />
                     </div>
-                    :
-                    <TermSelect process="course" />
                 }
             </div>
         </div>

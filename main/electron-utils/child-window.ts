@@ -1,6 +1,7 @@
 import { BrowserWindow } from "electron"
 import path from 'path'
 import { ChildPath, ChildWindow, ChildWindowLocation } from "../../types/ChildWin"
+import { paths } from "../utils"
 
 export const createChildWindow = async (mainWindow: BrowserWindow, childPath: ChildPath, location: ChildWindowLocation): Promise<ChildWindow> => {
   const mainBounds = mainWindow.getContentBounds()
@@ -11,6 +12,7 @@ export const createChildWindow = async (mainWindow: BrowserWindow, childPath: Ch
     width: windowWidth,
     height: windowHeight,
     frame: false,
+    icon: paths.windowIconPath,
     parent: location === "detach" ? null : mainWindow,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')

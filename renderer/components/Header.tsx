@@ -8,14 +8,12 @@ interface HeaderProps {
     isChildWindow: boolean
     isHelpMenuOpen: boolean
     handleHelpMenuToggle: () => void
+    routes: { route: string, plural: boolean }[]
     appVer: string
     HeaderMenuRef: MutableRefObject<any>
 }
 
-export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWindow, isHelpMenuOpen, handleHelpMenuToggle, appVer, HeaderMenuRef }: HeaderProps) {
-    const routes = ["home", "course", "book", "decision", "enrollment", "report"]
-    const plurals = ["course", "decision", "book", "report"]
-
+export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWindow, isHelpMenuOpen, handleHelpMenuToggle, routes, appVer, HeaderMenuRef }: HeaderProps) {
     const handleMinimize = () => {
         window.ipc.send('minimize-app')
     }
@@ -70,13 +68,16 @@ export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWind
                 <ul
                     className={`absolute flex flex-col text-black font-medium top-full left-10 mt-2 bg-white border border-gray-300 shadow-lg rounded-md ${isHeaderMenuOpen ? 'block' : 'hidden'}`}
                     style={{ zIndex: 50 }} >
-                    {routes.map((route, index) => (
+                    <Link href="/home" className="px-2 py-1 cursor-pointer hover:bg-gray-100">
+                        Home
+                    </Link>
+                    {routes.map((routeInfo, index) => (
                         <Link
-                            href={`${route}`}
+                            href={`${routeInfo.route}`}
                             key={index}
                             className="px-2 py-1 cursor-pointer hover:bg-gray-100"
                         >
-                            {`${route[0].toUpperCase()}${route.slice(1)}${plurals.includes(route) ? 's' : ''}`}
+                            {`${routeInfo.route[0].toUpperCase()}${routeInfo.route.slice(1)}${routeInfo.plural ? 's' : ''}`}
                         </Link>
                     ))}
                 </ul>
@@ -96,7 +97,6 @@ export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWind
                     </div>
                 </div>
             </header>
-
             :
             <header className='bg-gray-800 text-white p-1 flex items-center justify-between relative h-11'>
 

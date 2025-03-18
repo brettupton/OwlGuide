@@ -29,6 +29,6 @@ export type PrevAdoption = {
     Year: string
     Prof: string
     NoText: "Y" | "N"
-    Book: string | null
-    ISBN: string | null
+    Title: string | null | (string | null)[]
+    ISBN: string | null | (string | null)[]
 }

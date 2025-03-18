@@ -1,9 +1,6 @@
 import fs from 'fs'
-import path from 'path'
 import XLSX from '@e965/xlsx'
 import Papa from 'papaparse'
-import { safeStorage } from 'electron'
-import { paths } from '.'
 
 const parseCSV = (filePath: string): Promise<{ [field: string]: string | number }[]> => {
     return new Promise((resolve, reject) => {
@@ -63,15 +60,6 @@ const createXLSX = (data: DBRow[]): Promise<Buffer> => {
     })
 }
 
-const createDir = (dir: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        fs.mkdir(dir, { recursive: true }, (err) => {
-            if (err) { reject(err) }
-            resolve()
-        })
-    })
-}
-
 const getDirFileNames = (dir: string): Promise<string[]> => {
     return new Promise((resolve, reject) => {
         if (fs.existsSync(dir)) {
@@ -120,7 +108,6 @@ export const fileHandler = {
         write: createXLSX
     },
     files: {
-        create: createDir,
         names: getDirFileNames,
         delete: deleteFile
     },

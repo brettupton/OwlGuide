@@ -5,7 +5,7 @@ export type Column = {
         type: "TEXT" | "INTEGER" | "INTEGER PRIMARY KEY"
         bncRef: string | string[]
         foreignKey?: {
-            references: string
+            references: string[]
             onDelete: string
             onUpdate: string
         }
@@ -19,7 +19,7 @@ export type TableData = {
     // Composite key for identifying differences in table sync for tables that don't have identifiable primary key
     "CompKey": string[]
     "Indexes": string[]
-    "Timestamp"?: string[]
+    "Timestamp"?: string
 }
 
 export type Tables = {

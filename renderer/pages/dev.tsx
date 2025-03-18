@@ -38,6 +38,10 @@ export default function Development() {
         window.ipc.send('dev', { method: 'dump-files' })
     }
 
+    const handleLogStatements = () => {
+        window.ipc.send('dev', { method: 'log-statement' })
+    }
+
     const handleReset = () => {
         router.refresh()
     }
@@ -60,6 +64,9 @@ export default function Development() {
                 </div>
                 <div className="flex">
                     <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDBRecreate}>Recreate</button>
+                </div>
+                <div className="flex">
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleLogStatements}>Statements</button>
                 </div>
                 <div className="flex">
                     <span className="underline underline-offset-8">Directory</span>

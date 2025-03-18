@@ -5,12 +5,12 @@ import { spawn } from "child_process"
 import tables from "../../db/tables"
 import { TableData } from "../../../types/Database"
 
-export const updateDB = async (files: string[]) => {
+export const syncDB = async (files: string[]) => {
     if (files.length === Object.keys(tables).length) {
         try {
             const updateStart = Date.now()
-            await bSQLDB.all.updateDB(files, updateStart)
-            await config.write("dbUpdateTime", regex.ISOtoDb2Time(new Date().toISOString()), false)
+            await bSQLDB.all.syncDB(files, updateStart)
+            await config.write([["dbUpdateTime", regex.ISOtoDb2Time(new Date().toISOString())]])
         } catch (error) {
             throw error
         }
@@ -22,7 +22,6 @@ export const updateDB = async (files: string[]) => {
 export const initializeDB = async (): Promise<void> => {
     return new Promise(async (resolve, reject) => {
         const initializeStart = Date.now()
-        await config.write('dbUpdateTime', "0001-01-01-00.00.00.000000", false)
 
         if (!fs.existsSync(paths.dbPath)) {
             fs.mkdir(path.join(paths.userDataPath, 'db'), { recursive: true }, async (err) => {
@@ -85,11 +84,8 @@ export const getIBMTables = async (userId: string, password: string) => {
             })
 
             acsProcess.on('close', (code) => {
-                if (code !== 0) {
-                    reject(`Failed to download ${tableName}, exit code: ${code}`)
-                }
                 const timeEnd = Date.now()
-                logger.addNewLog("acs", [tableName, `Completed in ${(timeEnd - timeStart) / 1000}s`])
+                logger.addNewLog("acs", [tableName, `Completed in ${(timeEnd - timeStart) / 1000}s`, `Exit Code: ${code}`])
 
                 resolve()
             })

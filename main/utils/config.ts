@@ -3,37 +3,34 @@ import fs from 'fs'
 import { readJSON } from './fileHandler'
 import { paths } from './paths'
 
-const updateConfigValue = (key: string, value: string, encrypt: boolean): Promise<void> => {
+const updateConfigValue = (keyValues: string[][], encrypt?: boolean): Promise<void> => {
     return new Promise(async (resolve, reject) => {
         if (encrypt) {
             // Encryption to a buffer then convert to base64 string (allows for JSON storage)
-            value = safeStorage.encryptString(value).toString('base64')
+            keyValues.forEach(([_, value]) => {
+                value = safeStorage.encryptString(value).toString('base64')
+            })
         }
 
-        if (!fs.existsSync(paths.configPath)) {
-            const config: Config = { [key]: value }
-
-            fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
-                if (err) {
-                    reject(`Error writing ${key} to config: ${err}`)
-                }
-                resolve()
-            })
-        } else {
+        // Config should always exist, but check just in case
+        if (fs.existsSync(paths.configPath)) {
             try {
                 const config = await readJSON(paths.configPath)
-                config[key] = value
+
+                // Loop through array and set key-value pairs in config
+                keyValues.forEach(([key, value]) => {
+                    config[key] = value
+                })
 
                 fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
-                    if (err) {
-                        throw new Error(`${err}`)
-                    }
+                    if (err) { throw new Error(`${err}`) }
                     resolve()
                 })
             } catch (error) {
-                reject(`Error writing ${key} to config: ${error}`)
+                reject(error)
             }
         }
+        resolve()
     })
 }
 
@@ -54,13 +51,7 @@ const getConfigValue = (key: string, decrypt?: boolean): Promise<string> => {
                 reject(`Config error: ${error}`)
             }
         } else {
-            const config = {}
-            fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
-                if (err) {
-                    throw new Error(`${err}`)
-                }
-                resolve("")
-            })
+            resolve("")
         }
     })
 }

@@ -18,47 +18,25 @@ function App({ Component, pageProps }: AppProps) {
   const [isPassShow, setIsPassShow] = useState<boolean>(false)
   const [isDBUpdating, setIsDBUpdating] = useState<boolean>(false)
 
+  const routes = [
+    { route: "adoption", plural: true },
+    { route: "course", plural: true },
+    { route: "book", plural: true },
+    { route: "decision", plural: true },
+    { route: "enrollment", plural: false },
+    { route: "order", plural: true },
+    { route: "report", plural: true }
+  ]
+
   const HeaderMenuRef = useRef(null)
   const LoginMenuRef = useRef(null)
   const router = useRouter()
 
-  const handleMenuToggle = () => {
-    setIsHeaderMenuOpen(!isHeaderMenuOpen)
-  }
-
-  const handleHelpMenuToggle = () => {
-    setIsHelpMenuOpen(!isHelpMenuOpen)
-  }
-
-  const handleLoginMenuToggle = () => {
-    setIsLoginMenuOpen(!isLoginMenuOpen)
-    setIsPassShow(false)
-    setUserInfo({
-      userId: "",
-      password: ""
-    })
-  }
-
-  const handleUserChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.currentTarget
-
-    const newUser = {
-      ...userInfo,
-      [id]: value
-    }
-    setUserInfo(newUser)
-  }
-
-  const handleDBUpdate = () => {
-    if (Object.values(userInfo).every((ele) => ele !== "")) {
-      setIsDBUpdating(true)
-      window.ipc.send('main', { process: 'sql', method: 'update-db', data: { userInfo } })
-    }
-  }
-
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ipc) {
-      window.ipc.send('main', { process: 'app', method: 'get-values' })
+      if (!appVer || !dbUpdateTime) {
+        window.ipc.send('main', { process: 'app', method: 'get-values' })
+      }
     }
 
     window.ipc.on('appData', ({ appVer, dbUpdateTime }: { appVer: string, dbUpdateTime: string }) => {
@@ -121,19 +99,46 @@ function App({ Component, pageProps }: AppProps) {
     }
   }, [router])
 
+  const handleLoginMenuToggle = () => {
+    setIsLoginMenuOpen(!isLoginMenuOpen)
+    setIsPassShow(false)
+    setUserInfo({
+      userId: "",
+      password: ""
+    })
+  }
+
+  const handleUserChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.currentTarget
+
+    const newUser = {
+      ...userInfo,
+      [id]: value
+    }
+    setUserInfo(newUser)
+  }
+
+  const handleDBUpdate = () => {
+    if (Object.values(userInfo).every((ele) => ele !== "")) {
+      setIsDBUpdating(true)
+      window.ipc.send('main', { process: 'sql', method: 'update-db', data: { userInfo } })
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen">
       {!isChildWindow &&
         <Header
           isHeaderMenuOpen={isHeaderMenuOpen}
-          handleMenuToggle={handleMenuToggle}
+          handleMenuToggle={() => setIsHeaderMenuOpen(!isHeaderMenuOpen)}
           isHelpMenuOpen={isHelpMenuOpen}
-          handleHelpMenuToggle={handleHelpMenuToggle}
+          handleHelpMenuToggle={() => setIsHelpMenuOpen(!isHelpMenuOpen)}
+          routes={routes}
           isChildWindow={isChildWindow}
           appVer={appVer}
           HeaderMenuRef={HeaderMenuRef} />
       }
-      <Component {...pageProps} />
+      <Component {...pageProps} routes={routes} />
       <Login
         isLoginMenuOpen={isLoginMenuOpen}
         handleLoginMenuToggle={handleLoginMenuToggle}

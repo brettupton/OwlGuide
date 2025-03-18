@@ -1,4 +1,4 @@
-import { getDecisions, getTermDecisions } from "./helpers/buyDecision"
+import { getTermDecisions } from "./helpers/buyDecision"
 
 export const decisionProcess = async ({ event, method, data }: ProcessArgs) => {
     switch (method) {
