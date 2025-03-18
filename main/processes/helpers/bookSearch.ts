@@ -3,6 +3,7 @@ import axios from "axios"
 import { regex } from "../../utils"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const formatBookSearch = (sqlResults: DBRow[], apiResults: APIResult | {}) => {
     let book: BookResult | {} = {}
     if (sqlResults.length > 0) {
@@ -10,6 +11,8 @@ const formatBookSearch = (sqlResults: DBRow[], apiResults: APIResult | {}) => {
         Object.keys(sqlResults[0]).forEach((key) => sqlResults[0][key] = regex.toProperCase(sqlResults[0][key]))
         const firstResult = sqlResults[0]
 =======
+=======
+>>>>>>> main
 const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResults: APIResult | {}) => {
     let book: BookResult | {} = {}
 
@@ -18,6 +21,9 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
         Object.keys(sqlResults.info[0]).forEach((key) => sqlResults.info[0][key] = regex.toProperCase(sqlResults.info[0][key]))
 
         const firstResult = sqlResults.info[0]
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
         book = {
             ID: firstResult["ID"] as number,
@@ -31,13 +37,19 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
             Publisher: apiResults["Publisher"] || "",
             Image: apiResults["PreviewImg"],
 <<<<<<< HEAD
+<<<<<<< HEAD
             Terms: sqlResults.map((result) => {
 =======
+=======
+>>>>>>> main
             UnitPrice: firstResult["UnitPrice"],
             Discount: firstResult["Discount"],
             NewOH: firstResult["NewOH"],
             UsedOH: firstResult["UsedOH"],
             Terms: sqlResults.sales.map((result) => {
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
                 return {
                     Term: (result["Term"].toString()) + (result["Year"].toString()),

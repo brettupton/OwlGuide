@@ -1,6 +1,10 @@
 import { app } from 'electron'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { fileManager, regex } from '../utils'
+=======
+import { config, regex } from '../utils'
+>>>>>>> main
 =======
 import { config, regex } from '../utils'
 >>>>>>> main
@@ -9,7 +13,11 @@ export const appProcess = async ({ event, method, data }: ProcessArgs) => {
     switch (method) {
         case 'get-values':
 <<<<<<< HEAD
+<<<<<<< HEAD
             const dbUpdateTime = await fileManager.config.read('dbUpdateTime', false)
+=======
+            const dbUpdateTime = await config.read('dbUpdateTime', false)
+>>>>>>> main
 =======
             const dbUpdateTime = await config.read('dbUpdateTime', false)
 >>>>>>> main

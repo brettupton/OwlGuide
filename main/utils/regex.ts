@@ -113,7 +113,10 @@ const ISOtoDb2Time = (iso: string) => {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
 const fileNameTimeStamp = () => {
     // Construct filesafe timestamp string in MMDDYYTHHMMSSMSZ format
     const now = new Date()
@@ -122,6 +125,9 @@ const fileNameTimeStamp = () => {
         + `T${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}-${String(now.getSeconds()).padStart(2, "0")}-${now.getMilliseconds()}Z`
 }
 
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 export const regex = {
     matchFileName,
@@ -132,7 +138,12 @@ export const regex = {
     usedBarcodeToISBN,
     db2TimeToLocal,
 <<<<<<< HEAD
+<<<<<<< HEAD
     ISOtoDb2Time
+=======
+    ISOtoDb2Time,
+    fileNameTimeStamp
+>>>>>>> main
 =======
     ISOtoDb2Time,
     fileNameTimeStamp

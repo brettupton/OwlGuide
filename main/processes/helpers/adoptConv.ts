@@ -1,8 +1,16 @@
+<<<<<<< HEAD
 import { AdoptionCSV, NoAdoption } from "../../../types/Adoption"
 import Papa from 'papaparse'
 import { regex } from "../../utils"
 
 const formatToCSV = (courses: NoAdoption[], fullTerm: string) => {
+=======
+import { AdoptionCSV, NoAdoption, PrevAdoption } from "../../../types/Adoption"
+import Papa from 'papaparse'
+import { regex } from "../../utils"
+
+const formatToCSV = (courses: NoAdoption[], fullTerm: string): string[] => {
+>>>>>>> main
     const [term, year] = regex.splitFullTerm(fullTerm)
     const stringTerm = term === "F" ? "Fall" : term === "W" ? "Spring" : term === "A" ? "Summer" : ""
     const aipLimit = 1000 // AIP has limit of amount of courses per CSV
@@ -23,6 +31,21 @@ const formatToCSV = (courses: NoAdoption[], fullTerm: string) => {
                 'Notes': null,
                 'NoMaterials ( Non-First Day Sections Only "Y/N")': isNoText ? "Y" : "N"
             }
+<<<<<<< HEAD
+=======
+        } else {
+            return {
+                'CampusName': null,
+                'TermTitle': null,
+                'SectionCode': `${course["Dept"]}_${course["Course"]}_${course["Section"]}`,
+                'ISBN': isNoText ? null : course["ISBN"].trim(),
+                'SKU-First Day Sections Only': null,
+                'AdoptionCondition ( Non-First Day Sections Only)': null,
+                'AdoptionType ( Non-First Day Sections Only)': null,
+                'Notes': rejectMessage,
+                'NoMaterials ( Non-First Day Sections Only "Y/N")': null
+            }
+>>>>>>> main
         }
     })
 
@@ -56,10 +79,44 @@ const findRejectCourse = (course: NoAdoption): string => {
 
     for (let i = 0; i < rejectConditions.length; i++) {
         const currCondition = rejectConditions[i]
+<<<<<<< HEAD
         if (currCondition.condition) {
+=======
+        if (currCondition.condition()) {
+>>>>>>> main
             return currCondition.message
         }
     }
 }
 
+<<<<<<< HEAD
 export { formatToCSV }
+=======
+const formatPrevAdoptions = (prevAdoptions: PrevAdoption[]) => {
+    const joinedTerms: PrevAdoption[] = []
+
+    prevAdoptions.forEach((adoption) => {
+        const checkTermIndex = joinedTerms.findIndex((term) => term.Term === adoption.Term && term.Year === adoption.Year)
+
+        if (checkTermIndex < 0) {
+            const termAdoption = {
+                Term: adoption.Term,
+                Year: adoption.Year,
+                Prof: adoption.Prof,
+                NoText: adoption.NoText,
+                Title: [adoption.Title as string],
+                ISBN: [adoption.ISBN as string]
+            }
+
+            joinedTerms.push(termAdoption)
+        } else {
+            Array.isArray(joinedTerms[checkTermIndex]["Title"]) && joinedTerms[checkTermIndex]["Title"].push(adoption.Title as string)
+            Array.isArray(joinedTerms[checkTermIndex]["ISBN"]) && joinedTerms[checkTermIndex]["ISBN"].push(adoption.ISBN as string)
+        }
+    })
+
+    return joinedTerms
+}
+
+export { formatToCSV, formatPrevAdoptions }
+>>>>>>> main

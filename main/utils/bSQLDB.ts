@@ -1,6 +1,7 @@
 import Database from "better-sqlite3"
 import tables from "../db/tables"
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { regex, paths, fileManager } from "./"
 import { TableData, TableName } from "../../types/Database"
 
@@ -12,14 +13,32 @@ import { NoAdoption } from "../../types/Adoption"
 
 const createDB = async (startTime: number): Promise<void[]> => {
 >>>>>>> main
+=======
+import { config, paths, fileHandler } from "./"
+import { TableData, TableName } from "../../types/Database"
+import { NoAdoption } from "../../types/Adoption"
+import { CourseData } from "../../types/Course"
+
+const placeholderID = 0
+const placeholderTables = ["Books", "Courses", "Orders"]
+
+const createDB = async (startTime: number): Promise<void[]> => {
+>>>>>>> main
     return await Promise.all(
         Object.keys(tables).map((tableName): Promise<void> => {
             return new Promise((resolve, reject) => {
                 const db = new Database(paths.dbPath)
                 const table = tables[tableName as TableName]
+<<<<<<< HEAD
                 const tableSchema = buildTableSchema(table, false)
 
                 db.prepare(`DROP TABLE IF EXISTS ${tableName}`).run()
+=======
+                const tableSchema = buildTableSchema(table)
+
+                db.prepare(`DROP TABLE IF EXISTS ${tableName}`).run()
+                db.prepare(`VACUUM`).run()
+>>>>>>> main
                 db.prepare(`CREATE TABLE IF NOT EXISTS ${tableName} ${tableSchema}`).run()
 
                 try {
@@ -31,6 +50,7 @@ const createDB = async (startTime: number): Promise<void[]> => {
                     })()
 
 <<<<<<< HEAD
+<<<<<<< HEAD
                     // Placeholder ID for missing Book IDs in foreign tables
                     if (tableName === "Books") {
                         db.prepare(`INSERT INTO Books (ID) VALUES (0)`).run()
@@ -41,10 +61,18 @@ const createDB = async (startTime: number): Promise<void[]> => {
                     // Placeholder ID for missing Book and Order IDs in foreign tables
                     if (tableName === "Books" || tableName === "Orders") {
                         db.prepare(`INSERT INTO ${tableName} (ID) VALUES (0)`).run()
+=======
+                    // Placeholder ID for missing IDs in foreign tables
+                    if (placeholderTables.includes(tableName)) {
+                        db.prepare(`INSERT INTO ${tableName} (ID) VALUES (${placeholderID})`).run()
+>>>>>>> main
                     }
 
                     db.close()
                     console.log(`${tableName} Updated in ${(Date.now() - startTime) / 1000}s`)
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
                     resolve()
                 } catch (error) {
@@ -56,7 +84,11 @@ const createDB = async (startTime: number): Promise<void[]> => {
         }))
 }
 
+<<<<<<< HEAD
 const buildTableSchema = (table: TableData, isSync: boolean) => {
+=======
+const buildTableSchema = (table: TableData) => {
+>>>>>>> main
     const compKey = table["CompKey"]
     // Map each column key with its associated type
     const columns = Object.entries(table["Columns"])
@@ -66,7 +98,7 @@ const buildTableSchema = (table: TableData, isSync: boolean) => {
     const foreignKeys = Object.entries(table["Columns"])
         .map(([key, { foreignKey }]) => {
             return foreignKey
-                ? `FOREIGN KEY (${key}) REFERENCES ${foreignKey.references}` +
+                ? `FOREIGN KEY (${key}) REFERENCES ${foreignKey.references[0]}(${foreignKey.references[1]})` +
                 (foreignKey.onDelete ? ` ON DELETE ${foreignKey.onDelete}` : "") +
                 (foreignKey.onUpdate ? ` ON UPDATE ${foreignKey.onUpdate}` : "")
                 : null
@@ -74,6 +106,7 @@ const buildTableSchema = (table: TableData, isSync: boolean) => {
         .filter(Boolean)
         .join(", ")
 
+<<<<<<< HEAD
     // Syncing table doesn't require including foreign or primary keys
     return `(${columns}${!isSync && foreignKeys ? `, ${foreignKeys}` : ""}${!isSync && compKey.length > 0 ? `, PRIMARY KEY (${compKey.join(", ")})` : ""})`
         .replace(/,\s*$/, "")
@@ -82,11 +115,24 @@ const buildTableSchema = (table: TableData, isSync: boolean) => {
 const buildInsertStmt = (tableName: TableName, temp: boolean) => {
     const columns = tables[tableName]["Columns"]
     const compKey = tables[tableName]["CompKey"]
+=======
+    const schemaParts = [`(${columns}`]
+    // Include both foreign keys and composite keys in schema
+    if (foreignKeys) schemaParts.push(foreignKeys)
+    if (compKey.length > 0) schemaParts.push(`PRIMARY KEY (${compKey.join(", ")})`)
+
+    return schemaParts.join(", ") + ")"
+}
+
+const buildInsertStmt = (tableName: TableName) => {
+    const columns = tables[tableName]["Columns"]
+>>>>>>> main
 
     // Create insert keys and respective placeholders for values 
     const insertKeys = Object.keys(columns)
     const placeholders = insertKeys.map(() => "?").join(", ")
 
+<<<<<<< HEAD
     // Retrieve insert keys that aren't composite key
     const conflictKeys = compKey.length > 0
         ? insertKeys.filter(key => !compKey.includes(key))
@@ -205,8 +251,44 @@ const updateDB = async (files: string[], startTime: number) => {
             const upsertStmt = db.prepare(buildInsertStmt(tableName, false))
 
             const filePath = files.find((file) => file.includes(tableName))
+=======
+    // Ignore duplicate entries to satisfy unique constraint
+    return `INSERT OR IGNORE INTO ${tableName} (${insertKeys.join(", ")}) VALUES (${placeholders})`
+}
+>>>>>>> main
 
+const buildSelectStmt = async (table: TableData) => {
+    const termYear = await config.read('updateYear')
+
+    // If column reference is an array, concat elements together
+    const columns = Object.entries(table.Columns)
+        .map(([colName, colData]) => Array.isArray(colData.bncRef) ? `CONCAT(${colData.bncRef.join(', ')}) AS ${colName}` : colData.bncRef)
+        .join(', ')
+
+    let statement = `SELECT ${columns} FROM T2DB00622.${table.BNCName}`
+
+    if (table.Timestamp) {
+        statement += ` WHERE ${table.Timestamp} >= '${termYear}'`
+    }
+
+    return statement
+}
+
+const syncDB = async (files: string[], startTime: number) => {
+    const db = new Database(paths.dbPath)
+    for (const tableName of Object.keys(tables) as TableName[]) {
+        await new Promise<void>(async (resolve, reject) => {
+            // Disable foreign key restraints, delete all rows from table, and vacuum database 
+            db.prepare(`PRAGMA foreign_keys = OFF`).run()
+            db.prepare(`DELETE FROM ${tableName}${placeholderTables.includes(tableName) ? ` WHERE ID > 0` : ''}`).run()
+            db.prepare(`PRAGMA foreign_keys = ON`).run()
+            db.prepare(`VACUUM`).run()
+
+            const insertStmt = db.prepare(buildInsertStmt(tableName))
+
+            const filePath = files.find((file) => file.includes(tableName))
             try {
+<<<<<<< HEAD
 <<<<<<< HEAD
                 const csv = await fileManager.csv.read(filePath)
 =======
@@ -229,6 +311,57 @@ const updateDB = async (files: string[], startTime: number) => {
 =======
                 console.log(`${tableName} Updated in ${(Date.now() - startTime) / 1000}s`)
 >>>>>>> main
+=======
+                const csv = await fileHandler.csv.read(filePath)
+                db.transaction(() => {
+                    const columnNames = Object.keys(tables[tableName]["Columns"])
+                    const columnIndexMap = columnNames.reduce((acc, colName, idx) => {
+                        acc[colName] = idx
+                        return acc
+                    }, {} as { [field: string]: number })
+
+                    csv.forEach((row, index) => {
+                        try {
+                            const foreignKeys = Object.entries(tables[tableName]["Columns"]).filter(([_, colData]) => colData.foreignKey)
+
+                            // Resolve foreign keys to placeholder if not found in referenced table
+                            if (foreignKeys.length > 0) {
+                                for (const [keyName, keyData] of foreignKeys) {
+                                    const [refTable, refKey] = keyData["foreignKey"]["references"]
+                                    const colIndex = columnIndexMap[keyName]
+
+                                    // Check if row[keyName] exists in referenced table
+                                    const keyCheck = db.prepare(`
+                                        SELECT EXISTS(SELECT 1 FROM ${refTable} WHERE ${refKey} = ?) AS refExists
+                                    `).get(row[colIndex]) as DBRow
+
+                                    // Debug
+                                    if (0) {
+                                        console.log("Index Map:", columnIndexMap)
+                                        console.log("Key Name:", keyName, ";Key Data:", keyData)
+                                        console.log("Ref Table:", refTable, ";Ref Key:", refKey)
+                                        console.log("Index:", colIndex)
+                                        console.log("Key Check:", keyCheck)
+                                    }
+
+                                    // If the referenced key does not exist, replace with placeholderID
+                                    if (!keyCheck.refExists) {
+                                        row[colIndex] = placeholderID
+                                    }
+                                }
+                            }
+                            insertStmt.run(row)
+                        } catch (error) {
+                            console.error(`Error Table: ${tableName}\nError Row: ${index}`, row)
+                            db.prepare(`ROLLBACK`).run()
+                            throw error
+                        }
+                    }
+                    )
+                })()
+
+                console.log(`${tableName} Synced in ${(Date.now() - startTime) / 1000}s`)
+>>>>>>> main
                 resolve()
             } catch (error) {
                 db.close()
@@ -245,6 +378,7 @@ const getPrevSalesByTerm = (term: string, year: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
+<<<<<<< HEAD
                 WITH PrevTwoTerms AS (
                     -- Get the last two distinct years
                     SELECT DISTINCT Sales.Year
@@ -464,6 +598,52 @@ const getBooksByTerm = (term: string, year: string): Promise<DBRow[]> => {
                     AND Sales.Unit = '1'
                 ORDER BY Sales.Year DESC, Sales.Term
                 `)
+=======
+                WITH PrevTwoTerms AS
+                    (SELECT DISTINCT Sales.Year
+                    FROM Sales
+                    WHERE Sales.Term = :term
+                        AND Sales.Year < :year
+                    ORDER BY Sales.Year DESC
+                    LIMIT 2),
+                    PrevSales AS
+                    (SELECT Sales.BookID AS BookID,
+                    SUM(Sales.EstEnrl) AS PrevEstEnrl,
+                    SUM(Sales.ActEnrl) AS PrevActEnrl,
+                    SUM(Sales.EstSales) AS PrevEstSales,
+                    SUM(Sales.UsedSales) AS UsedSales,
+                    SUM(Sales.NewSales) AS NewSales
+                    FROM Sales
+                    WHERE Sales.Term = :term
+                        AND Sales.Year IN
+                        (SELECT YEAR
+                        FROM PrevTwoTerms)
+                    GROUP BY Sales.BookID)
+                SELECT Books.ID AS BookID,
+                    Books.ISBN,
+                    Books.Title,
+                    PrevSales.PrevEstEnrl,
+                    PrevSales.PrevActEnrl,
+                    (PrevSales.UsedSales + PrevSales.NewSales) AS PrevTotalSales,
+                    SUM(Courses.EstEnrl) AS CurrEstEnrl,
+                    SUM(Courses.ActEnrl) AS CurrActEnrl,
+                    COALESCE(Sales.EstSales, 0) AS CurrEstSales
+                FROM 'Course_Book' AS CB
+                JOIN Books ON CB.BookID = Books.ID
+                JOIN Courses ON CB.CourseID = Courses.ID
+                LEFT JOIN PrevSales ON Books.ID = PrevSales.BookID
+                LEFT JOIN Sales ON CB.BookID = Sales.BookID
+                AND Sales.Term = :term
+                AND Sales.Year = :year
+                WHERE CB.Unit = '1'
+                    AND CB.Term = :term
+                    AND CB.Year = :year
+                    AND Courses.Dept NOT IN ('CANC', 'SPEC')
+                    AND Books.Publisher NOT IN ('VST', 'XX SUPPLY')
+                GROUP BY Books.ID`)
+
+            const results = queryStmt.all({ term, year }) as DBRow[]
+>>>>>>> main
 
             const infoResult = infoStmt.all('%' + ISBN + '%') as DBRow[]
             const salesResult = salesStmt.all('%' + ISBN + '%') as DBRow[]
@@ -477,12 +657,13 @@ const getBooksByTerm = (term: string, year: string): Promise<DBRow[]> => {
     })
 }
 
-const getBookByISBN = (ISBN: string): Promise<DBRow[]> => {
+const getPrevSalesByBook = (bookID: number, term: string, year: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
 
         try {
             const queryStmt = db.prepare(`
+<<<<<<< HEAD
                 SELECT Books.ID, Books.ISBN, Books.Title, Books.Author, Books.Edition, Books.Publisher, 
                 Sales.Term, Sales.Year, Sales.EstEnrl, Sales.ActEnrl, Sales.EstSales, Sales.UsedSales, Sales.NewSales, Sales.Reorders
                 FROM Books
@@ -491,12 +672,30 @@ const getBookByISBN = (ISBN: string): Promise<DBRow[]> => {
                 AND Sales.Term NOT IN ('I', 'Q')
                 AND Sales.Unit = '1'
                 ORDER BY Sales.Year DESC, Sales.Term`)
+=======
+                SELECT CONCAT(Sales.Term, Sales.Year) AS Term,
+                        SUM(Sales.EstEnrl) AS EstEnrl,
+                        SUM(Sales.ActEnrl) AS ActEnrl,
+                        SUM(Sales.UsedSales) + SUM(Sales.NewSales) AS Sales
+                FROM Sales
+                JOIN Books ON Sales.BookID = Books.ID
+                WHERE Books.ID = ?
+                    AND CONCAT(Sales.Term, Sales.Year) != ?
+                GROUP BY Sales.Term,
+                            Sales.Year
+                ORDER BY Sales.Year DESC`)
 
-            const result = queryStmt.all('%' + ISBN + '%') as DBRow[]
+            const results = queryStmt.all(bookID, term + year) as DBRow[]
+>>>>>>> main
+
             db.close()
+<<<<<<< HEAD
             resolve(result)
 =======
             resolve({ info: infoResult, sales: salesResult })
+>>>>>>> main
+=======
+            resolve(results)
 >>>>>>> main
         } catch (error) {
             db.close()
@@ -505,40 +704,43 @@ const getBookByISBN = (ISBN: string): Promise<DBRow[]> => {
     })
 }
 
-const getBooksByCourse = (courseID: number): Promise<{ booksResult: DBRow[], course: string }> => {
+const getBookByISBN = (ISBN: string): Promise<{ info: DBRow[], sales: DBRow[] }> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
 
         try {
-            const booksStmt = db.prepare(`
+            const infoStmt = db.prepare(`
                 SELECT 
-                    Books.ISBN, Books.Title, Books.Edition, Books.Author, Books.Publisher
+                    Books.ID, Books.ISBN, Books.Title, Books.Author, Books.Edition, Books.Publisher, 
+                    Prices.UnitPrice, Prices.Discount,
+                    COALESCE(MAX(CASE WHEN Inventory.Unit = '1' AND Inventory.NewUsed = 'NW' THEN Inventory.OnHand ELSE 0 END), 0) AS NewOH,
+                    COALESCE(MAX(CASE WHEN Inventory.Unit = '1' AND Inventory.NewUsed = 'US' THEN Inventory.OnHand ELSE 0 END), 0) AS UsedOH
                 FROM 
                     Books
                 JOIN 
-                    Course_Book ON Books.ID = Course_Book.BookID
-                JOIN 
-                    Courses ON Course_Book.CourseID = Courses.ID
-                WHERE 
-                    Courses.ID = ?
+                    Prices ON Books.ID = Prices.BookID
+                LEFT JOIN 
+                    Inventory ON Books.ID = Inventory.BookID
+                WHERE Books.ISBN LIKE ?
                 `)
 
-            const courseStmt = db.prepare(`
+            const salesStmt = db.prepare(`
                 SELECT 
-                    CONCAT(Courses.Dept, ' ', 
-                        SUBSTR(CONCAT('000', Courses.Course), LENGTH(CONCAT('000', Courses.Course))-3+1, 3), ' ', 
-                        SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3)) AS Course
-                FROM
-                    Courses
-                WHERE
-                    Courses.ID = ?
+                    Sales.Term, Sales.Year, Sales.EstEnrl, Sales.ActEnrl, Sales.EstSales, Sales.UsedSales, Sales.NewSales, Sales.Reorders
+                FROM 
+                    Books
+                JOIN 
+                    Sales ON Books.ID = Sales.BookID
+                WHERE Books.ISBN LIKE ?
+                    AND Sales.Term NOT IN ('I', 'Q')
+                    AND Sales.Unit = '1'
+                ORDER BY Sales.Year DESC, Sales.Term
                 `)
 
-            const booksResult = booksStmt.all(courseID) as DBRow[]
-            const courseResult = courseStmt.get(courseID) as DBRow
-
+            const infoResult = infoStmt.all('%' + ISBN + '%') as DBRow[]
+            const salesResult = salesStmt.all('%' + ISBN + '%') as DBRow[]
             db.close()
-            resolve({ booksResult, course: courseResult.Course as string })
+            resolve({ info: infoResult, sales: salesResult })
         } catch (error) {
             db.close()
             reject(error)
@@ -546,6 +748,38 @@ const getBooksByCourse = (courseID: number): Promise<{ booksResult: DBRow[], cou
     })
 }
 
+<<<<<<< HEAD
+=======
+const getBooksByCourse = (course: DBRow): Promise<{ booksResult: DBRow[] }> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        const courseID = course?.ID
+        try {
+            const booksStmt = db.prepare(`
+                SELECT Books.ISBN,
+                        Books.Title,
+                        Books.Edition,
+                        Books.Author,
+                        Books.Publisher
+                FROM Books
+                JOIN Course_Book ON Books.ID = Course_Book.BookID
+                JOIN Courses ON Course_Book.CourseID = Courses.ID
+                WHERE Courses.ID = ?
+                `)
+
+            const booksResult = booksStmt.all(courseID) as DBRow[]
+
+            db.close()
+            resolve({ booksResult })
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
+>>>>>>> main
 const getCoursesByBook = (bookID: number, term: string, year: string): Promise<DBRow[]> => {
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
@@ -580,7 +814,11 @@ const getCoursesByBook = (bookID: number, term: string, year: string): Promise<D
 }
 
 const getCoursesByTerm = (term: string, year: string, limit: number, isForward: boolean, isSearch: boolean,
+<<<<<<< HEAD
     pivotCourse: { Dept: string, Course: string, Section: string }): Promise<{ queryResult: DBRow[], totalRows: number }> => {
+=======
+    pivotCourse: { Dept: string, Course: string, Section: string }): Promise<{ queryResult: CourseData[], totalRows: number }> => {
+>>>>>>> main
     return new Promise((resolve, reject) => {
         const db = new Database(paths.dbPath)
 
@@ -598,6 +836,7 @@ const getCoursesByTerm = (term: string, year: string, limit: number, isForward: 
             `AND (Courses.Dept, Courses.Course, Courses.Section) ${direction} (:dept, :course, :section)`
 
         let coursesQuery = `
+<<<<<<< HEAD
                 SELECT 
                     Courses.ID, 
                     Courses.Dept, 
@@ -621,6 +860,32 @@ const getCoursesByTerm = (term: string, year: string, limit: number, isForward: 
                     ${queryCondition}
                 ORDER BY 
                     Courses.Dept${order}, Courses.Course${order}, Courses.Section${order}
+=======
+                SELECT Courses.ID,
+                        Courses.Dept,
+                        SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course,
+                        SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section,
+                        Courses.Title,
+                        Courses.Prof,
+                        Courses.EstEnrl,
+                        Courses.ActEnrl,
+                        Courses.NoText,
+                        CASE
+                            WHEN EXISTS
+                                    (SELECT 1
+                                    FROM Course_Book
+                                    WHERE Course_Book.CourseID = Courses.ID) THEN 'Y'
+                            ELSE 'N'
+                        END AS Adopt
+                FROM Courses
+                WHERE Courses.Term = :term
+                    AND Courses.Year = :year
+                    AND Courses.Unit = '1' 
+                    ${queryCondition}
+                ORDER BY Courses.Dept${order}, 
+                            Courses.Course${order}, 
+                            Courses.Section${order}
+>>>>>>> main
                 LIMIT :limit
             `
 
@@ -644,6 +909,7 @@ const getCoursesByTerm = (term: string, year: string, limit: number, isForward: 
                     AND Courses.Year = ?
                 `)
 
+<<<<<<< HEAD
             const transaction = db.transaction(() => {
                 const queryResult = queryStmt.all({ term, year, dept: pivotCourse.Dept, course: pivotCourse.Course, section: pivotCourse.Section, limit }) as DBRow[]
                 const countResult = countStmt.get(term, year) as DBRow
@@ -654,6 +920,15 @@ const getCoursesByTerm = (term: string, year: string, limit: number, isForward: 
             transaction()
             db.close()
         } catch (error) {
+=======
+            const queryResult = queryStmt.all({ term, year, dept: pivotCourse.Dept, course: pivotCourse.Course, section: pivotCourse.Section, limit }) as CourseData[]
+            const countResult = countStmt.get(term, year) as DBRow
+
+            db.close()
+            resolve({ queryResult, totalRows: countResult.Count as number })
+        } catch (error) {
+            db.close()
+>>>>>>> main
             reject(error)
         }
     })
@@ -875,6 +1150,7 @@ const getPrevAdoptionsByCourse = (year: string, course: NoAdoption): Promise<DBR
 
         try {
             const queryStmt = db.prepare(`
+<<<<<<< HEAD
                 SELECT 
                     C.Term, C.Year, C.Prof, C.NoText, 
                     GROUP_CONCAT(Books.Title, ',') AS Book, GROUP_CONCAT(Books.ISBN, ',') AS ISBN FROM Courses AS C
@@ -882,13 +1158,28 @@ const getPrevAdoptionsByCourse = (year: string, course: NoAdoption): Promise<DBR
                     Course_Book ON C.ID = Course_Book.CourseID
                 LEFT JOIN 
                     Books ON Course_Book.BookID = Books.ID
+=======
+                SELECT C.Term,
+                        C.Year,
+                        C.Prof,
+                        C.NoText,
+                        Books.Title,
+                        Books.ISBN
+                FROM Courses AS C
+                LEFT JOIN Course_Book ON C.ID = Course_Book.CourseID
+                LEFT JOIN Books ON Course_Book.BookID = Books.ID
+>>>>>>> main
                 WHERE C.Year != ?
                     AND C.Dept = ?
                     AND C.Course = ?
                     AND C.Section = ?
+<<<<<<< HEAD
                 GROUP BY C.Term, C.Year
                 ORDER BY C.Year DESC
                 LIMIT 2
+=======
+                ORDER BY C.Year DESC
+>>>>>>> main
                 `)
 
             const queryResult = queryStmt.all(year, course["Dept"], course["Course"], course["Section"]) as DBRow[]
@@ -1014,17 +1305,24 @@ const getReconReport = (term: string, year: string): Promise<DBRow[]> => {
 
 export const bSQLDB = {
 <<<<<<< HEAD
+<<<<<<< HEAD
     all: { createDB, updateDB, buildSelectStmt, getAllTerms, getTablePage },
     sales: { getPrevSalesByTerm, getPrevSalesByBook, getTermModelFeatures },
     books: { getBooksByTerm, getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm }
 =======
     all: { createDB, updateDB, buildSelectStmt, getAllTerms, getAllVendors },
+=======
+    all: { createDB, syncDB, buildSelectStmt, getAllTerms, getAllVendors },
+>>>>>>> main
     sales: { getPrevSalesByTerm, getPrevSalesByBook },
     books: { getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm },
     orders: { getOrdersByTerm, getOrdersByPOVendor, getOrderByID },
     reports: { libr: getLibraryReport, recon: getReconReport },
     adoptions: { getNoAdoptionsByTerm, getPrevAdoptionsByCourse }
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 }

@@ -40,7 +40,11 @@ export default function AdoptionTable({ adoptions, status, selectedTerm, tableRe
         <div className="w-full">
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-13rem)]">
                 {adoptions.length > 0 &&
+<<<<<<< HEAD
                     <table className="w-full text-sm text-left rtl:text-right text-white" ref={tableRef}>
+=======
+                    <table className="w-full text-sm text-left rtl:text-right text-white table-auto" ref={tableRef}>
+>>>>>>> main
                         <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                             <tr>
                                 {Object.keys(adoptions[0]).map((header) => {
@@ -68,7 +72,11 @@ export default function AdoptionTable({ adoptions, status, selectedTerm, tableRe
                                             return (
                                                 key !== "ID" &&
                                                 <td
+<<<<<<< HEAD
                                                     className={`p-2 ${typeof adoption[key] === "number" ? "text-center" : ""}`} key={`${adoption["ID"]}-${index}`}
+=======
+                                                    className={`p-2 w-auto ${typeof adoption[key] === "number" ? "text-center" : ""} ${key === "Prof" ? "max-w-28 truncate" : key === "Title" ? "max-w-60 truncate" : ""}`} key={`${adoption["ID"]}-${index}`}
+>>>>>>> main
                                                     onClick={handleAdoptionWindow}
                                                     id={`${adoption["ID"]}`}
                                                 >

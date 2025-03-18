@@ -3,9 +3,13 @@
   "name": "owlguide",
   "description": "Textbook Management Assistance",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "3.2.0",
 =======
   "version": "3.2.5",
+>>>>>>> main
+=======
+  "version": "3.2.6",
 >>>>>>> main
   "author": "Canari",
   "main": "app/background.js",

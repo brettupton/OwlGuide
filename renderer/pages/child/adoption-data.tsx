@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState, useEffect } from "react"
 import { Spinner } from "../../components"
 
@@ -9,6 +10,23 @@ export default function AdoptionDetailPage() {
         window.ipc.on('data', ({ prevAdoptions }: { prevAdoptions: [] }) => {
             setAdoptions([...prevAdoptions])
             setIsLoading(false)
+=======
+import { useState, useEffect, useRef, MutableRefObject } from "react"
+import { Spinner } from "../../components"
+import { PrevAdoption } from "../../../types/Adoption"
+
+export default function AdoptionDetailPage() {
+    const [adoptions, setAdoptions] = useState<PrevAdoption[]>([])
+    const [isLoading, setIsLoading] = useState<boolean>(true)
+
+    const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
+
+    useEffect(() => {
+        window.ipc.on('data', ({ prevAdoptions }: { prevAdoptions: PrevAdoption[] }) => {
+            setAdoptions([...prevAdoptions])
+            setIsLoading(false)
+            tableRef.current.scrollIntoView({ behavior: 'auto' })
+>>>>>>> main
         })
 
         window.ipc.send("ready-to-receive")
@@ -21,7 +39,11 @@ export default function AdoptionDetailPage() {
                 :
                 adoptions.length > 0 ?
                     <div className="flex relative w-full overflow-x-auto max-h-[calc(100vh-1.5rem)]">
+<<<<<<< HEAD
                         <table className="w-full text-sm text-left rtl:text-right text-white text-center">
+=======
+                        <table className="w-full text-sm text-left rtl:text-right text-white text-center" ref={tableRef}>
+>>>>>>> main
                             <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                                 <tr>
                                     {Object.keys(adoptions[0]).map((header, index) => {
@@ -40,7 +62,21 @@ export default function AdoptionDetailPage() {
                                             {Object.keys(term).map((data, index) => {
                                                 return (
                                                     <td key={`${term["Term"]}${index}`} className="px-2 py-1">
+<<<<<<< HEAD
                                                         {term[data]}
+=======
+                                                        {Array.isArray(term[data]) ?
+                                                            <div className="flex flex-col">
+                                                                {term[data].map((info) => {
+                                                                    return (
+                                                                        <div className="flex">{info}</div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                            :
+                                                            term[data]
+                                                        }
+>>>>>>> main
                                                     </td>
                                                 )
                                             })}
@@ -51,7 +87,11 @@ export default function AdoptionDetailPage() {
                         </table>
                     </div>
                     :
+<<<<<<< HEAD
                     <div>No Previous Course Found</div>
+=======
+                    <div className="text-sm">No Previous Data Found</div>
+>>>>>>> main
             }
         </div>
     )

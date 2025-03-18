@@ -3,6 +3,7 @@ import fs from 'fs'
 import { readJSON } from './fileHandler'
 import { paths } from './paths'
 
+<<<<<<< HEAD
 const updateConfigValue = (key: string, value: string, encrypt: boolean): Promise<void> => {
     return new Promise(async (resolve, reject) => {
         if (encrypt) {
@@ -34,6 +35,36 @@ const updateConfigValue = (key: string, value: string, encrypt: boolean): Promis
                 reject(`Error writing ${key} to config: ${error}`)
             }
         }
+=======
+const updateConfigValue = (keyValues: string[][], encrypt?: boolean): Promise<void> => {
+    return new Promise(async (resolve, reject) => {
+        if (encrypt) {
+            // Encryption to a buffer then convert to base64 string (allows for JSON storage)
+            keyValues.forEach(([_, value]) => {
+                value = safeStorage.encryptString(value).toString('base64')
+            })
+        }
+
+        // Config should always exist, but check just in case
+        if (fs.existsSync(paths.configPath)) {
+            try {
+                const config = await readJSON(paths.configPath)
+
+                // Loop through array and set key-value pairs in config
+                keyValues.forEach(([key, value]) => {
+                    config[key] = value
+                })
+
+                fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
+                    if (err) { throw new Error(`${err}`) }
+                    resolve()
+                })
+            } catch (error) {
+                reject(error)
+            }
+        }
+        resolve()
+>>>>>>> main
     })
 }
 
@@ -54,6 +85,7 @@ const getConfigValue = (key: string, decrypt?: boolean): Promise<string> => {
                 reject(`Config error: ${error}`)
             }
         } else {
+<<<<<<< HEAD
             const config = {}
             fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
                 if (err) {
@@ -61,6 +93,9 @@ const getConfigValue = (key: string, decrypt?: boolean): Promise<string> => {
                 }
                 resolve("")
             })
+=======
+            resolve("")
+>>>>>>> main
         }
     })
 }

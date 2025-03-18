@@ -1,17 +1,18 @@
 import { MutableRefObject } from "react"
+import { CourseData } from "../../../types/Course"
 
 interface PageTableProps {
-    pageData: { [field: string]: string | number }[]
+    pageData: CourseData[]
     totalRows: number
-    page: number
+    pageNum: number
     limit: number
     updatePage: (forward: boolean) => void
     tableRef: MutableRefObject<HTMLTableElement>
-    handleRowClick?: (courseID: number) => void
+    handleRowClick?: (row: DBRow) => void
     activeRow?: number
 }
 
-export default function PageTable({ pageData, totalRows, page, limit, updatePage, tableRef, handleRowClick, activeRow }: PageTableProps) {
+export default function PageTable({ pageData, totalRows, pageNum, limit, updatePage, tableRef, handleRowClick, activeRow }: PageTableProps) {
     const headers = Object.keys(pageData[0])
 
     const rowClass = (header: string) => {
@@ -23,7 +24,11 @@ export default function PageTable({ pageData, totalRows, page, limit, updatePage
 
     return (
         <div className="w-full">
+<<<<<<< HEAD
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-12.5rem)]">
+=======
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-13.9rem)]">
+>>>>>>> main
                 <table className="w-full text-sm text-left rtl:text-right text-white" ref={tableRef}>
                     <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                         <tr>
@@ -40,7 +45,11 @@ export default function PageTable({ pageData, totalRows, page, limit, updatePage
                     <tbody>
                         {pageData.map((row) => {
                             return (
+<<<<<<< HEAD
                                 <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row['ID'] as number)}>
+=======
+                                <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row)}>
+>>>>>>> main
                                     {headers.map((header) => {
                                         return (
                                             header !== "ID" &&
@@ -61,7 +70,7 @@ export default function PageTable({ pageData, totalRows, page, limit, updatePage
                 <span className="text-sm font-normal text-gray-400 mb-2 md:mb-0 block w-full md:inline md:w-auto">
                     Showing
                     <span className="font-semibold text-white px-1">
-                        {((page - 1) * limit) + 1}-{pageData.length * page}
+                        {((pageNum - 1) * limit) + 1}-{pageData.length * pageNum}
                     </span>
                     of
                     <span className="font-semibold text-white px-1">

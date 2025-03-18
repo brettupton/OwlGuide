@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { getDecisions, getTermDecisions } from "./helpers/buyDecision"
+=======
+import { getTermDecisions } from "./helpers/buyDecision"
+>>>>>>> main
 
 export const decisionProcess = async ({ event, method, data }: ProcessArgs) => {
     switch (method) {

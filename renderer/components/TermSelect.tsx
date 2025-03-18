@@ -42,6 +42,10 @@ export default function TermSelect({ process, latest }: { process: string, lates
 
             window.ipc.send('main', { process, method, data: { term, limit: 30, isForward: true, isSearch: false, pivotCourse: { Dept: "", Course: "", Section: "" } } })
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+            setSelectedTerm(term)
+>>>>>>> main
 =======
             setSelectedTerm(term)
 >>>>>>> main

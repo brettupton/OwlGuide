@@ -25,6 +25,10 @@ export const adoptionProcess = async ({ event, method, data }: ProcessArgs) => {
         case 'download-csv':
             if (typeof data === "object" && data !== null && !Array.isArray(data)) {
                 try {
+<<<<<<< HEAD
+=======
+                    console.log(data["adoptions"])
+>>>>>>> main
                     const csv = formatToCSV(data["adoptions"] as NoAdoption[], data["term"] as string)
                     const csvFiles = csv.map((file) => { return { data: file, extension: "csv" } })
 

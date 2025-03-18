@@ -17,6 +17,7 @@ function App({ Component, pageProps }: AppProps) {
   const [userInfo, setUserInfo] = useState({ userId: "", password: "" })
   const [isPassShow, setIsPassShow] = useState<boolean>(false)
   const [isDBUpdating, setIsDBUpdating] = useState<boolean>(false)
+<<<<<<< HEAD
 
   const HeaderMenuRef = useRef(null)
   const LoginMenuRef = useRef(null)
@@ -59,6 +60,28 @@ function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ipc) {
       window.ipc.send('main', { process: 'app', method: 'get-values' })
+=======
+
+  const routes = [
+    { route: "adoption", plural: true },
+    { route: "course", plural: true },
+    { route: "book", plural: true },
+    { route: "decision", plural: true },
+    { route: "enrollment", plural: false },
+    { route: "order", plural: true },
+    { route: "report", plural: true }
+  ]
+
+  const HeaderMenuRef = useRef(null)
+  const LoginMenuRef = useRef(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.ipc) {
+      if (!appVer || !dbUpdateTime) {
+        window.ipc.send('main', { process: 'app', method: 'get-values' })
+      }
+>>>>>>> main
     }
 
     window.ipc.on('appData', ({ appVer, dbUpdateTime }: { appVer: string, dbUpdateTime: string }) => {
@@ -112,6 +135,10 @@ function App({ Component, pageProps }: AppProps) {
 
     setIsHeaderMenuOpen(false)
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    setIsLoginMenuOpen(false)
+>>>>>>> main
 =======
     setIsLoginMenuOpen(false)
 >>>>>>> main
@@ -124,8 +151,35 @@ function App({ Component, pageProps }: AppProps) {
     }
   }, [router])
 
+  const handleLoginMenuToggle = () => {
+    setIsLoginMenuOpen(!isLoginMenuOpen)
+    setIsPassShow(false)
+    setUserInfo({
+      userId: "",
+      password: ""
+    })
+  }
+
+  const handleUserChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.currentTarget
+
+    const newUser = {
+      ...userInfo,
+      [id]: value
+    }
+    setUserInfo(newUser)
+  }
+
+  const handleDBUpdate = () => {
+    if (Object.values(userInfo).every((ele) => ele !== "")) {
+      setIsDBUpdating(true)
+      window.ipc.send('main', { process: 'sql', method: 'update-db', data: { userInfo } })
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen">
+<<<<<<< HEAD
 <<<<<<< HEAD
       <Header
         isHeaderMenuOpen={isHeaderMenuOpen}
@@ -163,6 +217,35 @@ function App({ Component, pageProps }: AppProps) {
           HeaderMenuRef={HeaderMenuRef} />
       }
       <Component {...pageProps} />
+      <Login
+        isLoginMenuOpen={isLoginMenuOpen}
+        handleLoginMenuToggle={handleLoginMenuToggle}
+        handleUserChange={handleUserChange}
+        userInfo={userInfo}
+        isPassShow={isPassShow}
+        handlePassToggle={() => setIsPassShow(!isPassShow)}
+        handleDBUpdate={handleDBUpdate}
+        isDBUpdating={isDBUpdating}
+        LoginMenuRef={LoginMenuRef} />
+      <Footer
+        syncDB={handleLoginMenuToggle}
+        dbUpdateTime={dbUpdateTime}
+        isDBUpdating={isDBUpdating}
+        isChildWindow={isChildWindow}
+>>>>>>> main
+=======
+      {!isChildWindow &&
+        <Header
+          isHeaderMenuOpen={isHeaderMenuOpen}
+          handleMenuToggle={() => setIsHeaderMenuOpen(!isHeaderMenuOpen)}
+          isHelpMenuOpen={isHelpMenuOpen}
+          handleHelpMenuToggle={() => setIsHelpMenuOpen(!isHelpMenuOpen)}
+          routes={routes}
+          isChildWindow={isChildWindow}
+          appVer={appVer}
+          HeaderMenuRef={HeaderMenuRef} />
+      }
+      <Component {...pageProps} routes={routes} />
       <Login
         isLoginMenuOpen={isLoginMenuOpen}
         handleLoginMenuToggle={handleLoginMenuToggle}

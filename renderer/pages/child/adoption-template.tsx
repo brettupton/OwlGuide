@@ -27,8 +27,13 @@ export default function AdoptionTemplate() {
                 return newCourseArr
                     .map((course) => {
                         // Initialize keys that are missing from sent courses
+<<<<<<< HEAD
                         course["NoText"] = false
                         course["ISBN"] = ""
+=======
+                        course["NoText"] = course["NoText"] ?? false
+                        course["ISBN"] = course["ISBN"] ?? ""
+>>>>>>> main
                         course["TempID"] = course["TempID"] ?? tempIDRef.current++
 
                         return course
@@ -42,6 +47,22 @@ export default function AdoptionTemplate() {
 
             setSelectedTerm(term)
         })
+<<<<<<< HEAD
+=======
+
+        // Reloading on window removes all courses so it needs to be disabled
+        const preventReload = (e: KeyboardEvent) => {
+            if (e.key === 'r' && e.ctrlKey) {
+                e.preventDefault()
+            }
+        }
+
+        window.addEventListener('keydown', (e) => preventReload(e))
+
+        return () => {
+            window.removeEventListener('keydown', (e) => preventReload(e))
+        }
+>>>>>>> main
     }, [])
 
     const handleMinimize = () => {
@@ -110,7 +131,11 @@ export default function AdoptionTemplate() {
     }
 
     const handleDownloadCSV = () => {
+<<<<<<< HEAD
         if (tempAdoptions.length > 0 && (tempAdoptions.some((course) => course["ISBN"].length > 0) || tempAdoptions.some((course) => course["NoText"]))) {
+=======
+        if (tempAdoptions.length > 0 && (tempAdoptions.every((course) => course["ISBN"].length > 0 || course["NoText"]))) {
+>>>>>>> main
             window.ipc.send('main', { process: 'adoption', method: 'download-csv', data: { adoptions: tempAdoptions, term: selectedTerm } })
         }
     }

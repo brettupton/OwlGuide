@@ -33,11 +33,21 @@ export default function Development() {
     const handleDBRecreate = () => {
         window.ipc.send('main', { process: 'sql', method: 'recreate-db' })
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
     }
 
     const handleDumpFiles = () => {
         window.ipc.send('dev', { method: 'dump-files' })
+<<<<<<< HEAD
+>>>>>>> main
+=======
+    }
+
+    const handleLogStatements = () => {
+        window.ipc.send('dev', { method: 'log-statement' })
 >>>>>>> main
     }
 
@@ -65,12 +75,24 @@ export default function Development() {
                     <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDBRecreate}>Recreate</button>
                 </div>
                 <div className="flex">
+<<<<<<< HEAD
+=======
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleLogStatements}>Statements</button>
+                </div>
+                <div className="flex">
+>>>>>>> main
                     <span className="underline underline-offset-8">Directory</span>
                 </div>
                 <div className="flex">
                     <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleOpenUserPath}>Open</button>
                 </div>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+                <div className="flex">
+                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDumpFiles}>Dump</button>
+                </div>
+>>>>>>> main
 =======
                 <div className="flex">
                     <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDumpFiles}>Dump</button>

@@ -2,7 +2,11 @@ import fs from 'fs'
 import path from 'path'
 import { Features } from '../../types/LGBModel'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { fileManager } from './fileManager'
+=======
+import { fileHandler } from './fileHandler'
+>>>>>>> main
 =======
 import { fileHandler } from './fileHandler'
 >>>>>>> main
@@ -11,7 +15,11 @@ export const getPredictions = (books: Features[]): Promise<Features[]> => {
     return new Promise(async (resolve, reject) => {
         try {
 <<<<<<< HEAD
+<<<<<<< HEAD
             const forest = await fileManager.JSON.read(path.join(__dirname, "..", "main", "models", "forest_model.json")) as any
+=======
+            const forest = await fileHandler.JSON.read(path.join(__dirname, "..", "main", "models", "forest_model.json")) as any
+>>>>>>> main
 =======
             const forest = await fileHandler.JSON.read(path.join(__dirname, "..", "main", "models", "forest_model.json")) as any
 >>>>>>> main
@@ -56,7 +64,11 @@ export const getPredictions = (books: Features[]): Promise<Features[]> => {
 const encodeFeatures = async (book: Features) => {
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
         const encodings = await fileManager.JSON.read(path.join(__dirname, "..", "main", "models", "forest_encodings.json"))
+=======
+        const encodings = await fileHandler.JSON.read(path.join(__dirname, "..", "main", "models", "forest_encodings.json"))
+>>>>>>> main
 =======
         const encodings = await fileHandler.JSON.read(path.join(__dirname, "..", "main", "models", "forest_encodings.json"))
 >>>>>>> main

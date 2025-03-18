@@ -1,5 +1,9 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { fileManager } from "../utils"
+=======
+import { config } from "../utils"
+>>>>>>> main
 =======
 import { config } from "../utils"
 >>>>>>> main
@@ -16,7 +20,11 @@ export const enrollmentProcess = async ({ event, method, data }: ProcessArgs) =>
                 const enrollment = await matchEnrollment(filePath)
                 // Write filepath to config for later retrieval
 <<<<<<< HEAD
+<<<<<<< HEAD
                 await fileManager.config.write('enrollmentPath', filePath, false)
+=======
+                await config.write('enrollmentPath', filePath, false)
+>>>>>>> main
 =======
                 await config.write('enrollmentPath', filePath, false)
 >>>>>>> main
@@ -29,7 +37,11 @@ export const enrollmentProcess = async ({ event, method, data }: ProcessArgs) =>
         case 'file-download':
             try {
 <<<<<<< HEAD
+<<<<<<< HEAD
                 const prevFile = await fileManager.config.read('enrollmentPath', false)
+=======
+                const prevFile = await config.read('enrollmentPath', false)
+>>>>>>> main
 =======
                 const prevFile = await config.read('enrollmentPath', false)
 >>>>>>> main

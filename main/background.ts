@@ -1,6 +1,7 @@
 require("dotenv").config()
 import path from 'path'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { app, ipcMain, dialog, BrowserWindow, shell, Tray, nativeImage } from 'electron'
 import serve from 'electron-serve'
 import { createWindow, createChildWindow, rightClickMenu } from './electron-utils'
@@ -17,6 +18,20 @@ import { adoptionProcess, appProcess, bookProcess, courseProcess, decisionProces
 import { initializeDB } from './processes/helpers/sqlDatabase'
 import { ChildPath, ChildWindow, ChildWindowLocation } from '../types/ChildWin'
 import fs from 'fs'
+>>>>>>> main
+=======
+import { app, ipcMain, dialog, BrowserWindow, shell } from 'electron'
+import serve from 'electron-serve'
+import fs from 'fs'
+import { createWindow, createChildWindow, rightClickMenu, createTray } from './electron-utils'
+import { bSQLDB, paths, regex, logger, createZipBlob } from './utils'
+import { adoptionProcess, appProcess, bookProcess, courseProcess, decisionProcess, enrollmentProcess, orderProcess, reportProcess, sqlProcess } from './processes'
+import { ChildPath, ChildWindow, ChildWindowLocation } from '../types/ChildWin'
+import tables from './db/tables'
+import { TableData } from '../types/Database'
+import { formatPrevAdoptions } from './processes/helpers/adoptConv'
+import { PrevAdoption } from '../types/Adoption'
+import { initializeApp } from './electron-utils/init-app'
 >>>>>>> main
 
 export const isProd = process.env.NODE_ENV === 'production'
@@ -42,6 +57,7 @@ let childWindows: ChildWindow[] = []
       },
     })
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     tray = new Tray(nativeImage.createFromPath(paths.trayIconPath).resize({ width: 16 }))
     tray.setToolTip('OwlGuide')
@@ -70,11 +86,28 @@ let childWindows: ChildWindow[] = []
     await mainWindow.loadURL(isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`)
 
     if (!isProd) {
+=======
+    // Close any remaining child windows if main window is closed
+    mainWindow.on('closed', () => {
+      childWindows.forEach((window) => window.browserWin.close())
+    })
+
+    createTray(paths.trayIconPath)
+
+    if (isProd) {
+      try {
+        await initializeApp()
+      } catch (error) {
+        dialog.showErrorBox('App', `${error}\n\nContact dev for assistance.`)
+      }
+    } else {
+>>>>>>> main
       const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer')
       installExtension(REACT_DEVELOPER_TOOLS)
         .catch((err: Error) => console.log('An error occurred: ', err))
     }
 
+    await mainWindow.loadURL(isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`)
   })()
 
 app.on('window-all-closed', () => {
@@ -83,13 +116,12 @@ app.on('window-all-closed', () => {
 
 // Header Processes
 ipcMain.on('minimize-app', (event) => {
-  const window = BrowserWindow.getFocusedWindow()
-  if (window) window.minimize()
+  if (mainWindow) mainWindow.minimize()
 })
 
 ipcMain.on('close-app', (event) => {
-  const window = BrowserWindow.getFocusedWindow()
-  if (window) window.close()
+  childWindows.forEach((window) => window.browserWin.close())
+  if (mainWindow) mainWindow.close()
 })
 
 ipcMain.on('open-github', (event) => {
@@ -153,11 +185,17 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
         break
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
       case 'adoption':
         await adoptionProcess({ event, method, data })
         break
 
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
       case 'book':
         await bookProcess({ event, method, data })
@@ -176,7 +214,10 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
         break
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
       case 'order':
         await orderProcess({ event, method, data })
         break
@@ -185,6 +226,9 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
         await reportProcess({ event, method, data })
         break
 
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
       case 'sql':
         await sqlProcess({ event, method, data })
@@ -194,6 +238,7 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
     console.error(error)
     logger.addNewLog("error", [process, method, error])
     dialog.showErrorBox(`${process[0].toUpperCase() + process.slice(1)}`, `${error}\n\nContact dev for assistance.`)
+<<<<<<< HEAD
 <<<<<<< HEAD
   }
 })
@@ -216,6 +261,11 @@ ipcMain.on('child', async (event, { process, data }) => {
   }
 })
 
+=======
+  }
+})
+
+>>>>>>> main
 ipcMain.on('dev', async (event, { method, data }: ProcessArgs) => {
   switch (method) {
     case 'open-user-dir':
@@ -243,6 +293,21 @@ ipcMain.on('dev', async (event, { method, data }: ProcessArgs) => {
       } catch (error) {
         console.error(error)
         dialog.showErrorBox('Dev', `${error}`)
+<<<<<<< HEAD
+=======
+      }
+      break
+
+    case 'log-statement':
+      try {
+        Object.keys(tables).forEach(async (tableName) => {
+          const table = tables[tableName] as TableData
+          const statement = await bSQLDB.all.buildSelectStmt(table)
+          console.log(`${tableName}: ${statement}\n`)
+        })
+      } catch (error) {
+        console.error(error)
+>>>>>>> main
       }
       break
   }
@@ -255,6 +320,7 @@ ipcMain.on('window-sync', async (event, { fromWindow, process, data }) => {
         // Find child window by ID and return window, if exists  
         const childName = "adoption-template"
         let child = childWindows.find((window) => window.id === childName)?.browserWin
+<<<<<<< HEAD
 
         // Only create the child window if it doesn't exist from the main window
         if (fromWindow === "main" && !child) {
@@ -331,11 +397,66 @@ ipcMain.on('child', async (event, { process, data }) => {
           const { booksResult, course } = await bSQLDB.books.getBooksByCourse(data["courseID"])
 
           childData = { books: booksResult, course }
+=======
+
+        // Only create the child window if it doesn't exist from the main window
+        if (fromWindow === "main" && !child) {
+          const newChildWindow = await createChildWindow(mainWindow, "adoption-template", "detach")
+          childWindows.push(newChildWindow)
+
+          ipcMain.once('ready-to-receive', (event) => {
+            event.reply('sync-data', { course: data["course"], term: data["term"] })
+          })
+        } else {
+          const toWindow = fromWindow === "main" ? child : mainWindow
+
+          toWindow.webContents.send('sync-data', { course: data["course"], term: data["term"] })
+        }
+        break
+    }
+  } catch (error) {
+    console.error(error)
+    logger.addNewLog('error', ["SYNC", process, error])
+  }
+})
+
+ipcMain.on('child', async (event, { process, data }) => {
+  let childName: ChildPath
+  let childLocation: ChildWindowLocation
+  let childData: {}
+
+  try {
+    // Set childName and childData based on process before opening child window
+    switch (process) {
+      case 'adoption':
+        try {
+          childName = "adoption-data"
+          childLocation = "bottom"
+          const [term, year] = regex.splitFullTerm(data["term"])
+          const prevCourseAdoptions = await bSQLDB.adoptions.getPrevAdoptionsByCourse(year, data["course"]) as PrevAdoption[]
+
+          childData = { prevAdoptions: formatPrevAdoptions(prevCourseAdoptions) }
+>>>>>>> main
         } catch (error) {
           throw error
         }
         break
 
+<<<<<<< HEAD
+=======
+      case 'course':
+        try {
+          childName = "course-data"
+          childLocation = "bottom"
+          const { booksResult } = await bSQLDB.books.getBooksByCourse(data["course"])
+
+          childData = { books: booksResult, course: data["course"] }
+        } catch (error) {
+          throw error
+        }
+        break
+
+>>>>>>> main
       case 'decision':
         try {
           childName = "decision-data"
@@ -378,6 +499,9 @@ ipcMain.on('child', async (event, { process, data }) => {
   } catch (error) {
     console.error(error)
     logger.addNewLog("error", ["child", process, error])
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
   }
 })
