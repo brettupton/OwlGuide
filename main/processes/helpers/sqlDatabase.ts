@@ -8,8 +8,7 @@ import { TableData } from "../../../types/Database"
 export const syncDB = async (files: string[]) => {
     if (files.length === Object.keys(tables).length) {
         try {
-            const updateStart = Date.now()
-            await bSQLDB.all.syncDB(files, updateStart)
+            await bSQLDB.all.syncDB(files)
             await config.write([["dbUpdateTime", regex.ISOtoDb2Time(new Date().toISOString())]])
         } catch (error) {
             throw error
@@ -84,8 +83,7 @@ export const getIBMTables = async (userId: string, password: string) => {
             })
 
             acsProcess.on('close', (code) => {
-                const timeEnd = Date.now()
-                logger.addNewLog("acs", [tableName, `Completed in ${(timeEnd - timeStart) / 1000}s`, `Exit Code: ${code}`])
+                logger.addNewLog("acs", [tableName, `Completed in ${(Date.now() - timeStart) / 1000}s`, `Exit Code: ${code}`])
 
                 resolve()
             })

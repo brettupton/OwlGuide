@@ -1,50 +1,33 @@
 import { config } from "../utils"
-import { matchEnrollment, submitEnrollment } from "./helpers/enrlmntFile"
-import { dialog, app } from 'electron'
-import path from 'path'
-import fs from 'fs'
+import { initialMatch, submitEnrollment } from "./helpers/enrlmntFile"
+import { downloadFiles } from "../electron-utils/download-file"
 
 export const enrollmentProcess = async ({ event, method, data }: ProcessArgs) => {
-    switch (method) {
-        case 'file-upload':
-            try {
-                const filePath: string = data[0]
-                const enrollment = await matchEnrollment(filePath)
-                // Write filepath to config for later retrieval
-                await config.write('enrollmentPath', filePath, false)
-                event.reply('data', { enrollment })
-            } catch (error) {
-                throw error
-            }
-            break
+    if (data.type === "enrollment") {
+        switch (method) {
+            case 'file-upload':
+                try {
+                    const filePath: string = data["fileArr"][0]
+                    const enrollment = await initialMatch(filePath)
 
-        case 'file-download':
-            try {
-                const prevFile = await config.read('enrollmentPath', false)
+                    // Write filepath to config for later retrieval
+                    await config.write([['enrollmentPath', filePath]])
+                    event.reply('data', { enrollment })
+                } catch (error) {
+                    throw error
+                }
+                break
 
-                if (typeof data === 'object') {
+            case 'file-download':
+                try {
+                    const prevFile = await config.read('enrollmentPath', false)
                     const { fileName, csv } = await submitEnrollment(data["enrollment"], prevFile)
 
-                    dialog.showSaveDialog({
-                        defaultPath: path.join(app.getPath('downloads'), `${fileName}_Formatted`),
-                        filters: [{ name: 'CSV Files', extensions: ['csv'] }]
-                    })
-                        .then(async (result) => {
-                            if (!result.canceled && result.filePath) {
-                                fs.writeFile(result.filePath, csv, (err) => {
-                                    if (err) {
-                                        throw "Unable to write CSV to selected path."
-                                    }
-                                    event.reply('success')
-                                })
-                            }
-                        })
-                } else {
-                    throw "Unexpected data value received from renderer."
+                    await downloadFiles(event, "enrollment", [{ data: csv, extension: "csv", name: fileName }])
+                } catch (error) {
+                    throw error
                 }
-            } catch (error) {
-                throw error
-            }
-            break
+                break
+        }
     }
 }

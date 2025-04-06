@@ -6,41 +6,38 @@ export default function TermSelect({ process, latest }: { process: string, lates
     const [selectedTerm, setSelectedTerm] = useState<string>("")
 
     useEffect(() => {
-        if (typeof window !== undefined && window.ipc) {
-            window.ipc.send('main', { process: 'sql', method: 'get-terms' })
+        window.ipc.send('main', { process: 'sql', method: 'get-terms', data: { type: 'sql' } })
 
-            window.ipc.on('term-list', (data: { terms: string[] }) => {
-                if (latest) {
-                    // Get latest three years for all terms in list
-                    const grouped = data.terms.reduce((acc, term) => {
-                        const termLetter = term[0]
-                        const year = parseInt(term.slice(1), 10)
+        window.ipc.on('term-list', ({ terms }: { terms: string[] }) => {
+            console.log(terms)
+            if (latest) {
+                // Get latest three term years for shorter list selection
+                const sortedTerms = [...terms]
+                    .sort((a, b) => {
+                        const termLetterA = a[0]
+                        const termYearA = parseInt(a.slice(1), 10)
+                        const termLetterB = b[0]
+                        const termYearB = parseInt(b.slice(1), 10)
 
-                        if (!acc[termLetter]) {
-                            acc[termLetter] = []
+                        if (termYearA === termYearB) {
+                            return termLetterA.localeCompare(termLetterB)
                         }
-                        acc[termLetter].push(year)
-                        return acc
-                    }, {})
-
-                    const latestTerms = Object.keys(grouped).map(term => {
-                        const maxYear = Math.max(...grouped[term])
-                        return `${term}${maxYear}`
-                    })
-                    setTerms(latestTerms)
-                } else {
-                    setTerms(data.terms)
-                }
-            })
-        }
+                        return termYearA - termYearB
+                    }).slice(-3)
+                setTerms(sortedTerms)
+            } else {
+                setTerms(terms)
+            }
+        })
     }, [])
 
     const handleTermChoice = (e: ChangeEvent<HTMLSelectElement>) => {
         if (e.currentTarget.value) {
             const term = e.currentTarget.value
             const method = `get-term-${process}`
+            const courseData = process === 'course' ? { limit: 30, isForward: true, isSearch: false, pivotCourse: { Dept: "", Course: "", Section: "" } } : {}
 
-            window.ipc.send('main', { process, method, data: { term, limit: 30, isForward: true, isSearch: false, pivotCourse: { Dept: "", Course: "", Section: "" } } })
+            window.ipc.send('main', { process, method, data: { type: process, term, ...courseData } })
             setSelectedTerm(term)
         }
     }
@@ -48,20 +45,22 @@ export default function TermSelect({ process, latest }: { process: string, lates
     return (
         <div className="flex w-full justify-center">
             {terms.length <= 0 ?
-                <Spinner />
+                <div className="flex p-1">
+                    <Spinner />
+                </div>
                 :
                 <select
-                    className={`border text-sm rounded-lg block p-1 bg-gray-700 border-gray-600 text-white ${selectedTerm ? "ring-2 ring-white" : ""}`}
+                    className={`border text-sm rounded-lg block px-1 py-2 bg-gray-700 border-gray-600 text-white ${selectedTerm ? "ring-2 ring-white" : ""}`}
                     onChange={handleTermChoice}
                 >
                     <option value="">Term</option>
                     {terms.map((term, index) => {
-                        return !["0", "Q", "I"].includes(term[0]) &&
-                            <option key={index}>{term}</option>
-
+                        return (
+                            <option value={term} key={index}>{term}</option>
+                        )
                     })}
                 </select>
             }
-        </div>
+        </div >
     )
 }

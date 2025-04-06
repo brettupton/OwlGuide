@@ -1,6 +1,6 @@
 const { Worker } = require('worker_threads')
 
-export const newWorker = (workerPath: string, workerID: string, workerData: JSObj): Promise<void> => {
+export const newWorker = (workerPath: string, workerID: string, workerData): Promise<void> => {
     return new Promise((resolve, reject) => {
         const worker = new Worker(workerPath, { workerData })
 

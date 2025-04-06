@@ -6,10 +6,9 @@ import { fileHandler, regex } from '../utils'
 import { generateReport } from "./helpers/reportGen"
 
 export const reportProcess = async ({ event, method, data }: ProcessArgs) => {
-    switch (method) {
-        case 'request':
-            // Typecheck that data is specifically an object and not any of types in JSObj
-            if (typeof data === "object" && data !== null && !Array.isArray(data)) {
+    if (data.type === "report") {
+        switch (method) {
+            case 'request':
                 const { isCsv, reqReports, reqTerms } = data
                 // Initial array to hold finished reports by id
                 const reportData: { id: string, report: DBRow[] }[] = []
@@ -80,7 +79,7 @@ export const reportProcess = async ({ event, method, data }: ProcessArgs) => {
                     }
                 }
                 event.reply('report-success')
-            }
-            break
+                break
+        }
     }
 }

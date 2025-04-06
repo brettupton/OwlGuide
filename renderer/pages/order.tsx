@@ -27,7 +27,7 @@ export default function OrderPage() {
 
     const handleSearchPO = () => {
         if (searchPO.length > 0 || searchVendor.length > 0) {
-            window.ipc.send('main', { process: 'order', method: 'search-po', data: { searchPO, searchVendor } })
+            window.ipc.send('main', { process: 'order', method: 'search-po', data: { type: 'order', searchPO, searchVendor } })
         }
     }
 

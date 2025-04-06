@@ -39,7 +39,7 @@ export default function Course() {
             {
                 process: 'course',
                 method: 'get-term-course',
-                data: { term: selectedTerm, limit, isForward: forward, isSearch: false, pivotCourse: { Dept: pivot.Dept, Course: pivot.Course, Section: pivot.Section } }
+                data: { type: 'course', term: selectedTerm, limit, isForward: forward, isSearch: false, pivotCourse: { Dept: pivot.Dept, Course: pivot.Course, Section: pivot.Section } }
             })
         // Calculate new page number within constraints
         let newPage = pageNum + (forward ? 1 : -1)
@@ -68,7 +68,7 @@ export default function Course() {
                 {
                     process: 'course',
                     method: 'get-term-course',
-                    data: { term: selectedTerm, limit, isForward: true, isSearch: true, pivotCourse: { Dept: searchCourse.Dept, Course: searchCourse.Course, Section: searchCourse.Section } }
+                    data: { type: 'course', term: selectedTerm, limit, isForward: true, isSearch: true, pivotCourse: { Dept: searchCourse.Dept, Course: searchCourse.Course, Section: searchCourse.Section } }
                 })
         }
     }

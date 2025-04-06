@@ -1,5 +1,6 @@
 import React, { ChangeEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Dropdown } from '../components/Dropdown'
 
 export default function Development() {
     const router = useRouter()
@@ -22,7 +23,7 @@ export default function Development() {
                 newPaths.push(file.path)
             }
 
-            window.ipc.send('main', { process: 'sql', method: "update-db-manual", data: { files: newPaths } })
+            window.ipc.send('main', { process: 'sql', method: "update-db-manual", data: { type: 'sql', files: newPaths } })
         }
     }
 
@@ -36,10 +37,6 @@ export default function Development() {
 
     const handleDumpFiles = () => {
         window.ipc.send('dev', { method: 'dump-files' })
-    }
-
-    const handleLogStatements = () => {
-        window.ipc.send('dev', { method: 'log-statement' })
     }
 
     const handleReset = () => {
@@ -66,9 +63,6 @@ export default function Development() {
                     <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDBRecreate}>Recreate</button>
                 </div>
                 <div className="flex">
-                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleLogStatements}>Statements</button>
-                </div>
-                <div className="flex">
                     <span className="underline underline-offset-8">Directory</span>
                 </div>
                 <div className="flex">
@@ -76,6 +70,22 @@ export default function Development() {
                 </div>
                 <div className="flex">
                     <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDumpFiles}>Dump</button>
+                </div>
+                <div className="flex">
+                    <span className="underline underline-offset-8">Dropdown</span>
+                </div>
+                <div className="flex">
+                    <Dropdown
+                        icon={"bars"}
+                        location={"bottom-right"}
+                        data={
+                            [<div>Version <span className="text-indigo-600">3.2.6</span></div>,
+                            <div><span className="text-yellow-600">Canari</span> 2025</div>,
+                            <button onClick={() => window.ipc.send('open-github')} className="text-blue-600 underline" rel="noopener noreferrer">
+                                GitHub
+                            </button>
+                            ]}
+                    />
                 </div>
             </div>
         </div>

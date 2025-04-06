@@ -40,17 +40,15 @@ export default function ReportPage() {
     const router = useRouter()
 
     useEffect(() => {
-        if (typeof window !== undefined && window.ipc) {
-            window.ipc.send('main', { process: 'sql', method: 'get-terms' })
+        window.ipc.send('main', { process: 'sql', method: 'get-terms', data: { type: 'sql' } })
 
-            window.ipc.on('term-list', (data: { terms: string[] }) => {
-                setTerms(data.terms)
-            })
+        window.ipc.on('term-list', (data: { terms: string[] }) => {
+            setTerms(data.terms)
+        })
 
-            window.ipc.on('report-success', () => {
-                router.reload()
-            })
-        }
+        window.ipc.on('report-success', () => {
+            router.reload()
+        })
     }, [])
 
     const handleToggleReport = (reportId: string) => {
@@ -61,7 +59,7 @@ export default function ReportPage() {
 
     const handleRequestReport = () => {
         if (selectedReports.length > 0 && selectedTerms.length > 0) {
-            window.ipc.send('main', ({ process: 'report', method: 'request', data: { isCsv: isCSVReport, reqReports: selectedReports, reqTerms: selectedTerms } }))
+            window.ipc.send('main', ({ process: 'report', method: 'request', data: { type: 'report', isCsv: isCSVReport, reqReports: selectedReports, reqTerms: selectedTerms } }))
         }
     }
 
@@ -93,7 +91,7 @@ export default function ReportPage() {
                             {terms.length <= 0 ?
                                 <Spinner /> :
                                 <MultiSelect
-                                    options={terms.filter((term) => !["0", "Q", "I"].includes(term[0]))}
+                                    options={terms}
                                     selectedItems={selectedTerms}
                                     setSelectedItems={setSelectedTerms}
                                     maxNumOptions={6}

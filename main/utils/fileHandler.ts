@@ -1,6 +1,7 @@
 import fs from 'fs'
 import XLSX from '@e965/xlsx'
 import Papa from 'papaparse'
+import path from 'path'
 
 const parseCSV = (filePath: string): Promise<{ [field: string]: string | number }[]> => {
     return new Promise((resolve, reject) => {
@@ -65,7 +66,12 @@ const getDirFileNames = (dir: string): Promise<string[]> => {
         if (fs.existsSync(dir)) {
             fs.readdir(dir, (err, files) => {
                 if (err) { reject(err) }
-                resolve(files)
+                const fullPaths: string[] = []
+
+                files.forEach((file) => {
+                    fullPaths.push(path.join(dir, file))
+                })
+                resolve(fullPaths)
             })
         } else {
             reject(`Directory ${dir} does not exist.`)
@@ -84,13 +90,13 @@ const deleteFile = (filePath: string): Promise<void> => {
     })
 }
 
-export const readJSON = (filePath: string): Promise<JSObj> => {
+export const readJSON = (filePath: string): Promise<any> => {
     return new Promise((resolve, reject) => {
         fs.readFile(filePath, (err, data) => {
             if (err) { reject(err) }
 
             try {
-                const JSONObj: JSObj = JSON.parse(data.toString())
+                const JSONObj = JSON.parse(data.toString())
                 resolve(JSONObj)
             } catch (error) {
                 reject(error)

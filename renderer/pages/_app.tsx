@@ -8,8 +8,6 @@ import Footer from '../components/Footer'
 import Login from '../components/Login'
 
 function App({ Component, pageProps }: AppProps) {
-  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState<boolean>(false)
-  const [isHelpMenuOpen, setIsHelpMenuOpen] = useState<boolean>(false)
   const [isLoginMenuOpen, setIsLoginMenuOpen] = useState<boolean>(false)
   const [isChildWindow, setIsChildWindow] = useState<boolean>(false)
   const [appVer, setAppVer] = useState<string>("")
@@ -27,15 +25,13 @@ function App({ Component, pageProps }: AppProps) {
     { route: "order", plural: true },
     { route: "report", plural: true }
   ]
-
-  const HeaderMenuRef = useRef(null)
   const LoginMenuRef = useRef(null)
   const router = useRouter()
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ipc) {
       if (!appVer || !dbUpdateTime) {
-        window.ipc.send('main', { process: 'app', method: 'get-values' })
+        window.ipc.send('main', { process: 'app', method: 'get-values', data: { type: 'app' } })
       }
     }
 
@@ -64,11 +60,6 @@ function App({ Component, pageProps }: AppProps) {
     }
 
     const handleClickOutsideMenu = (event: MouseEvent) => {
-      if (HeaderMenuRef.current && !HeaderMenuRef.current.contains(event.target)) {
-        setIsHeaderMenuOpen(false)
-        setIsHelpMenuOpen(false)
-      }
-
       if (LoginMenuRef.current && !LoginMenuRef.current.contains(event.target)) {
         setIsLoginMenuOpen(false)
       }
@@ -88,7 +79,6 @@ function App({ Component, pageProps }: AppProps) {
       window.ipc.send('close-child', { childId: router.pathname.split('\\').pop().split('/').pop(), promptClose: false })
     }
 
-    setIsHeaderMenuOpen(false)
     setIsLoginMenuOpen(false)
     setIsChildWindow(router.pathname.startsWith('/child'))
 
@@ -121,7 +111,7 @@ function App({ Component, pageProps }: AppProps) {
   const handleDBUpdate = () => {
     if (Object.values(userInfo).every((ele) => ele !== "")) {
       setIsDBUpdating(true)
-      window.ipc.send('main', { process: 'sql', method: 'update-db', data: { userInfo } })
+      window.ipc.send('main', { process: 'sql', method: 'update-db', data: { type: 'sql', userInfo } })
     }
   }
 
@@ -129,14 +119,9 @@ function App({ Component, pageProps }: AppProps) {
     <div className="flex flex-col h-screen">
       {!isChildWindow &&
         <Header
-          isHeaderMenuOpen={isHeaderMenuOpen}
-          handleMenuToggle={() => setIsHeaderMenuOpen(!isHeaderMenuOpen)}
-          isHelpMenuOpen={isHelpMenuOpen}
-          handleHelpMenuToggle={() => setIsHelpMenuOpen(!isHelpMenuOpen)}
           routes={routes}
           isChildWindow={isChildWindow}
-          appVer={appVer}
-          HeaderMenuRef={HeaderMenuRef} />
+          appVer={appVer} />
       }
       <Component {...pageProps} routes={routes} />
       <Login

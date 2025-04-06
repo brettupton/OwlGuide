@@ -1,54 +1,51 @@
-import fs from 'fs'
-import { bSQLDB, config, fileHandler, paths, regex } from "../utils"
+import { bSQLDB, fileHandler, paths } from "../utils"
 import { syncDB, initializeDB, getIBMTables } from "./helpers/sqlDatabase"
 
 export const sqlProcess = async ({ event, method, data }: ProcessArgs) => {
-    switch (method) {
-        case "get-terms":
-            try {
-                const terms = await bSQLDB.all.getAllTerms()
-                event.reply("term-list", { terms: terms.map((term) => term.Term) })
-            } catch (error) {
-                throw error
-            }
-            break
+    if (data.type === "sql") {
+        switch (method) {
+            case "get-terms":
+                try {
+                    const terms = await bSQLDB.all.getAllTerms()
+                    event.reply("term-list", { terms: terms.map((term) => term.Term) })
+                } catch (error) {
+                    throw error
+                }
+                break
 
-        case "update-db-manual":
-            try {
-                const files = data["files"]
+            case "update-db-manual":
+                try {
+                    await syncDB(data["files"])
+                    event.reply('update-success')
+                } catch (error) {
+                    event.reply('update-fail')
+                    throw error
+                }
+                break
 
-                await syncDB(files)
-                event.reply('update-success')
-            } catch (error) {
-                event.reply('update-fail')
-                throw error
-            }
-            break
+            case "update-db":
+                try {
+                    // Access IBMi with CLI to load tables into temp directory
+                    await getIBMTables(data["userInfo"]["userId"], data["userInfo"]["password"])
 
-        case "update-db":
-            try {
-                const { userId, password } = data["userInfo"]
+                    // Get string array of temp file names
+                    const files = await fileHandler.files.names(paths.tempPath)
+                    await syncDB(files)
 
-                // Access IBMi with CLI to load tables into temp directory
-                await getIBMTables(userId, password)
+                    event.reply('update-success')
+                } catch (error) {
+                    event.reply('update-fail')
+                    throw error
+                }
+                break
 
-                // Get string array of temp file names
-                const files = await fileHandler.files.names(paths.tempPath)
-                await syncDB(files)
-
-                event.reply('update-success')
-            } catch (error) {
-                event.reply('update-fail')
-                throw error
-            }
-            break
-
-        case "recreate-db":
-            try {
-                await initializeDB()
-            } catch (error) {
-                throw error
-            }
-            break
+            case "recreate-db":
+                try {
+                    await initializeDB()
+                } catch (error) {
+                    throw error
+                }
+                break
+        }
     }
 }

@@ -99,9 +99,10 @@ const buildSelectStmt = async (table: TableData) => {
     return statement
 }
 
-const syncDB = async (files: string[], startTime: number) => {
+const syncDB = async (files: string[]) => {
     const db = new Database(paths.dbPath)
     for (const tableName of Object.keys(tables) as TableName[]) {
+        const startTime = Date.now()
         await new Promise<void>(async (resolve, reject) => {
             // Disable foreign key restraints, delete all rows from table, and vacuum database 
             db.prepare(`PRAGMA foreign_keys = OFF`).run()
@@ -248,7 +249,8 @@ const getPrevSalesByBook = (bookID: number, term: string, year: string): Promise
                     AND CONCAT(Sales.Term, Sales.Year) != ?
                 GROUP BY Sales.Term,
                             Sales.Year
-                ORDER BY Sales.Year DESC`)
+                ORDER BY Sales.Year DESC
+                `)
 
             const results = queryStmt.all(bookID, term + year) as DBRow[]
 
@@ -267,31 +269,46 @@ const getBookByISBN = (ISBN: string): Promise<{ info: DBRow[], sales: DBRow[] }>
 
         try {
             const infoStmt = db.prepare(`
-                SELECT 
-                    Books.ID, Books.ISBN, Books.Title, Books.Author, Books.Edition, Books.Publisher, 
-                    Prices.UnitPrice, Prices.Discount,
-                    COALESCE(MAX(CASE WHEN Inventory.Unit = '1' AND Inventory.NewUsed = 'NW' THEN Inventory.OnHand ELSE 0 END), 0) AS NewOH,
-                    COALESCE(MAX(CASE WHEN Inventory.Unit = '1' AND Inventory.NewUsed = 'US' THEN Inventory.OnHand ELSE 0 END), 0) AS UsedOH
-                FROM 
-                    Books
-                JOIN 
-                    Prices ON Books.ID = Prices.BookID
-                LEFT JOIN 
-                    Inventory ON Books.ID = Inventory.BookID
+                SELECT Books.ID,
+                        Books.ISBN,
+                        Books.Title,
+                        Books.Author,
+                        Books.Edition,
+                        Books.Publisher,
+                        Prices.UnitPrice,
+                        Prices.Discount,
+                        COALESCE(MAX(CASE
+                                        WHEN Inventory.Unit = '1'
+                                            AND Inventory.NewUsed = 'NW' THEN Inventory.OnHand
+                                        ELSE 0
+                                    END), 0) AS NewOH,
+                        COALESCE(MAX(CASE
+                                        WHEN Inventory.Unit = '1'
+                                            AND Inventory.NewUsed = 'US' THEN Inventory.OnHand
+                                        ELSE 0
+                                    END), 0) AS UsedOH
+                FROM Books
+                JOIN Prices ON Books.ID = Prices.BookID
+                LEFT JOIN Inventory ON Books.ID = Inventory.BookID
                 WHERE Books.ISBN LIKE ?
                 `)
 
             const salesStmt = db.prepare(`
-                SELECT 
-                    Sales.Term, Sales.Year, Sales.EstEnrl, Sales.ActEnrl, Sales.EstSales, Sales.UsedSales, Sales.NewSales, Sales.Reorders
-                FROM 
-                    Books
-                JOIN 
-                    Sales ON Books.ID = Sales.BookID
+                SELECT Sales.Term,
+                        Sales.Year,
+                        Sales.EstEnrl,
+                        Sales.ActEnrl,
+                        Sales.EstSales,
+                        Sales.UsedSales,
+                        Sales.NewSales,
+                        Sales.Reorders
+                FROM Books
+                JOIN Sales ON Books.ID = Sales.BookID
                 WHERE Books.ISBN LIKE ?
-                    AND Sales.Term NOT IN ('I', 'Q')
+                    AND Sales.Term NOT IN ('I','Q')
                     AND Sales.Unit = '1'
-                ORDER BY Sales.Year DESC, Sales.Term
+                ORDER BY Sales.Year DESC,
+                        Sales.Term
                 `)
 
             const infoResult = infoStmt.all('%' + ISBN + '%') as DBRow[]
@@ -354,7 +371,8 @@ const getCoursesByBook = (bookID: number, term: string, year: string): Promise<D
                     AND Courses.Year = ?
                 ORDER BY Courses.Dept, 
                             Courses.Course, 
-                            Courses.Section`)
+                            Courses.Section
+                `)
 
             const results = queryStmt.all(bookID, term, year) as DBRow[]
 
@@ -424,13 +442,11 @@ const getCoursesByTerm = (term: string, year: string, limit: number, isForward: 
         try {
             const queryStmt = db.prepare(coursesQuery)
             const countStmt = db.prepare(`
-                SELECT 
-                    COUNT(*) AS Count
-                FROM 
-                    Courses
-                WHERE Courses.Unit = '1'
-                    AND Courses.Term = ?
-                    AND Courses.Year = ?
+                SELECT COUNT(*) AS Count
+                    FROM Courses
+                    WHERE Courses.Unit = '1'
+                        AND Courses.Term = ?
+                        AND Courses.Year = ?
                 `)
 
             const queryResult = queryStmt.all({ term, year, dept: pivotCourse.Dept, course: pivotCourse.Course, section: pivotCourse.Section, limit }) as CourseData[]
@@ -451,11 +467,9 @@ const getSectionsByTerm = (term: string, year: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
-                SELECT 
-                    SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3) AS Section,
-                    Courses.CRN
-                FROM 
-                    Courses
+                SELECT SUBSTR(CONCAT('000', Courses.Section), LENGTH(CONCAT('000', Courses.Section))-3+1, 3) AS Section,
+                        Courses.CRN
+                FROM Courses
                 WHERE Courses.Term = ?
                     AND Courses.Year = ?
                 `)
@@ -477,14 +491,12 @@ const getAllTerms = (): Promise<DBRow[]> => {
 
         try {
             const terms = db.prepare(`
-                SELECT DISTINCT 
-                    CONCAT(Term, Year) AS Term 
-                FROM 
-                    Courses
-                WHERE 
-                    Courses.Term != ''
-                ORDER BY 
-                    Courses.Term, Courses.Year`).all() as DBRow[]
+                SELECT DISTINCT CONCAT(Term, Year) AS Term 
+                FROM Courses
+                WHERE Courses.Term NOT IN ('','I','Q')
+                ORDER BY Courses.Term, 
+                            Courses.Year
+                `).all() as DBRow[]
 
             db.close()
             resolve(terms)
@@ -501,14 +513,10 @@ const getAllVendors = (): Promise<DBRow[]> => {
 
         try {
             const vendors = db.prepare(`
-                SELECT DISTINCT
-                    Vendor
-                FROM 
-                    Orders
-				WHERE
-					Vendor IS NOT NULL
-                ORDER BY
-                    Vendor
+                SELECT DISTINCT Vendor
+                FROM Orders
+				WHERE Vendor IS NOT NULL
+                ORDER BY Vendor
                 `).all() as DBRow[]
 
             db.close()
@@ -526,11 +534,18 @@ const getOrdersByTerm = (term: string, year: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
-                SELECT 
-                    Orders.ID, Orders.Number AS PO, Orders.Vendor, Orders.CreatedOn, Orders.Status, Orders.SentBy, Orders.Sent, 
-                    Orders.NumItemsOrd AS NumOrd, Orders.NumItemsRcvd AS NumRcvd, Orders.QtyItemsOrd AS QtyOrd, Orders.QtyItemsRcvd AS QtyRcvd
-                FROM 
-                    Orders
+                SELECT Orders.ID,
+                        Orders.Number AS PO,
+                        Orders.Vendor,
+                        Orders.CreatedOn,
+                        Orders.Status,
+                        Orders.SentBy,
+                        Orders.Sent,
+                        Orders.NumItemsOrd AS NumOrd,
+                        Orders.NumItemsRcvd AS NumRcvd,
+                        Orders.QtyItemsOrd AS QtyOrd,
+                        Orders.QtyItemsRcvd AS QtyRcvd
+                FROM Orders
                 WHERE Orders.Unit = '1'
                     AND Orders.Term = ?
                     AND Orders.Year = ?
@@ -554,16 +569,24 @@ const getOrdersByPOVendor = (PO: string, vendor: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
-                SELECT 
-                    Orders.ID, Orders.Term, Orders.Year, Orders.Number, Orders.Vendor, Orders.Status, Orders.SentBy, Orders.Sent, 
-                    Orders.NumItemsOrd AS NumOrd, Orders.NumItemsRcvd AS NumRcvd, Orders.QtyItemsOrd AS QtyOrd, Orders.QtyItemsRcvd AS QtyRcvd
-                FROM 
-                    Orders
-                WHERE 
-                    Orders.ID != '0'
-                    AND Orders.Number LIKE ? AND Orders.Vendor LIKE ?
-                ORDER BY 
-                    Orders.Term, Orders.Year
+                SELECT Orders.ID,
+                        Orders.Term,
+                        Orders.Year,
+                        Orders.Number,
+                        Orders.Vendor,
+                        Orders.Status,
+                        Orders.SentBy,
+                        Orders.Sent,
+                        Orders.NumItemsOrd AS NumOrd,
+                        Orders.NumItemsRcvd AS NumRcvd,
+                        Orders.QtyItemsOrd AS QtyOrd,
+                        Orders.QtyItemsRcvd AS QtyRcvd
+                FROM Orders
+                WHERE Orders.ID != '0'
+                    AND Orders.Number LIKE ?
+                    AND Orders.Vendor LIKE ?
+                ORDER BY Orders.Term,
+                        Orders.Year
                 `)
 
             const queryResult = queryStmt.all('%' + PO + '%', '%' + vendor + '%') as DBRow[]
@@ -583,16 +606,16 @@ const getOrderByID = (reqId: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
-                SELECT 
-                    Books.ISBN, Books.Title,
-                    Order_Book.NewUsed AS "Cond.", Order_Book.Ordered, Order_Book.Received,
-                    Order_Book.UnitPrice, Order_Book.Discount
-                FROM 
-                    Order_Book
-                JOIN 
-                    Books ON Order_Book.BookID = Books.ID
-                WHERE 
-                    Order_Book.OrderID = ?
+                SELECT Books.ISBN,
+                        Books.Title,
+                        Order_Book.NewUsed AS "Cond.",
+                        Order_Book.Ordered,
+                        Order_Book.Received,
+                        Order_Book.UnitPrice,
+                        Order_Book.Discount
+                FROM Order_Book
+                JOIN Books ON Order_Book.BookID = Books.ID
+                WHERE Order_Book.OrderID = ?
                 ORDER BY Books.Title
                 `)
 
@@ -613,35 +636,37 @@ const getNoAdoptionsByTerm = (term: string, year: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
-                SELECT Courses.ID, Courses.CRN, Courses.Dept, 
-                    SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course, 
-                    SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section, 
-                    Courses.Prof, Courses.Title,
-                    -- Subquery to check if Dept,Course,Section existed in prior years
-                    EXISTS (
-                            SELECT 1
-                            FROM Courses AS C
-                            WHERE C.Year != :year
-                                AND C.Dept = Courses.Dept
-                                AND C.Course = Courses.Course
-                                AND C.Section = Courses.Section
-                        ) AS HasPrev
-                FROM 
-                    Courses
+                SELECT Courses.ID,
+                        Courses.CRN,
+                        Courses.Dept,
+                        SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course,
+                        SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section,
+                        Courses.Prof,
+                        Courses.Title, 
+                -- Subquery to check if Dept,Course,Section existed in prior years
+                    EXISTS
+                        (SELECT 1
+                        FROM Courses AS C
+                        WHERE C.Year != :year
+                            AND C.Dept = Courses.Dept
+                            AND C.Course = Courses.Course
+                            AND C.Section = Courses.Section) AS HasPrev
+                FROM Courses
                 WHERE Courses.Unit = '1'
                     AND Courses.Term = :term
                     AND Courses.Year = :year
-                    AND Courses.NoText = 'N'
-                    -- Check if Course already has Book for term
-                    AND NOT EXISTS(
-                        SELECT 1 FROM Course_Book
-                        WHERE Courses.ID = Course_Book.CourseID
-                            AND Course_Book.Unit = '1'
+                    AND Courses.NoText = 'N' 
+                    -- Check if Course already has Book for term        
+                    AND NOT EXISTS
+                    (SELECT 1
+                    FROM Course_Book
+                    WHERE Courses.ID = Course_Book.CourseID
+                        AND Course_Book.Unit = '1'
                         AND Course_Book.Term = :term
-                        AND Course_Book.Year = :year
-                    )
-                ORDER BY 
-                    Courses.Dept, Courses.Course, Courses.Section
+                        AND Course_Book.Year = :year)
+                ORDER BY Courses.Dept,
+                        Courses.Course,
+                        Courses.Section
                 `)
 
             const queryResult = queryStmt.all({ term, year }) as DBRow[]
@@ -694,31 +719,32 @@ const getLibraryReport = (term: string, year: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
-                SELECT 
-                    Books.Title, 
-                    Books.ISBN, 
-                    (CASE WHEN Course_Book.Unit = '1' THEN 'MPC' ELSE 'MCV' END) AS Str,
-                    Courses.Dept, 
-                    SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course, 
-                    SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section, 
-                    Courses.Prof,
-                    Books.Author, 
-                    Books.Edition, 
-                    Books.Publisher
-                FROM 
-                    Course_Book
-                JOIN 
-                    Courses ON Course_Book.CourseID = Courses.ID
-                JOIN 
-                    Books ON Course_Book.BookID = Books.ID
-                WHERE 
-                    Course_Book.Term = ?
-                        AND Course_Book.Year = ?
-                        AND Courses.Dept NOT IN ('CANC', 'SPEC')
-                        AND SUBSTR(Books.ISBN, 1, 3) != '822'
-                        AND Books.ISBN != '0'
-                        AND Books.Publisher != 'VST'
-                ORDER BY Courses.Dept, Courses.Course, Courses.Section, Books.ISBN
+                SELECT Books.Title,
+                        Books.ISBN,
+                        (CASE
+                            WHEN Course_Book.Unit = '1' THEN 'MPC'
+                            ELSE 'MCV'
+                        END) AS STR,
+                        Courses.Dept,
+                        SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course,
+                        SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section,
+                        Courses.Prof,
+                        Books.Author,
+                        Books.Edition,
+                        Books.Publisher
+                FROM Course_Book
+                JOIN Courses ON Course_Book.CourseID = Courses.ID
+                JOIN Books ON Course_Book.BookID = Books.ID
+                WHERE Course_Book.Term = ?
+                    AND Course_Book.Year = ?
+                    AND Courses.Dept NOT IN ('CANC','SPEC')
+                    AND SUBSTR(Books.ISBN, 1, 3) != '822'
+                    AND Books.ISBN != '0'
+                    AND Books.Publisher != 'VST'
+                ORDER BY Courses.Dept,
+                        Courses.Course,
+                        Courses.Section,
+                        Books.ISBN
                 `)
 
             const queryResult = queryStmt.all(term, year) as DBRow[]
@@ -738,53 +764,60 @@ const getReconReport = (term: string, year: string): Promise<DBRow[]> => {
 
         try {
             const queryStmt = db.prepare(`
-                SELECT 
-                    Courses.Dept,
-                    SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course, 
-                    SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section,
-                    Books.Title, 
-                    Books.ISBN,
-                    MAX(CASE WHEN Inventory.NewUsed = 'NW' THEN Inventory.OnHand ELSE 0 END) AS NewOH,
-                    MAX(CASE WHEN Inventory.NewUsed = 'NW' THEN Inventory.Reserved ELSE 0 END) AS NewRsvd,
-                    MAX(CASE WHEN Inventory.NewUsed = 'US' THEN Inventory.OnHand ELSE 0 END) AS UsedOH,
-                    MAX(CASE WHEN Inventory.NewUsed = 'US' THEN Inventory.Reserved ELSE 0 END) AS UsedRsvd,
-                    (
-                    SELECT GROUP_CONCAT(Dept || ' ' || Course, CHAR(10))
-                    FROM (
-                        SELECT DISTINCT C2.Dept, 
-                            SUBSTR('000' || C2.Course, LENGTH('000' || C2.Course) - 3 + 1, 3) AS Course
+                SELECT Courses.Dept,
+                        SUBSTR('000' || Courses.Course, LENGTH('000' || Courses.Course) - 3 + 1, 3) AS Course,
+                        SUBSTR('000' || Courses.Section, LENGTH('000' || Courses.Section) - 3 + 1, 3) AS Section,
+                        Books.Title,
+                        Books.ISBN,
+                        MAX(CASE
+                                WHEN Inventory.NewUsed = 'NW' THEN Inventory.OnHand
+                                ELSE 0
+                            END) AS NewOH,
+                        MAX(CASE
+                            WHEN Inventory.NewUsed = 'NW' THEN Inventory.Reserved
+                            ELSE 0
+                        END) AS NewRsvd,
+                        MAX(CASE
+                                WHEN Inventory.NewUsed = 'US' THEN Inventory.OnHand
+                                ELSE 0
+                            END) AS UsedOH,
+                        MAX(CASE
+                                WHEN Inventory.NewUsed = 'US' THEN Inventory.Reserved
+                                ELSE 0
+                            END) AS UsedRsvd,
+                (SELECT GROUP_CONCAT(Dept || ' ' || Course, CHAR(10))
+                    FROM
+                        (SELECT DISTINCT C2.Dept,
+                                        SUBSTR('000' || C2.Course, LENGTH('000' || C2.Course) - 3 + 1, 3) AS Course
                         FROM Course_Book CB2
                         JOIN Courses C2 ON CB2.CourseID = C2.ID
                         WHERE CB2.BookID = Course_Book.BookID
-                        AND (C2.Dept <> Courses.Dept OR C2.Course <> Courses.Course)
-                        AND CB2.Unit = '1' 
-                        AND CB2.Term = :term 
+                        AND (C2.Dept <> Courses.Dept
+                                OR C2.Course <> Courses.Course)
+                        AND CB2.Unit = '1'
+                        AND CB2.Term = :term
                         AND CB2.Year = :year
-                        AND C2.Dept NOT IN ('CANC', 'SPEC')
-                        ORDER BY C2.Dept, C2.Course
-                    )
-                ) AS CXL
+                        AND C2.Dept NOT IN ('CANC','SPEC')
+                        ORDER BY C2.Dept,
+                                C2.Course)) AS CXL
                 FROM Course_Book
                 JOIN Courses ON Course_Book.CourseID = Courses.ID
                 JOIN Books ON Course_Book.BookID = Books.ID
                 LEFT JOIN Inventory ON Course_Book.BookID = Inventory.BookID
-                WHERE 
-                    Course_Book.Unit = '1'
+                WHERE Course_Book.Unit = '1'
                     AND Course_Book.Term = :term
                     AND Course_Book.Year = :year
-                    AND Courses.Dept NOT IN ('CANC', 'SPEC')
-                    AND Books.Publisher NOT IN ('XX SUPPLY', 'VST')
-                GROUP BY 
-                    Courses.Dept, 
-                    Courses.Course, 
-                    Courses.Section,
-                    Books.ID, 
-                    Books.ISBN, 
-                    Books.Title
-                ORDER BY 
-                    Courses.Dept, 
-                    Course, 
-                    Section
+                    AND Courses.Dept NOT IN ('CANC','SPEC')
+                    AND Books.Publisher NOT IN ('XX SUPPLY','VST')
+                GROUP BY Courses.Dept,
+                        Courses.Course,
+                        Courses.Section,
+                        Books.ID,
+                        Books.ISBN,
+                        Books.Title
+                ORDER BY Courses.Dept,
+                        Courses.Course,
+                        Courses.Section
                 `)
 
             const queryResult = queryStmt.all({ term, year }) as DBRow[]

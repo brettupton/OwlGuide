@@ -2,16 +2,12 @@ require("dotenv").config()
 import path from 'path'
 import { app, ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import serve from 'electron-serve'
-import fs from 'fs'
-import { createWindow, createChildWindow, rightClickMenu, createTray } from './electron-utils'
+import { createWindow, createChildWindow, rightClickMenu, createTray, initializeApp, downloadFiles } from './electron-utils'
 import { bSQLDB, paths, regex, logger, createZipBlob } from './utils'
 import { adoptionProcess, appProcess, bookProcess, courseProcess, decisionProcess, enrollmentProcess, orderProcess, reportProcess, sqlProcess } from './processes'
 import { ChildPath, ChildWindow, ChildWindowLocation } from '../types/ChildWin'
-import tables from './db/tables'
-import { TableData } from '../types/Database'
 import { formatPrevAdoptions } from './processes/helpers/adoptConv'
 import { PrevAdoption } from '../types/Adoption'
-import { initializeApp } from './electron-utils/init-app'
 
 export const isProd = process.env.NODE_ENV === 'production'
 
@@ -36,16 +32,10 @@ let childWindows: ChildWindow[] = []
       },
     })
 
-    // Close any remaining child windows if main window is closed
-    mainWindow.on('closed', () => {
-      childWindows.forEach((window) => window.browserWin.close())
-    })
-
-    createTray(paths.trayIconPath)
-
     if (isProd) {
       try {
         await initializeApp()
+        createTray(paths.trayIconPath)
       } catch (error) {
         dialog.showErrorBox('App', `${error}\n\nContact dev for assistance.`)
       }
@@ -68,8 +58,20 @@ ipcMain.on('minimize-app', (event) => {
 })
 
 ipcMain.on('close-app', (event) => {
-  childWindows.forEach((window) => window.browserWin.close())
-  if (mainWindow) mainWindow.close()
+  if (childWindows && childWindows.length > 0) {
+    // Close all windows safely
+    childWindows.forEach((windowObj) => {
+      if (windowObj && !windowObj.browserWin.isDestroyed()) {
+        windowObj.browserWin.close()
+      }
+    })
+    // After all closed, clear the list
+    childWindows = []
+  }
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.close()
+  }
 })
 
 ipcMain.on('open-github', (event) => {
@@ -124,7 +126,9 @@ ipcMain.on('close-child', async (event, { childId, promptClose }: { childId: str
 })
 
 ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
-  logger.addNewLog("main", [process, method, data?.["term"] ?? "", data?.["isbn"] ?? ""])
+  // Include both term and isbn for specific processes to log
+  const logInfo = [["adoption", "course", "decision", "order"].includes(data.type) ? data["term"] : "", data.type === "book" ? data["isbn"] : ""]
+  logger.addNewLog("main", [process, method, ...logInfo])
 
   try {
     switch (process) {
@@ -180,36 +184,10 @@ ipcMain.on('dev', async (event, { method, data }: ProcessArgs) => {
     case 'dump-files':
       try {
         const filesBlob = await createZipBlob()
-
-        dialog.showSaveDialog({
-          defaultPath: path.join(app.getPath('downloads'), `${regex.fileNameTimeStamp()}`),
-          filters: [{ name: 'Zip File', extensions: ['zip'] }]
-        })
-          .then(async (result) => {
-            if (!result.canceled && result.filePath) {
-              fs.writeFile(result.filePath, Buffer.from(await filesBlob.arrayBuffer()), (err) => {
-                if (err) {
-                  throw new Error("Unable to write ZIP to selected path.")
-                }
-                event.reply('success')
-              })
-            }
-          })
+        await downloadFiles(event, 'Dump', [{ data: Buffer.from(await filesBlob.arrayBuffer()), extension: 'zip' }])
       } catch (error) {
         console.error(error)
         dialog.showErrorBox('Dev', `${error}`)
-      }
-      break
-
-    case 'log-statement':
-      try {
-        Object.keys(tables).forEach(async (tableName) => {
-          const table = tables[tableName] as TableData
-          const statement = await bSQLDB.all.buildSelectStmt(table)
-          console.log(`${tableName}: ${statement}\n`)
-        })
-      } catch (error) {
-        console.error(error)
       }
       break
   }
