@@ -25,9 +25,13 @@ export default function PageTable({ pageData, totalRows, pageNum, limit, updateP
     return (
         <div className="w-full">
 <<<<<<< HEAD
+<<<<<<< HEAD
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-12.5rem)]">
 =======
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-13.9rem)]">
+>>>>>>> main
+=======
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-15rem)]">
 >>>>>>> main
                 <table className="w-full text-sm text-left rtl:text-right text-white" ref={tableRef}>
                     <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
@@ -46,7 +50,11 @@ export default function PageTable({ pageData, totalRows, pageNum, limit, updateP
                         {pageData.map((row) => {
                             return (
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row['ID'] as number)}>
+=======
+                                <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row)}>
+>>>>>>> main
 =======
                                 <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row)}>
 >>>>>>> main

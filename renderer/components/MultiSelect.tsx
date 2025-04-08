@@ -1,4 +1,8 @@
 import { useRef, useState, useEffect } from "react"
+<<<<<<< HEAD
+=======
+import { Dropdown } from "./Dropdown"
+>>>>>>> main
 
 interface MultiSelectProps {
     options: string[]
@@ -39,6 +43,7 @@ export default function MultiSelect({ options, selectedItems, setSelectedItems, 
     }
 
     return (
+<<<<<<< HEAD
         <div className="flex">
             <div className="flex flex-col relative" ref={selectRef}>
                 <div className="flex">
@@ -65,6 +70,30 @@ export default function MultiSelect({ options, selectedItems, setSelectedItems, 
             <div className="grid grid-flow-col grid-rows-2 gap-2 -mt-3 mx-3">
                 {selectedItems.map((item) => (
                     <span key={item} className="bg-gray-700 text-white text-sm px-3 py-1 rounded-full flex items-center shadow-md">
+=======
+        <div className="flex w-full px-2">
+            <div className="flex flex-col relative" ref={selectRef}>
+                <Dropdown
+                    icon="bars-2"
+                    location="bottom-right"
+                    data={
+                        options.map((option, index) => {
+                            return (
+                                <div
+                                    className={`text-sm py-1 px-3 hover:cursor-pointer rounded-lg ${selectedItems.includes(option) ? "bg-gray-400" : "hover:bg-gray-400"}`}
+                                    onClick={() => toggleSelection(option)}
+                                    key={index}>
+                                    {option}
+                                </div>
+                            )
+                        })
+                    }
+                />
+            </div>
+            <div className="grid grid-flow-col absolute grid-rows-2 gap-2 -top-4 left-16 ml-2">
+                {selectedItems.map((item) => (
+                    <span key={item} className="bg-gray-600 text-white text-sm px-3 py-1 rounded-full flex items-center shadow-md">
+>>>>>>> main
                         {item}
                         <button
                             className="ml-2 bg-white text-gray-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold"

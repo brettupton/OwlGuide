@@ -8,8 +8,11 @@ import Footer from '../components/Footer'
 import Login from '../components/Login'
 
 function App({ Component, pageProps }: AppProps) {
+<<<<<<< HEAD
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState<boolean>(false)
   const [isHelpMenuOpen, setIsHelpMenuOpen] = useState<boolean>(false)
+=======
+>>>>>>> main
   const [isLoginMenuOpen, setIsLoginMenuOpen] = useState<boolean>(false)
   const [isChildWindow, setIsChildWindow] = useState<boolean>(false)
   const [appVer, setAppVer] = useState<string>("")
@@ -17,6 +20,7 @@ function App({ Component, pageProps }: AppProps) {
   const [userInfo, setUserInfo] = useState({ userId: "", password: "" })
   const [isPassShow, setIsPassShow] = useState<boolean>(false)
   const [isDBUpdating, setIsDBUpdating] = useState<boolean>(false)
+<<<<<<< HEAD
 <<<<<<< HEAD
 
   const HeaderMenuRef = useRef(null)
@@ -62,6 +66,9 @@ function App({ Component, pageProps }: AppProps) {
       window.ipc.send('main', { process: 'app', method: 'get-values' })
 =======
 
+=======
+
+>>>>>>> main
   const routes = [
     { route: "adoption", plural: true },
     { route: "course", plural: true },
@@ -71,15 +78,23 @@ function App({ Component, pageProps }: AppProps) {
     { route: "order", plural: true },
     { route: "report", plural: true }
   ]
+<<<<<<< HEAD
 
   const HeaderMenuRef = useRef(null)
+=======
+>>>>>>> main
   const LoginMenuRef = useRef(null)
   const router = useRouter()
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ipc) {
       if (!appVer || !dbUpdateTime) {
+<<<<<<< HEAD
         window.ipc.send('main', { process: 'app', method: 'get-values' })
+      }
+>>>>>>> main
+=======
+        window.ipc.send('main', { process: 'app', method: 'get-values', data: { type: 'app' } })
       }
 >>>>>>> main
     }
@@ -109,9 +124,14 @@ function App({ Component, pageProps }: AppProps) {
     }
 
     const handleClickOutsideMenu = (event: MouseEvent) => {
+<<<<<<< HEAD
       if (HeaderMenuRef.current && !HeaderMenuRef.current.contains(event.target)) {
         setIsHeaderMenuOpen(false)
         setIsHelpMenuOpen(false)
+=======
+      if (LoginMenuRef.current && !LoginMenuRef.current.contains(event.target)) {
+        setIsLoginMenuOpen(false)
+>>>>>>> main
       }
 
       if (LoginMenuRef.current && !LoginMenuRef.current.contains(event.target)) {
@@ -133,9 +153,13 @@ function App({ Component, pageProps }: AppProps) {
       window.ipc.send('close-child', { childId: router.pathname.split('\\').pop().split('/').pop(), promptClose: false })
     }
 
+<<<<<<< HEAD
     setIsHeaderMenuOpen(false)
 <<<<<<< HEAD
 <<<<<<< HEAD
+=======
+    setIsLoginMenuOpen(false)
+>>>>>>> main
 =======
     setIsLoginMenuOpen(false)
 >>>>>>> main
@@ -173,12 +197,17 @@ function App({ Component, pageProps }: AppProps) {
   const handleDBUpdate = () => {
     if (Object.values(userInfo).every((ele) => ele !== "")) {
       setIsDBUpdating(true)
+<<<<<<< HEAD
       window.ipc.send('main', { process: 'sql', method: 'update-db', data: { userInfo } })
+=======
+      window.ipc.send('main', { process: 'sql', method: 'update-db', data: { type: 'sql', userInfo } })
+>>>>>>> main
     }
   }
 
   return (
     <div className="flex flex-col h-screen">
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
       <Header
@@ -244,6 +273,30 @@ function App({ Component, pageProps }: AppProps) {
           isChildWindow={isChildWindow}
           appVer={appVer}
           HeaderMenuRef={HeaderMenuRef} />
+      }
+      <Component {...pageProps} routes={routes} />
+      <Login
+        isLoginMenuOpen={isLoginMenuOpen}
+        handleLoginMenuToggle={handleLoginMenuToggle}
+        handleUserChange={handleUserChange}
+        userInfo={userInfo}
+        isPassShow={isPassShow}
+        handlePassToggle={() => setIsPassShow(!isPassShow)}
+        handleDBUpdate={handleDBUpdate}
+        isDBUpdating={isDBUpdating}
+        LoginMenuRef={LoginMenuRef} />
+      <Footer
+        syncDB={handleLoginMenuToggle}
+        dbUpdateTime={dbUpdateTime}
+        isDBUpdating={isDBUpdating}
+        isChildWindow={isChildWindow}
+>>>>>>> main
+=======
+      {!isChildWindow &&
+        <Header
+          routes={routes}
+          isChildWindow={isChildWindow}
+          appVer={appVer} />
       }
       <Component {...pageProps} routes={routes} />
       <Login

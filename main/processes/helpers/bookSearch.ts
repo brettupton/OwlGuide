@@ -1,7 +1,37 @@
+<<<<<<< HEAD
+=======
+<<<<<<<< HEAD:main/processes/book.ts
+import { regex, bSQLDB } from '../utils'
+import { apiSearch, formatBookSearch } from './helpers/bookSearch'
+
+export const bookProcess = async ({ event, method, data }: ProcessArgs) => {
+    switch (method) {
+        case 'search-isbn':
+            try {
+                const isbn = data["isbn"]
+                const search = regex.createSearchISBN(isbn)
+                // Query SQL DB for book term & vendor data
+                const sqlResults = await bSQLDB.books.getBookByISBN(search)
+                // Query Google API for book information data
+                const apiResults = await apiSearch(isbn)
+                // Join both results
+                const book = formatBookSearch(sqlResults, apiResults)
+
+                event.reply('book-data', { book })
+            } catch (error) {
+                console.error(error)
+                throw error
+            }
+            break
+    }
+}
+========
+>>>>>>> main
 import { BookResult, GVolInfo, APIResult } from "../../../types/Book"
 import axios from "axios"
 import { regex } from "../../utils"
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 const formatBookSearch = (sqlResults: DBRow[], apiResults: APIResult | {}) => {
@@ -13,6 +43,8 @@ const formatBookSearch = (sqlResults: DBRow[], apiResults: APIResult | {}) => {
 =======
 =======
 >>>>>>> main
+=======
+>>>>>>> main
 const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResults: APIResult | {}) => {
     let book: BookResult | {} = {}
 
@@ -22,6 +54,9 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
 
         const firstResult = sqlResults.info[0]
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -38,8 +73,11 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
             Image: apiResults["PreviewImg"],
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             Terms: sqlResults.map((result) => {
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
             UnitPrice: firstResult["UnitPrice"],
@@ -48,6 +86,9 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
             UsedOH: firstResult["UsedOH"],
             Terms: sqlResults.sales.map((result) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -99,4 +140,9 @@ const apiSearch = async (isbn: string): Promise<APIResult | {}> => {
     }
 }
 
+<<<<<<< HEAD
 export { formatBookSearch, apiSearch }
+=======
+export { formatBookSearch, apiSearch }
+>>>>>>>> main:main/processes/helpers/bookSearch.ts
+>>>>>>> main

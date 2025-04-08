@@ -12,11 +12,9 @@ export default function FileForm({ process, label, accept, multiple = false }: F
     const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && window.ipc) {
-            window.ipc.on('file-error', () => {
-                setIsLoading(false)
-            })
-        }
+        window.ipc.on('file-error', () => {
+            setIsLoading(false)
+        })
     }, [])
 
     const handleSelectionChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -27,14 +25,21 @@ export default function FileForm({ process, label, accept, multiple = false }: F
                 fileArr.push(newFile.path)
             }
             setIsLoading(true)
+<<<<<<< HEAD
             window.ipc.send('main', { process, method: "file-upload", data: fileArr })
+=======
+            window.ipc.send('main', { process, method: "file-upload", data: { type: process, fileArr } })
+>>>>>>> main
         }
     }
 
     return (
         <div className="flex flex-col w-full h-full">
             {isLoading ?
-                <Spinner />
+                <Spinner
+                    size="md"
+                    color="white"
+                />
                 :
                 <form>
                     <div className="flex m-3 justify-center">

@@ -4,6 +4,7 @@ import { readJSON } from './fileHandler'
 import { paths } from './paths'
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const updateConfigValue = (key: string, value: string, encrypt: boolean): Promise<void> => {
     return new Promise(async (resolve, reject) => {
         if (encrypt) {
@@ -36,6 +37,8 @@ const updateConfigValue = (key: string, value: string, encrypt: boolean): Promis
             }
         }
 =======
+=======
+>>>>>>> main
 const updateConfigValue = (keyValues: string[][], encrypt?: boolean): Promise<void> => {
     return new Promise(async (resolve, reject) => {
         if (encrypt) {
@@ -64,6 +67,9 @@ const updateConfigValue = (keyValues: string[][], encrypt?: boolean): Promise<vo
             }
         }
         resolve()
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
     })
 }
@@ -86,6 +92,7 @@ const getConfigValue = (key: string, decrypt?: boolean): Promise<string> => {
             }
         } else {
 <<<<<<< HEAD
+<<<<<<< HEAD
             const config = {}
             fs.writeFile(paths.configPath, JSON.stringify(config, null, 2), (err) => {
                 if (err) {
@@ -93,6 +100,9 @@ const getConfigValue = (key: string, decrypt?: boolean): Promise<string> => {
                 }
                 resolve("")
             })
+=======
+            resolve("")
+>>>>>>> main
 =======
             resolve("")
 >>>>>>> main

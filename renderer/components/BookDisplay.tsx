@@ -38,7 +38,11 @@ export default function BookDisplay({ book }: { book: BookResult }) {
                         <div className="mt-1 flex justify-between items-center">
                             <div className="grid grid-cols-2 mt-2 text-xs text-gray-400">
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 <p className="font-semibold">Unit Price: <span className="text-gray-200">${book.UnitPrice}</span></p>
+=======
+                                <p className="font-semibold">Unit Price: <span className="text-gray-200">${Number(book.UnitPrice).toFixed(2)}</span></p>
+>>>>>>> main
 =======
                                 <p className="font-semibold">Unit Price: <span className="text-gray-200">${Number(book.UnitPrice).toFixed(2)}</span></p>
 >>>>>>> main
@@ -57,11 +61,14 @@ export default function BookDisplay({ book }: { book: BookResult }) {
             <div className="flex bg-gray-300 rounded-xl border border-white mx-4 p-2 max-h-[calc(25vh)]">
                 <div className="flex relative w-full overflow-x-auto">
 <<<<<<< HEAD
+<<<<<<< HEAD
                     <table className="w-full text-sm text-left rtl:text-right text-white text-center">
                         <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                             <tr>
                                 {Object.keys(book.Terms[0]).map((header, index) => {
 =======
+=======
+>>>>>>> main
                     {book.Terms.length > 0 ?
                         <table className="w-full text-sm text-left rtl:text-right text-white text-center">
                             <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
@@ -77,6 +84,9 @@ export default function BookDisplay({ book }: { book: BookResult }) {
                             </thead>
                             <tbody>
                                 {book.Terms.map((term, index) => {
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
                                     return (
                                         <tr key={index} className="odd:bg-gray-900 even:bg-gray-800 hover:bg-gray-600 border-b border-gray-700">

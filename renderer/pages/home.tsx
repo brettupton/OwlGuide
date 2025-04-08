@@ -3,6 +3,7 @@ import Image from 'next/image'
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 export default function HomePage() {
   const routes = ['course', 'book', 'decision', 'enrollment']
@@ -24,6 +25,17 @@ export default function HomePage({ routes }: IHomePage) {
     <div className="flex flex-grow items-center justify-center">
       <div className="flex flex-col text-center -mt-16">
         <Link href="/dev">
+=======
+interface IHomePage {
+  routes: { route: string, plural: boolean }[]
+}
+
+export default function HomePage({ routes }: IHomePage) {
+  return (
+    <div className="flex flex-grow items-center justify-center">
+      <div className="flex flex-col text-center -mt-16">
+        <Link href="/dev" className="hover:cursor-default">
+>>>>>>> main
           <Image
             className="ml-auto mr-auto"
             src="/images/owl.png"
@@ -36,7 +48,11 @@ export default function HomePage({ routes }: IHomePage) {
         <span className="courgette-regular text-3xl">OwlGuide</span>
         <div className="grid grid-cols-2 gap-5 mt-10">
 <<<<<<< HEAD
+<<<<<<< HEAD
           {routes.map((route, index) => (
+=======
+          {routes.map((routeInfo, index) => (
+>>>>>>> main
 =======
           {routes.map((routeInfo, index) => (
 >>>>>>> main

@@ -1,5 +1,6 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 export type TableName = "Books" | "Courses" | "Sales" | "Course_Book" | "Prices" | "Inventory"
 
 export type Column = {
@@ -8,12 +9,17 @@ export type Column = {
 =======
 =======
 >>>>>>> main
+=======
+>>>>>>> main
 export type TableName = "Books" | "Courses" | "Sales" | "Course_Book" | "Prices" | "Inventory" | "Orders" | "Order_Book"
 
 export type Column = {
     [column: string]: {
         type: "TEXT" | "INTEGER" | "INTEGER PRIMARY KEY"
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -34,7 +40,11 @@ export type TableData = {
     "CompKey": string[]
     "Indexes": string[]
 <<<<<<< HEAD
+<<<<<<< HEAD
     "Timestamp"?: string[]
+=======
+    "Timestamp"?: string
+>>>>>>> main
 =======
     "Timestamp"?: string
 >>>>>>> main

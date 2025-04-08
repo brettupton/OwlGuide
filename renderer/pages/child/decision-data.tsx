@@ -89,7 +89,14 @@ export default function DecisionData() {
                     </div>
                 </div>
                 :
+<<<<<<< HEAD
                 <Spinner />
+=======
+                <Spinner
+                    size="md"
+                    color="white"
+                />
+>>>>>>> main
             }
         </div>
     )

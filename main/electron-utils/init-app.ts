@@ -19,6 +19,10 @@ export const initializeApp = (): Promise<void> => {
                         switch (pathName) {
                             case "configPath":
                                 const config = {}
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
                                 fs.writeFileSync(fullPath, JSON.stringify(config, null, 2))
                                 break
                             case "tempPath":

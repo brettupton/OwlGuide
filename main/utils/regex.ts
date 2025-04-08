@@ -114,7 +114,10 @@ const ISOtoDb2Time = (iso: string) => {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
 const fileNameTimeStamp = () => {
@@ -126,6 +129,9 @@ const fileNameTimeStamp = () => {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -139,7 +145,12 @@ export const regex = {
     db2TimeToLocal,
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     ISOtoDb2Time
+=======
+    ISOtoDb2Time,
+    fileNameTimeStamp
+>>>>>>> main
 =======
     ISOtoDb2Time,
     fileNameTimeStamp

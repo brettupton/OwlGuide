@@ -1,20 +1,9 @@
 import { useState, useEffect, ChangeEvent } from "react"
 import { BackArrow, FileForm, MatchTable } from "../components"
-
-/* 
-Array indices for enrollment
-Campus  0
-Dept    1
-Course  2
-Section 3
-Prof    4
-EstEnrl 5
-ActEnrl 6
-Title   7
-CRN     8
-*/
+import { IntermCourse } from "../../types/Enrollment"
 
 export default function EnrollmentHome() {
+<<<<<<< HEAD
     const [enrollment, setEnrollment] = useState<string[][]>([])
     const [needOfferings, setNeedOfferings] = useState<string[][]>([])
 
@@ -26,11 +15,22 @@ export default function EnrollmentHome() {
                     if (a[1].localeCompare(b[1]) !== 0) {
                         return a[1].localeCompare(b[1])
                     }
+=======
+    const [enrollment, setEnrollment] = useState<IntermCourse[]>([])
+    const [noSections, setNoSections] = useState<IntermCourse[]>([])
 
-                    return a[2].localeCompare(b[2])
-                })
-                const offerings = sorted.filter((course) => course[3] === "0")
+    useEffect(() => {
+        window.ipc.on('data', ({ enrollment }: { enrollment: IntermCourse[] }) => {
+            // Find courses with no offering numbers then sort by department and course number
+            const noFileSections = enrollment.filter((course) => course.Section === "0")
+>>>>>>> main
 
+            noFileSections.sort((a, b) => {
+                if (a["Dept"].localeCompare(b["Dept"]) !== 0) {
+                    return a["Dept"].localeCompare(b["Dept"])
+                }
+
+<<<<<<< HEAD
                 setEnrollment(sorted)
                 setNeedOfferings(offerings)
             })
@@ -40,30 +40,47 @@ export default function EnrollmentHome() {
                 setNeedOfferings([])
             })
         }
+=======
+                return a["Course"].localeCompare(b["Course"])
+            })
+
+            setEnrollment(enrollment)
+            setNoSections(noFileSections)
+        })
+
+        window.ipc.on('download-success', () => {
+            setEnrollment([])
+            setNoSections([])
+        })
+>>>>>>> main
     }, [])
 
-    const handleOfferingChange = (e: ChangeEvent<HTMLInputElement>, course: string[]) => {
+    const handleSectionChange = (e: ChangeEvent<HTMLInputElement>, course: IntermCourse) => {
         const { value } = e.currentTarget
-        const CRN = course[8]
-        const matchIndex = enrollment.findIndex((enrollCourse) => enrollCourse[8] === CRN)
+        const matchIndex = enrollment.findIndex((enrollCourse) => enrollCourse.CRN === course.CRN)
 
         setEnrollment((prevCourses) => {
-            prevCourses[matchIndex][3] = value
+            prevCourses[matchIndex]["Section"] = value
+
             return [...prevCourses]
         })
     }
 
     const handleSubmit = () => {
+<<<<<<< HEAD
         window.ipc.send('main', { process: 'enrollment', method: 'file-download', data: { enrollment } })
+=======
+        window.ipc.send('main', { process: 'enrollment', method: 'file-download', data: { type: "enrollment", enrollment } })
+>>>>>>> main
     }
 
     return (
         <div className="flex flex-col h-full w-full">
             <BackArrow path="home" />
-            {needOfferings.length <= 0 ?
+            {enrollment.length <= 0 ?
                 <FileForm process="enrollment" label="Enrollment File" accept=".xlsx" />
                 :
-                <MatchTable dataLength={enrollment.length} needOfferings={needOfferings} handleOfferingChange={handleOfferingChange} handleSubmit={handleSubmit} />
+                <MatchTable numCourses={enrollment.length} noSections={noSections} handleSectionChange={handleSectionChange} handleSubmit={handleSubmit} />
             }
         </div>
     )

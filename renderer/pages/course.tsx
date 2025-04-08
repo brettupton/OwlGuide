@@ -1,6 +1,10 @@
 import { ChangeEvent, MutableRefObject, useEffect, useRef, useState } from "react"
 import { BackArrow, PageTable, TermSelect } from "../components"
 import { CourseData } from "../../types/Course"
+<<<<<<< HEAD
+=======
+import { Button } from "../components/Button"
+>>>>>>> main
 
 export default function Course() {
     const [courses, setCourses] = useState<CourseData[]>([])
@@ -19,6 +23,7 @@ export default function Course() {
 
     useEffect(() => {
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (typeof window !== undefined && window.ipc) {
             window.ipc.on('course-data', ({ courses, total, term }: { courses: DBRow[], total: number, term: string }) => {
                 if (courses.length > 0) {
@@ -30,6 +35,8 @@ export default function Course() {
             })
         }
 =======
+=======
+>>>>>>> main
         window.ipc.on('course-data', ({ courses, total, term }: { courses: CourseData[], total: number, term: string }) => {
             if (courses.length > 0) {
                 setCourses(courses)
@@ -42,6 +49,9 @@ export default function Course() {
 
             window.ipc.send('close-child', { prompt: false })
         })
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
     }, [])
 
@@ -52,6 +62,7 @@ export default function Course() {
             {
                 process: 'course',
                 method: 'get-term-course',
+<<<<<<< HEAD
 <<<<<<< HEAD
                 data: { term, limit, isForward: forward, isSearch: false, pivotCourse: { Dept: pivot.Dept, Course: pivot.Course, Section: pivot.Section } }
             })
@@ -79,6 +90,20 @@ export default function Course() {
         setActiveCourse(row["ID"] as number)
         window.ipc.send('child', { process: 'course', data: { course: row } })
 >>>>>>> main
+=======
+                data: { type: 'course', term: selectedTerm, limit, isForward: forward, isSearch: false, pivotCourse: { Dept: pivot.Dept, Course: pivot.Course, Section: pivot.Section } }
+            })
+        // Calculate new page number within constraints
+        let newPage = pageNum + (forward ? 1 : -1)
+        if (newPage >= 1 && newPage < Math.floor(totalRows / limit)) {
+            setPageNum(newPage)
+        }
+    }
+
+    const handleRowClick = (row: DBRow) => {
+        setActiveCourse(row["ID"] as number)
+        window.ipc.send('child', { process: 'course', data: { course: row } })
+>>>>>>> main
     }
 
     const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -91,6 +116,7 @@ export default function Course() {
     }
 
     const handleSearch = () => {
+<<<<<<< HEAD
 <<<<<<< HEAD
         window.ipc.send('main',
             {
@@ -184,6 +210,19 @@ export default function Course() {
     }
 
     return (
+=======
+        if (Object.values(searchCourse).some((searchVal) => searchVal !== "") && selectedTerm) {
+            window.ipc.send('main',
+                {
+                    process: 'course',
+                    method: 'get-term-course',
+                    data: { type: 'course', term: selectedTerm, limit, isForward: true, isSearch: true, pivotCourse: { Dept: searchCourse.Dept, Course: searchCourse.Course, Section: searchCourse.Section } }
+                })
+        }
+    }
+
+    return (
+>>>>>>> main
         <div className="flex flex-col">
             <BackArrow />
             <div className="flex flex-col m-4">
@@ -201,6 +240,9 @@ export default function Course() {
                                 maxLength={4}
                                 onChange={handleSearchChange}
                             />
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
                         </div>
                         <div className="flex">
@@ -224,6 +266,7 @@ export default function Course() {
                             />
                         </div>
                         <div className="flex">
+<<<<<<< HEAD
                             <button className="bg-white hover:bg-gray-300 text-gray-800 font-semibold px-1 border border-gray-400 rounded shadow text-center active:scale-95 transition-transform duration-75"
                                 onClick={handleSearch}
                             >
@@ -231,6 +274,16 @@ export default function Course() {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                                 </svg>
                             </button>
+=======
+                            <Button
+                                parentComponent="course"
+                                text="search"
+                                isLoading={false}
+                                icon="search"
+                                buttonCommand={handleSearch}
+                                isDisabled={!Object.values(searchCourse).some((searchVal) => searchVal !== "") || !selectedTerm}
+                            />
+>>>>>>> main
                         </div>
                     </div>
                 </div>

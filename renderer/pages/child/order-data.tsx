@@ -16,11 +16,24 @@ export default function OrderDetailPage() {
     }, [])
 
     return (
+<<<<<<< HEAD
         <div className="m-4">
             {isLoading ?
                 <Spinner />
                 :
                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-1.5rem)]">
+=======
+        <div className="flex m-4">
+            {isLoading ?
+                <div className="flex w-full justify-center">
+                    <Spinner
+                        size="md"
+                        color="white"
+                    />
+                </div>
+                :
+                <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-1.5rem)] w-full">
+>>>>>>> main
                     <table className="w-full text-sm text-left rtl:text-right text-white">
                         <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                             <tr>

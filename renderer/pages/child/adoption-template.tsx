@@ -5,11 +5,20 @@ import Image from "next/image"
 export default function AdoptionTemplate() {
     const [tempAdoptions, setTempAdoptions] = useState<NoAdoption[]>([])
     const [selectedTerm, setSelectedTerm] = useState<string>("")
+<<<<<<< HEAD
+=======
+    const [targetTempID, setTargetTempID] = useState<number>(null)
+>>>>>>> main
 
     const filterHeaders = ["ID", "Prof", "CRN", "Title", "HasPrev", "TempID"]
     // TempID handles multiple duplicate courses existing by ensuring each have unique TempID
     const tempIDRef = useRef(0)
 
+<<<<<<< HEAD
+=======
+    const rowRefs = useRef<{ [key: string]: HTMLTableRowElement }>({})
+
+>>>>>>> main
     useEffect(() => {
         window.ipc.send('ready-to-receive')
 
@@ -28,6 +37,7 @@ export default function AdoptionTemplate() {
                     .map((course) => {
                         // Initialize keys that are missing from sent courses
 <<<<<<< HEAD
+<<<<<<< HEAD
                         course["NoText"] = false
                         course["ISBN"] = ""
 =======
@@ -35,6 +45,12 @@ export default function AdoptionTemplate() {
                         course["ISBN"] = course["ISBN"] ?? ""
 >>>>>>> main
                         course["TempID"] = course["TempID"] ?? tempIDRef.current++
+=======
+                        course["NoText"] = course["NoText"] ?? false
+                        course["ISBN"] = course["ISBN"] ?? ""
+                        course["TempID"] = course["TempID"] ?? tempIDRef.current++
+                        setTargetTempID(course["TempID"])
+>>>>>>> main
 
                         return course
                     })
@@ -48,7 +64,10 @@ export default function AdoptionTemplate() {
             setSelectedTerm(term)
         })
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
 
         // Reloading on window removes all courses so it needs to be disabled
         const preventReload = (e: KeyboardEvent) => {
@@ -62,9 +81,22 @@ export default function AdoptionTemplate() {
         return () => {
             window.removeEventListener('keydown', (e) => preventReload(e))
         }
+<<<<<<< HEAD
 >>>>>>> main
     }, [])
 
+=======
+    }, [])
+
+    useEffect(() => {
+        // Scroll table to last received course
+        if (targetTempID && rowRefs.current[targetTempID]) {
+            rowRefs.current[targetTempID]?.scrollIntoView({ behavior: "smooth", block: "center" })
+            setTargetTempID(null)
+        }
+    }, [tempAdoptions, targetTempID])
+
+>>>>>>> main
     const handleMinimize = () => {
         window.ipc.send('minimize-app')
     }
@@ -120,9 +152,15 @@ export default function AdoptionTemplate() {
         setTempAdoptions([...noText])
     }
 
+<<<<<<< HEAD
     const handleCourseUpdate = (e: ChangeEvent<HTMLInputElement>, courseId: number) => {
         const { id, value } = e.currentTarget
         const courseIndex = tempAdoptions.findIndex((course) => course["ID"] === courseId)
+=======
+    const handleCourseUpdate = (e: ChangeEvent<HTMLInputElement>, courseTempId: number) => {
+        const { id, value } = e.currentTarget
+        const courseIndex = tempAdoptions.findIndex((course) => course["TempID"] === courseTempId)
+>>>>>>> main
         const currTemp = [...tempAdoptions]
 
         // Convert value to boolean equivalent on NoText update
@@ -132,11 +170,16 @@ export default function AdoptionTemplate() {
 
     const handleDownloadCSV = () => {
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (tempAdoptions.length > 0 && (tempAdoptions.some((course) => course["ISBN"].length > 0) || tempAdoptions.some((course) => course["NoText"]))) {
 =======
         if (tempAdoptions.length > 0 && (tempAdoptions.every((course) => course["ISBN"].length > 0 || course["NoText"]))) {
 >>>>>>> main
             window.ipc.send('main', { process: 'adoption', method: 'download-csv', data: { adoptions: tempAdoptions, term: selectedTerm } })
+=======
+        if (tempAdoptions.length > 0 && (tempAdoptions.every((course) => course["ISBN"].length > 0 || course["NoText"]))) {
+            window.ipc.send('main', { process: 'adoption', method: 'download-csv', data: { type: "adoption", adoptions: tempAdoptions, term: selectedTerm } })
+>>>>>>> main
         }
     }
 
@@ -179,10 +222,14 @@ export default function AdoptionTemplate() {
                                         !filterHeaders.includes(header) &&
                                         <th className={`p-2 ${header !== "ISBN" ? "text-center" : ""}`} key={header}>
                                             {header === "NoText" ?
+<<<<<<< HEAD
                                                 <button
                                                     onClick={handleNoTextAll}
                                                     title="Check All"
                                                 >
+=======
+                                                <button onClick={handleNoTextAll} title="Mark All">
+>>>>>>> main
                                                     NOTEXT
                                                 </button>
                                                 :
@@ -192,14 +239,22 @@ export default function AdoptionTemplate() {
                                     )
                                 })}
                                 <th className="px-2 py-1">
+<<<<<<< HEAD
                                     <button title="Remove All" onClick={() => handleSendAll(false)}>
+=======
+                                    <button title="Remove All" className="hover:text-white" onClick={() => handleSendAll(false)}>
+>>>>>>> main
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
                                         </svg>
                                     </button>
                                 </th>
                                 <th className="px-2 py-1">
+<<<<<<< HEAD
                                     <button title="Download CSV" onClick={handleDownloadCSV}>
+=======
+                                    <button title="Download CSV" className="hover:text-white" onClick={handleDownloadCSV}>
+>>>>>>> main
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                                         </svg>
@@ -212,7 +267,11 @@ export default function AdoptionTemplate() {
                                 return (
                                     <tr
                                         className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={`${adoption["TempID"]}-${adoption["ID"]}`}
+<<<<<<< HEAD
                                         id={`${adoption["ID"]}`}
+=======
+                                        id={`${adoption["ID"]}`} ref={(ele) => { rowRefs.current[adoption.TempID] = ele }}
+>>>>>>> main
                                     >
                                         {Object.keys(adoption).map((key, index) => {
                                             return (
@@ -226,7 +285,11 @@ export default function AdoptionTemplate() {
                                                             checked={adoption["NoText"]}
                                                             disabled={adoption["ISBN"].length > 0}
                                                             value={String(!adoption["NoText"])}
+<<<<<<< HEAD
                                                             onChange={(e) => handleCourseUpdate(e, adoption["ID"])} />
+=======
+                                                            onChange={(e) => handleCourseUpdate(e, adoption["TempID"])} />
+>>>>>>> main
                                                         :
                                                         key === "ISBN" ?
                                                             <input
@@ -236,7 +299,11 @@ export default function AdoptionTemplate() {
                                                                 disabled={adoption["NoText"]}
                                                                 value={adoption["ISBN"]}
                                                                 maxLength={13}
+<<<<<<< HEAD
                                                                 onChange={(e) => handleCourseUpdate(e, adoption["ID"])}
+=======
+                                                                onChange={(e) => handleCourseUpdate(e, adoption["TempID"])}
+>>>>>>> main
                                                             />
                                                             :
                                                             adoption[key]}

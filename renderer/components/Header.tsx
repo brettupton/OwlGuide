@@ -1,18 +1,23 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { MutableRefObject } from 'react'
+import { Dropdown } from './Dropdown'
 
+<<<<<<< HEAD
 interface HeaderProps {
     isHeaderMenuOpen: boolean
     handleMenuToggle: () => void
     isChildWindow: boolean
     isHelpMenuOpen: boolean
     handleHelpMenuToggle: () => void
+=======
+interface IHeader {
+    isChildWindow: boolean
+>>>>>>> main
     routes: { route: string, plural: boolean }[]
     appVer: string
-    HeaderMenuRef: MutableRefObject<any>
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWindow, isHelpMenuOpen, handleHelpMenuToggle, appVer, HeaderMenuRef }: HeaderProps) {
 <<<<<<< HEAD
@@ -24,6 +29,9 @@ export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWind
 =======
 export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWindow, isHelpMenuOpen, handleHelpMenuToggle, routes, appVer, HeaderMenuRef }: HeaderProps) {
 >>>>>>> main
+=======
+export default function Header({ isChildWindow, routes, appVer }: IHeader) {
+>>>>>>> main
     const handleMinimize = () => {
         window.ipc.send('minimize-app')
     }
@@ -32,14 +40,10 @@ export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWind
         window.ipc.send('close-app')
     }
 
-    const openGithubLink = () => {
-        window.ipc.send('open-github')
-    }
-
     return (
         !isChildWindow
             ?
-            <header className="bg-gray-800 relative" ref={HeaderMenuRef}>
+            <header className="bg-gray-800 relative">
                 <div className="flex px-2 py-1 justify-between">
                     <div className="flex gap-2 window-controls">
                         <Image
@@ -49,19 +53,41 @@ export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWind
                             height={35}
                             priority={true}
                         />
-                        <button onClick={handleMenuToggle}>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-7">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                            </svg>
-                        </button>
-                    </div>
+                        <Dropdown
+                            icon="bars-3"
+                            location="bottom-right"
+                            data={[
+                                <Link href="/home" className="px-2 py-1 cursor-pointer hover:bg-gray-400 rounded w-full">
+                                    Home
+                                </Link>,
+                                ...routes.map((routeInfo, index) => {
+                                    return (
+                                        <Link
+                                            href={`${routeInfo.route}`}
+                                            key={index}
+                                            className="px-2 py-1 cursor-pointer hover:bg-gray-400 rounded w-full"
+                                        >
+                                            {`${routeInfo.route[0].toUpperCase()}${routeInfo.route.slice(1)}${routeInfo.plural ? 's' : ''}`}
+                                        </Link>
+                                    )
+                                }
+                                )
+                            ]}
+                        />
+                    </div >
                     <div className="flex">
                         <div className="flex window-controls gap-2">
-                            <button onClick={handleHelpMenuToggle}>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
-                                </svg>
-                            </button>
+                            <Dropdown
+                                icon="question"
+                                location="bottom-left"
+                                data={[
+                                    <div>Version <span className="text-indigo-600">{appVer}</span></div>,
+                                    <div><span className="text-yellow-600">Canari</span> 2025</div>,
+                                    <button onClick={() => window.ipc.send('open-github')} className="text-blue-600 underline" rel="noopener noreferrer">
+                                        GitHub
+                                    </button>
+                                ]}
+                            />
                             <button onClick={handleMinimize}>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
@@ -75,6 +101,7 @@ export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWind
                         </div>
                     </div>
                 </div>
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
                 <div
@@ -143,6 +170,8 @@ export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWind
                         </button>
                     </div>
                 </div>
+=======
+>>>>>>> main
             </header>
             :
             <header className='bg-gray-800 text-white p-1 flex items-center justify-between relative h-11'>

@@ -2,6 +2,10 @@ import { BrowserWindow } from "electron"
 import path from 'path'
 import { ChildPath, ChildWindow, ChildWindowLocation } from "../../types/ChildWin"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { paths } from "../utils"
+>>>>>>> main
 =======
 import { paths } from "../utils"
 >>>>>>> main
@@ -16,6 +20,10 @@ export const createChildWindow = async (mainWindow: BrowserWindow, childPath: Ch
     height: windowHeight,
     frame: false,
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    icon: paths.windowIconPath,
+>>>>>>> main
 =======
     icon: paths.windowIconPath,
 >>>>>>> main
@@ -65,7 +73,11 @@ const updateChildWindowPos = (mainWindow: BrowserWindow, childWindow: BrowserWin
     const childX = location === "right" ? mainBounds.x + (mainBounds.width - 2) : location === "bottom" ? mainBounds.x : 0
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     const childY = location === "right" ? mainBounds.y : location === "bottom" ? mainBounds.y + mainBounds.height : 0
+=======
+    const childY = location === "right" ? mainBounds.y : location === "bottom" ? mainBounds.y + (mainBounds.height - 2) : 0
+>>>>>>> main
 =======
     const childY = location === "right" ? mainBounds.y : location === "bottom" ? mainBounds.y + (mainBounds.height - 2) : 0
 >>>>>>> main

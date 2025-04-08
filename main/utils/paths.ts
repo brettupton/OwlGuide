@@ -14,7 +14,11 @@ export const paths = {
     configPath: path.join(userData, 'config.json'),
     logPath: app.getPath('logs'),
 <<<<<<< HEAD
+<<<<<<< HEAD
     tempPath: path.join(userData, 'tmp'),
+=======
+    tempPath: path.join(userData, 'temp'),
+>>>>>>> main
 =======
     tempPath: path.join(userData, 'temp'),
 >>>>>>> main

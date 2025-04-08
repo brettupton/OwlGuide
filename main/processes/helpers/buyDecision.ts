@@ -1,9 +1,15 @@
 import { Decision, SQLDecision } from "../../../types/Decision"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { Features } from "../../../types/LGBModel"
 import { regex, bSQLDB, forest } from "../../utils"
 
+=======
+import { regex, bSQLDB } from "../../utils"
+
+/*
+>>>>>>> main
 =======
 import { regex, bSQLDB } from "../../utils"
 
@@ -38,6 +44,10 @@ const getDecisions = async (term: string) => {
 }
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+*/
+>>>>>>> main
 =======
 */
 >>>>>>> main
@@ -55,6 +65,7 @@ const getTermDecisions = async (termYear: string) => {
         termData.forEach((book) => {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             if (book["CurrEstSales"]) {
 
                 const decision = calculateDecision(book as SQLDecision)
@@ -66,11 +77,16 @@ const getTermDecisions = async (termYear: string) => {
 =======
 =======
 >>>>>>> main
+=======
+>>>>>>> main
             const decision = calculateDecision(book as SQLDecision)
             decisions.push(decision)
         })
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -81,6 +97,7 @@ const getTermDecisions = async (termYear: string) => {
 }
 
 const calculateDecision = (book: SQLDecision) => {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     // Get previous semester sales over enrollment
@@ -98,6 +115,8 @@ const calculateDecision = (book: SQLDecision) => {
     const newDec = Math.round(book.CurrActEnrl * salesEnrl)
     const newDecision: Decision = {
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
     // Get previous semester sales over enrollment (default to 1/5 if no previous data)
@@ -119,6 +138,9 @@ const calculateDecision = (book: SQLDecision) => {
     const newDecision: Decision = {
         ID: book.BookID,
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -129,8 +151,14 @@ const calculateDecision = (book: SQLDecision) => {
         EstSales: book.CurrEstSales,
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         Decision: newDec,
         Diff: Math.abs(book.CurrEstSales - newDec)
+=======
+        EstDec: Math.round(book.CurrEstEnrl * salesEnrl),
+        ActDec: newDec,
+        ActDiff: Math.abs(book.CurrEstSales - newDec)
+>>>>>>> main
 =======
         EstDec: Math.round(book.CurrEstEnrl * salesEnrl),
         ActDec: newDec,
@@ -148,7 +176,11 @@ const calculateDecision = (book: SQLDecision) => {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 export { getTermDecisions, getDecisions }
+=======
+export { getTermDecisions }
+>>>>>>> main
 =======
 export { getTermDecisions }
 >>>>>>> main

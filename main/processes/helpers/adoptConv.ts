@@ -1,15 +1,21 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { AdoptionCSV, NoAdoption } from "../../../types/Adoption"
 import Papa from 'papaparse'
 import { regex } from "../../utils"
 
 const formatToCSV = (courses: NoAdoption[], fullTerm: string) => {
 =======
+=======
+>>>>>>> main
 import { AdoptionCSV, NoAdoption, PrevAdoption } from "../../../types/Adoption"
 import Papa from 'papaparse'
 import { regex } from "../../utils"
 
 const formatToCSV = (courses: NoAdoption[], fullTerm: string): string[] => {
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
     const [term, year] = regex.splitFullTerm(fullTerm)
     const stringTerm = term === "F" ? "Fall" : term === "W" ? "Spring" : term === "A" ? "Summer" : ""
@@ -32,7 +38,10 @@ const formatToCSV = (courses: NoAdoption[], fullTerm: string): string[] => {
                 'NoMaterials ( Non-First Day Sections Only "Y/N")': isNoText ? "Y" : "N"
             }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
         } else {
             return {
                 'CampusName': null,
@@ -45,6 +54,9 @@ const formatToCSV = (courses: NoAdoption[], fullTerm: string): string[] => {
                 'Notes': rejectMessage,
                 'NoMaterials ( Non-First Day Sections Only "Y/N")': null
             }
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
         }
     })
@@ -80,7 +92,11 @@ const findRejectCourse = (course: NoAdoption): string => {
     for (let i = 0; i < rejectConditions.length; i++) {
         const currCondition = rejectConditions[i]
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (currCondition.condition) {
+=======
+        if (currCondition.condition()) {
+>>>>>>> main
 =======
         if (currCondition.condition()) {
 >>>>>>> main
@@ -90,8 +106,11 @@ const findRejectCourse = (course: NoAdoption): string => {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 export { formatToCSV }
 =======
+=======
+>>>>>>> main
 const formatPrevAdoptions = (prevAdoptions: PrevAdoption[]) => {
     const joinedTerms: PrevAdoption[] = []
 
@@ -118,5 +137,9 @@ const formatPrevAdoptions = (prevAdoptions: PrevAdoption[]) => {
     return joinedTerms
 }
 
+<<<<<<< HEAD
+export { formatToCSV, formatPrevAdoptions }
+>>>>>>> main
+=======
 export { formatToCSV, formatPrevAdoptions }
 >>>>>>> main

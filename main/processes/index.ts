@@ -1,5 +1,6 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 export * from './adoption'
 export * from './app'
@@ -23,3 +24,14 @@ export * from './order'
 export * from './report'
 >>>>>>> main
 export * from './sql'
+=======
+export * from './adoptionProc'
+export * from './appProc'
+export * from './bookProc'
+export * from './courseProc'
+export * from './decisionProc'
+export * from './enrollmentProc'
+export * from './orderProc'
+export * from './reportProc'
+export * from './sqlProc'
+>>>>>>> main

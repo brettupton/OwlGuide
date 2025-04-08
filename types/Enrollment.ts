@@ -1,8 +1,20 @@
+export type IntermCourse = {
+    Unit: string
+    CRN: string
+    Dept: string
+    Course: string
+    Section: string
+    Prof: string
+    Title: string
+    EstEnrl: string
+    ActEnrl: string
+}
+
 export type XLSXCourse = {
     COLLEGE: string
     DEPARTMENT: string
     SUBJECT: string
-    'COURSE NUMBER': number
+    'COURSE NUMBER': string
     TITLE: string
     'OFFERING NUMBER'?: string
     'PRIMARY INSTRUCTOR LAST NAME'?: string
