@@ -21,7 +21,10 @@ export default function AdoptionDetailPage() {
     return (
         <div className="m-4">
             {isLoading ?
-                <Spinner />
+                <Spinner
+                    size="md"
+                    color="white"
+                />
                 :
                 adoptions.length > 0 ?
                     <div className="flex relative w-full overflow-x-auto max-h-[calc(100vh-1.5rem)]">

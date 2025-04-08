@@ -23,6 +23,9 @@ export const downloadFiles = async (event: IpcMainEvent, process: string, files:
                         if (err) { reject(err) }
                         resolve()
                     })
+                } else {
+                    event.reply('file-canceled')
+                    reject("Download cancelled")
                 }
             } catch (error) {
                 reject(error)

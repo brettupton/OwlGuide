@@ -1,4 +1,5 @@
 import { ChangeEvent, MutableRefObject } from "react"
+import { Button } from "./Button"
 
 interface ILoginProps {
     isLoginMenuOpen: boolean
@@ -66,16 +67,15 @@ export default function Login({ isLoginMenuOpen, handleLoginMenuToggle, handleUs
                                 </div>
                                 {userInfo["password"] === "" && <p className="text-xs text-red-500 mt-1">Required</p>}
                             </div>
-                            <div className="flex justify-center">
-                                <div className="w-1/2">
-                                    <button
-                                        className={`${isDBUpdating ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-300 active:scale-95 transition-transform duration-75'} bg-white text-gray-800 font-semibold w-full py-1 px-3 mt-3 border border-gray-400 rounded shadow text-center`}
-                                        onClick={handleDBUpdate}
-                                        disabled={isDBUpdating}
-                                    >
-                                        Sign in
-                                    </button>
-                                </div>
+                            <div className="flex justify-center pt-2">
+                                <Button
+                                    parentComponent="login"
+                                    text="Sign In"
+                                    isLoading={isDBUpdating}
+                                    isDisabled={userInfo["userId"].length <= 0 || userInfo["password"].length <= 0}
+                                    icon="none"
+                                    buttonCommand={handleDBUpdate}
+                                />
                             </div>
                         </div>
                     </div>

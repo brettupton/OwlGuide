@@ -9,7 +9,6 @@ export default function TermSelect({ process, latest }: { process: string, lates
         window.ipc.send('main', { process: 'sql', method: 'get-terms', data: { type: 'sql' } })
 
         window.ipc.on('term-list', ({ terms }: { terms: string[] }) => {
-            console.log(terms)
             if (latest) {
                 // Get latest three term years for shorter list selection
                 const sortedTerms = [...terms]
@@ -45,8 +44,11 @@ export default function TermSelect({ process, latest }: { process: string, lates
     return (
         <div className="flex w-full justify-center">
             {terms.length <= 0 ?
-                <div className="flex p-1">
-                    <Spinner />
+                <div className="flex">
+                    <Spinner
+                        size="md"
+                        color="white"
+                    />
                 </div>
                 :
                 <select

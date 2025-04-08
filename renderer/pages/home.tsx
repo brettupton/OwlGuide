@@ -9,7 +9,7 @@ export default function HomePage({ routes }: IHomePage) {
   return (
     <div className="flex flex-grow items-center justify-center">
       <div className="flex flex-col text-center -mt-16">
-        <Link href="/dev">
+        <Link href="/dev" className="hover:cursor-default">
           <Image
             className="ml-auto mr-auto"
             src="/images/owl.png"

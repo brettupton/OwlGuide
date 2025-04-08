@@ -1,15 +1,12 @@
 import React, { ChangeEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Dropdown } from '../components/Dropdown'
+import Spinner from '../components/Spinner'
+import { Button } from '../components/Button'
 
 export default function Development() {
     const router = useRouter()
 
     useEffect(() => {
-        window.ipc.on('config-data', ({ config }: Config) => {
-            console.log(config)
-        })
-
         window.ipc.on('update-success', () => {
             router.refresh()
         })
@@ -39,19 +36,8 @@ export default function Development() {
         window.ipc.send('dev', { method: 'dump-files' })
     }
 
-    const handleReset = () => {
-        router.refresh()
-    }
-
     return (
         <div className="flex flex-col mt-5 pl-2 w-full mx-auto">
-            <div className="flex">
-                <button onClick={handleReset}>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-7">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                    </svg>
-                </button>
-            </div>
             <div className="flex flex-col mt-3 gap-3">
                 <div className="flex">
                     <span className="underline underline-offset-8">Database</span>
@@ -60,31 +46,82 @@ export default function Development() {
                     <input type="file" id="csv" multiple onChange={handleFileChange} />
                 </div>
                 <div className="flex">
-                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDBRecreate}>Recreate</button>
+                    <Button
+                        parentComponent="dev-recreate"
+                        text="Recreate"
+                        icon="none"
+                        isLoading={false}
+                        buttonCommand={handleDBRecreate}
+                    />
                 </div>
                 <div className="flex">
                     <span className="underline underline-offset-8">Directory</span>
                 </div>
                 <div className="flex">
-                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleOpenUserPath}>Open</button>
+                    <Button
+                        parentComponent="dev-open"
+                        text="Open"
+                        icon="none"
+                        isLoading={false}
+                        buttonCommand={handleOpenUserPath}
+                    />
                 </div>
                 <div className="flex">
-                    <button className="border border-white rounded px-3 hover:bg-gray-500" onClick={handleDumpFiles}>Dump</button>
+                    <Button
+                        parentComponent="dev-dump"
+                        text="Dump"
+                        icon="none"
+                        isLoading={false}
+                        buttonCommand={handleDumpFiles}
+                    />
                 </div>
                 <div className="flex">
-                    <span className="underline underline-offset-8">Dropdown</span>
+                    <span className="underline underline-offset-8">Components</span>
                 </div>
                 <div className="flex">
-                    <Dropdown
-                        icon={"bars"}
-                        location={"bottom-right"}
-                        data={
-                            [<div>Version <span className="text-indigo-600">3.2.6</span></div>,
-                            <div><span className="text-yellow-600">Canari</span> 2025</div>,
-                            <button onClick={() => window.ipc.send('open-github')} className="text-blue-600 underline" rel="noopener noreferrer">
-                                GitHub
-                            </button>
-                            ]}
+                    <Spinner
+                        size="sm"
+                        color="white"
+                    />
+                    <Spinner
+                        size="md"
+                        color="white"
+                    />
+                    <Spinner
+                        size="lg"
+                        color="white"
+                    />
+                    <Spinner
+                        size="sm"
+                        color="gray"
+                    />
+                    <Spinner
+                        size="md"
+                        color="gray"
+                    />
+                    <Spinner
+                        size="lg"
+                        color="gray"
+                    />
+                </div>
+                <div className="flex">
+                    <Button
+                        parentComponent="dev"
+                        text="Button"
+                        isLoading={false}
+                        icon="none"
+                    />
+                    <Button
+                        parentComponent="dev-2"
+                        text="Button 2"
+                        isLoading={true}
+                        icon="none"
+                    />
+                    <Button
+                        parentComponent="dev-3"
+                        text="Button 3"
+                        isLoading={false}
+                        icon="search"
                     />
                 </div>
             </div>

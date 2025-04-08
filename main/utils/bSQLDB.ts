@@ -449,7 +449,7 @@ const getCoursesByTerm = (term: string, year: string, limit: number, isForward: 
                         AND Courses.Year = ?
                 `)
 
-            const queryResult = queryStmt.all({ term, year, dept: pivotCourse.Dept, course: pivotCourse.Course, section: pivotCourse.Section, limit }) as CourseData[]
+            const queryResult = queryStmt.all({ term, year, dept: pivotCourse.Dept.toUpperCase(), course: pivotCourse.Course, section: pivotCourse.Section, limit }) as CourseData[]
             const countResult = countStmt.get(term, year) as DBRow
 
             db.close()
@@ -831,12 +831,65 @@ const getReconReport = (term: string, year: string): Promise<DBRow[]> => {
     })
 }
 
+const getOTBReport = (term: string, year: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                WITH InventoryJoin AS
+                    (SELECT Inventory.BookID,
+                        SUM(Inventory.OnHand) AS OnHand,
+                        SUM(Inventory.Reserved) AS Reserved,
+                        SUM(Inventory.PendTransIn) AS PendTransIn
+                    FROM Inventory
+                    GROUP BY Inventory.BookID),
+                        OrderJoin AS
+                    (SELECT Order_Book.BookID,
+                        SUM(Order_Book.Ordered) AS Ordered
+                    FROM Order_Book
+                    JOIN Orders ON Order_Book.OrderID = Orders.ID
+                    WHERE Orders.Term = :term
+                        AND Orders.Year = :year
+                    GROUP BY Order_Book.BookID)
+                SELECT Books.ISBN,
+                        Books.Title,
+                        Books.Publisher,
+                        SUM(Course_Book.EstSales) AS EstSales,
+                        OrderJoin.Ordered,
+                        InventoryJoin.OnHand,
+                        InventoryJoin.Reserved,
+                        (SUM(Course_Book.EstSales) - OrderJoin.Ordered) AS OTB
+                FROM Books
+                JOIN Course_Book ON Books.ID = Course_Book.BookID
+                JOIN InventoryJoin ON Books.ID = InventoryJoin.BookID
+                JOIN OrderJoin ON Books.ID = OrderJoin.BookID
+                WHERE Course_Book.Unit = '1'
+                    AND Course_Book.Term = :term
+                    AND Course_Book.Year = :year
+                    AND Course_Book.EstSales > 0
+                GROUP BY Books.ID
+                ORDER BY Books.Publisher,
+                            Books.Title
+                `)
+
+            const queryResult = queryStmt.all({ term, year }).filter((row) => Number(row["OTB"]) > 0) as DBRow[]
+
+            db.close()
+            resolve(queryResult)
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
 export const bSQLDB = {
     all: { createDB, syncDB, buildSelectStmt, getAllTerms, getAllVendors },
     sales: { getPrevSalesByTerm, getPrevSalesByBook },
     books: { getBooksByCourse, getBookByISBN },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm },
     orders: { getOrdersByTerm, getOrdersByPOVendor, getOrderByID },
-    reports: { libr: getLibraryReport, recon: getReconReport },
+    reports: { libr: getLibraryReport, recon: getReconReport, otb: getOTBReport },
     adoptions: { getNoAdoptionsByTerm, getPrevAdoptionsByCourse }
 }

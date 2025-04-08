@@ -31,7 +31,7 @@ export default function Header({ isChildWindow, routes, appVer }: IHeader) {
                             priority={true}
                         />
                         <Dropdown
-                            icon="bars"
+                            icon="bars-3"
                             location="bottom-right"
                             data={[
                                 <Link href="/home" className="px-2 py-1 cursor-pointer hover:bg-gray-400 rounded w-full">

@@ -42,7 +42,7 @@ let childWindows: ChildWindow[] = []
     } else {
       const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer')
       installExtension(REACT_DEVELOPER_TOOLS)
-        .catch((err: Error) => console.log('An error occurred: ', err))
+        .catch((err: Error) => console.error('An error occurred: ', err))
     }
 
     await mainWindow.loadURL(isProd ? 'app://./home' : `http://localhost:${process.argv[2]}/home`)
@@ -126,8 +126,13 @@ ipcMain.on('close-child', async (event, { childId, promptClose }: { childId: str
 })
 
 ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
-  // Include both term and isbn for specific processes to log
-  const logInfo = [["adoption", "course", "decision", "order"].includes(data.type) ? data["term"] : "", data.type === "book" ? data["isbn"] : ""]
+  // Include data for specific processes to log
+  const logInfo = [
+    ["adoption", "course", "decision", "order"].includes(data.type) ? data["term"] : "",
+    data.type === "book" ? data["isbn"] : "",
+    data.type === "report" ? data["reqReports"].join(",") : "",
+    data.type === "report" ? data["reqTerms"].join(",") : ""
+  ]
   logger.addNewLog("main", [process, method, ...logInfo])
 
   try {

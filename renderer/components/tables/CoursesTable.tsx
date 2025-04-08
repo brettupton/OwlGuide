@@ -25,7 +25,7 @@ export default function CoursesTable({ courses }: CoursesTableProps) {
                                 <tr className="bg-gray-800 hover:bg-gray-600 border-b border-gray-700" key={index}>
                                     {fields.map((field) => {
                                         return (
-                                            <td className={`p-1 ${typeof (row[field]) === "number" ? "text-center" : ""}`}>
+                                            <td className={`p-1 ${typeof (row[field]) === "number" ? "text-center" : ""}`} key={`${index}-${field}`}>
                                                 {row[field]}
                                             </td>
                                         )

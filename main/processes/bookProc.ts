@@ -6,12 +6,12 @@ export const bookProcess = async ({ event, method, data }: ProcessArgs) => {
         switch (method) {
             case 'search-isbn':
                 try {
-                    const isbn = data["isbn"]
-                    const search = regex.createSearchISBN(isbn)
+                    const reqISBN = data["isbn"]
+                    const search = regex.createSearchISBN(reqISBN)
                     // Query SQL DB for book term & vendor data
                     const sqlResults = await bSQLDB.books.getBookByISBN(search)
                     // Query Google API for book information data
-                    const apiResults = await apiSearch(isbn)
+                    const apiResults = await apiSearch(reqISBN)
                     // Join both results
                     const book = formatBookSearch(sqlResults, apiResults)
 

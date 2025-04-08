@@ -1,6 +1,5 @@
 import { bSQLDB, regex } from "../utils"
 import { formatToCSV } from "./helpers/adoptConv"
-import { NoAdoption } from "../../types/Adoption"
 import { downloadFiles } from "../electron-utils/download-file"
 
 export const adoptionProcess = async ({ event, method, data }: ProcessArgs) => {
@@ -20,7 +19,7 @@ export const adoptionProcess = async ({ event, method, data }: ProcessArgs) => {
 
             case 'download-csv':
                 try {
-                    const csv = formatToCSV(data["adoptions"] as NoAdoption[], data["term"] as string)
+                    const csv = formatToCSV(data["adoptions"], data["term"])
                     const csvFiles = csv.map((file) => { return { data: file, extension: "csv" } })
 
                     await downloadFiles(event, "AIP", csvFiles)

@@ -26,7 +26,7 @@ export default function CourseDataPage() {
                         {courseInfo["Dept"]} {courseInfo["Course"]} {courseInfo["Section"]}
                     </div>
                     <div className="flex rounded bg-gray-300 mt-2 min-h-[calc(100vh-4.5rem)] max-h-[calc(100vh-4.5rem)]">
-                        <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-1rem)] m-2 w-full">
+                        <div className="relative overflow-x-auto max-h-[calc(100vh-1rem)] m-2 w-full">
                             {courseAdoptions.length > 0 ?
                                 <table className="w-full text-sm text-left rtl:text-right text-white">
                                     <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
@@ -62,9 +62,11 @@ export default function CourseDataPage() {
                         </div>
                     </div>
                 </div>
-
                 :
-                <Spinner />
+                <Spinner
+                    size="md"
+                    color="white"
+                />
             }
         </div>
     )
