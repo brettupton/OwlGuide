@@ -32,7 +32,10 @@ export default function FileForm({ process, label, accept, multiple = false }: F
     return (
         <div className="flex flex-col w-full h-full">
             {isLoading ?
-                <Spinner />
+                <Spinner
+                    size="md"
+                    color="white"
+                />
                 :
                 <form>
                     <div className="flex m-3 justify-center">
