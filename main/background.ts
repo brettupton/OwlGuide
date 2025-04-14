@@ -195,6 +195,36 @@ ipcMain.on('dev', async (event, { method, data }: ProcessArgs) => {
         dialog.showErrorBox('Dev', `${error}`)
       }
       break
+
+    case 'progress-bar':
+      const randomDelayPromise = () => {
+        const delay = Math.floor(Math.random() * 6000)
+        return new Promise<void>(resolve => {
+          setTimeout(() => {
+            current++
+            currProgress = (current / total) * 100
+            mainWindow.webContents.send('progress-update', { updatedProgress: currProgress })
+            resolve()
+          }, delay)
+        })
+      }
+
+      const promises: Promise<void>[] = []
+      const total = 5
+      let current = 0
+      let currProgress = (current / total) * 100
+
+      for (let i = 0; i < total; i++) {
+        promises.push(randomDelayPromise())
+      }
+
+      try {
+        Promise.all(promises)
+      } catch (error) {
+        console.error(error)
+      }
+
+      break
   }
 })
 

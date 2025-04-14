@@ -1,5 +1,5 @@
 import { NoAdoption } from "../types/Adoption"
-import { IntermCourse } from "../types/Enrollment"
+import { BannerTerm, IntermCourse } from "../types/Enrollment"
 
 declare global {
     type DBRow = {
@@ -40,6 +40,7 @@ declare global {
     type EnrollmentRendererData = {
         enrollment: IntermCourse[]
         fileArr: string[]
+        term: BannerTerm
     }
 
     type OrderRendererData = {

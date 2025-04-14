@@ -1,15 +1,30 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState } from 'react'
 
 interface IHomePage {
   routes: { route: string, plural: boolean }[]
 }
 
 export default function HomePage({ routes }: IHomePage) {
+  const [audioIsPlaying, setAudioIsPlaying] = useState<boolean>(false)
+
+  const handleAudio = () => {
+    const audioHTML = new Audio('/sounds/hoot.mp3')
+    if (audioHTML) {
+      audioHTML.volume = 0.2
+
+      audioIsPlaying ? audioHTML.pause() : audioHTML.play()
+      setAudioIsPlaying(!audioIsPlaying)
+    }
+  }
+
   return (
     <div className="flex flex-grow items-center justify-center">
       <div className="flex flex-col text-center -mt-16">
-        <Link href="/dev" className="hover:cursor-default">
+        <Link href="/dev" className="hover:cursor-default"
+          onClick={handleAudio}
+        >
           <Image
             className="ml-auto mr-auto"
             src="/images/owl.png"

@@ -1,6 +1,7 @@
-import { config } from "../utils"
-import { initialMatch, submitEnrollment } from "./helpers/enrlmntFile"
+import { config, regex } from "../utils"
+import { fetchBannerCourses, fetchBannerTerms, initialMatch, submitEnrollment } from "./helpers/enrlmntFile"
 import { downloadFiles } from "../electron-utils/download-file"
+import { BrowserWindow } from "electron"
 
 export const enrollmentProcess = async ({ event, method, data }: ProcessArgs) => {
     if (data.type === "enrollment") {
@@ -28,6 +29,26 @@ export const enrollmentProcess = async ({ event, method, data }: ProcessArgs) =>
                     throw error
                 }
                 break
+
+            case 'get-api-terms':
+                try {
+                    const terms = await fetchBannerTerms()
+
+                    event.reply('terms-data', { terms })
+                } catch (error) {
+                    throw error
+                }
+                break
+
+            case 'get-api-sections':
+                try {
+                    // Pass electron window for ability to update progress bar on renderer
+                    const courses = await fetchBannerCourses(BrowserWindow.fromId(event.sender.id), data["term"]["code"])
+
+                    await downloadFiles(event, "enrollment", [{ data: courses, extension: "csv", name: `${data["term"]["description"]} Enrollment - ${regex.fileNameTimeStamp()}` }])
+                } catch (error) {
+                    throw error
+                }
         }
     }
 }

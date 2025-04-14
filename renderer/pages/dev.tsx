@@ -1,15 +1,19 @@
 import React, { ChangeEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Spinner from '../components/Spinner'
 import { Button } from '../components/Button'
+import Link from 'next/link'
+import ProgressBar from '../components/ProgressBar'
 
 export default function Development() {
     const router = useRouter()
+    const [barProgress, setBarProgress] = useState<number>(0)
 
     useEffect(() => {
         window.ipc.on('update-success', () => {
             router.refresh()
         })
+
+        window.ipc.send('dev', { method: "progress-bar" })
     }, [])
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -78,51 +82,16 @@ export default function Development() {
                 <div className="flex">
                     <span className="underline underline-offset-8">Components</span>
                 </div>
-                <div className="flex">
-                    <Spinner
-                        size="sm"
-                        color="white"
-                    />
-                    <Spinner
-                        size="md"
-                        color="white"
-                    />
-                    <Spinner
-                        size="lg"
-                        color="white"
-                    />
-                    <Spinner
-                        size="sm"
-                        color="gray"
-                    />
-                    <Spinner
-                        size="md"
-                        color="gray"
-                    />
-                    <Spinner
-                        size="lg"
-                        color="gray"
+                <div className="flex w-1/2">
+                    <ProgressBar
+                        title="OwlGuide"
                     />
                 </div>
                 <div className="flex">
-                    <Button
-                        parentComponent="dev"
-                        text="Button"
-                        isLoading={false}
-                        icon="none"
-                    />
-                    <Button
-                        parentComponent="dev-2"
-                        text="Button 2"
-                        isLoading={true}
-                        icon="none"
-                    />
-                    <Button
-                        parentComponent="dev-3"
-                        text="Button 3"
-                        isLoading={false}
-                        icon="search"
-                    />
+                    <span className="underline underline-offset-8">Routes</span>
+                </div>
+                <div className="flex">
+                    <Link href="old-enrollment">Enrollment</Link>
                 </div>
             </div>
         </div>

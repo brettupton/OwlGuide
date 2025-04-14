@@ -24,6 +24,14 @@ const splitFullTerm = (fullTerm: string): string[] => {
     return match ? match.slice(0, 2) : []
 }
 
+const splitFullTermDesc = (fullTerm: string): string[] => {
+    const splitTerm = fullTerm.split(/\s/gm)
+    const term = splitTerm[0].slice(0, 2) === "Sp" ? "W" : splitTerm[0].slice(0, 2) === "Su" ? "A" : "F"
+    const year = splitTerm[1].replace("(View Only)", "").slice(-2)
+
+    return [term, year]
+}
+
 const createSearchISBN = (ISBN: string) => {
     // Removes hyphens, first three digits, and last digit for searching any user inputted ISBN
     let search = ISBN
@@ -56,6 +64,30 @@ const toProperCase = (str: string | number) => {
             return part
         })
         .join('')
+}
+
+const getFacultyLastName = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/)
+    if (parts.length === 1) {
+        return parts[0].toUpperCase() // Only one name
+    } else if (parts.length === 2) {
+        return parts[1].toUpperCase() // Only last name
+    } else {
+        return parts.slice(-2).join(' ').toUpperCase() // Last two names
+    }
+}
+
+const decodeHTMLEntities = (html: string) => {
+    return html.replace(/&[a-zA-Z0-9#]+;/g, match => {
+        switch (match) {
+            case '&amp;': return '&'
+            case '&lt;': return '<'
+            case '&gt;': return '>'
+            case '&quot;': return '"'
+            case '&#39;': return "'"
+            default: return match // Leave unknown entities alone
+        }
+    })
 }
 
 const toISBN10 = (ISBN: string | number) => {
@@ -124,8 +156,11 @@ export const regex = {
     matchFileName,
     matchFileTermYear,
     splitFullTerm,
+    splitFullTermDesc,
     createSearchISBN,
     toProperCase,
+    decodeHTMLEntities,
+    getFacultyLastName,
     usedBarcodeToISBN,
     db2TimeToLocal,
     ISOtoDb2Time,
