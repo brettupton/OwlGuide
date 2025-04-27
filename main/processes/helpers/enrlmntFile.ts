@@ -6,8 +6,8 @@ import { fileHandler, bSQLDB, regex } from "../../utils"
 import Papa from 'papaparse'
 
 const BASE_URL = 'https://reg-prod.ec.vcu.edu/StudentRegistrationSsb/ssb'
-const REQUEST_TIMEOUT_MS = 5000
-const MAX_PAGE_SIZE = 40
+const REQUEST_TIMEOUT_MS = 5000 // 5sec
+const MAX_PAGE_SIZE = 40 // Provides fastest data response
 
 const initialMatch = async (filePath: string) => {
     try {
@@ -157,6 +157,7 @@ const fetchBannerSubjects = async (term: string, client: AxiosInstance, sessionI
     const pageSize = 50
     let offset = 1
 
+    // Average time to fetch all subjects is ~1s so timeout is just a failsafe
     while ((Date.now() - timeStart) < REQUEST_TIMEOUT_MS) {
         const subjectResponse = await client.get(BASE_URL + '/classSearch/get_subject', {
             params: {
@@ -201,10 +202,10 @@ const fetchBannerSections = async (term: string, client: AxiosInstance, subject:
     const allSections: CSVCourse[] = []
 
     return new Promise(async (resolve, reject) => {
-        // Required reset of form before fetching new subject data
+        // Required post request before attempting to fetch new subject data
         await client.post(BASE_URL + '/classSearch/resetDataForm')
 
-        // Initial request to retrieve total number of sections
+        // Basic initial request to retrieve total number of sections
         const initResponse = await client.get(BASE_URL + '/searchResults/searchResults', {
             params: {
                 txt_subject: subject,
@@ -232,9 +233,15 @@ const fetchBannerSections = async (term: string, client: AxiosInstance, subject:
             for (const pageSections of pages) {
                 allSections.push(
                     ...pageSections.map(pageSection => {
+                        // Assume all non-MCV campus descriptions are Monroe Park
                         const unitNum = pageSection.campusDescription === "MCV" ? "2" : "1"
                         const [term, year] = regex.splitFullTermDesc(pageSection.termDesc)
-                        const professor = pageSection.faculty.length > 0 ? regex.getFacultyLastName(pageSection.faculty[0].displayName) : "TBD"
+                        const professor = pageSection.faculty.length > 0
+                            // Find index instructor listed as primary in faculty array, defaulting to 0 if not found
+                            ? pageSection.faculty.findIndex((instructor) => instructor.primaryIndicator) > 0
+                                ? regex.decodeHTMLEntities(regex.getFacultyLastName(pageSection.faculty[pageSection.faculty.findIndex((instructor) => instructor.primaryIndicator)].displayName))
+                                : regex.decodeHTMLEntities(regex.getFacultyLastName(pageSection.faculty[0].displayName))
+                            : "TBD"
                         const title = regex.decodeHTMLEntities(pageSection.courseTitle)
 
                         return {
@@ -270,17 +277,19 @@ const fetchBannerCourses = async (currWindow: Electron.BrowserWindow, termCode: 
     return new Promise(async (resolve, reject) => {
         const { client: initClient, uniqueSessionId: initSessionId } = await initializeBannerSession(termCode)
         const subjects = await fetchBannerSubjects(termCode, initClient, initSessionId)
+
         const subjectPromises: Promise<CSVCourse[]>[] = []
         const totalSubjects = subjects.length
         let currentPromise = 0
 
-        if (subjects.length <= 0) {
+        if (totalSubjects <= 0) {
             reject(`Error fetching subjects for ${termCode}.`)
         }
 
-        for (let i = 0; i < subjects.length; i++) {
+        for (let i = 0; i < totalSubjects; i++) {
+            // Creating new session for each subject allows for concurrency in fetching
             const { client: currClient, uniqueSessionId: currSessionId } = await initializeBannerSession(termCode)
-            // Update progress by after promise resolve but return result to array to await promise.all
+            // Update progress after promise resolve but return result to array
             const p = fetchBannerSections(termCode, currClient, subjects[i], currSessionId)
                 .then(result => {
                     currentPromise++

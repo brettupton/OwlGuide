@@ -2,7 +2,8 @@ import React, { ChangeEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '../components/Button'
 import Link from 'next/link'
-import ProgressBar from '../components/ProgressBar'
+import Image from 'next/image'
+import ZoomImage from '../components/ZoomImage'
 
 export default function Development() {
     const router = useRouter()
@@ -41,7 +42,7 @@ export default function Development() {
     }
 
     return (
-        <div className="flex flex-col mt-5 pl-2 w-full mx-auto">
+        <div className="flex flex-col pl-2 w-full mx-auto">
             <div className="flex flex-col mt-3 gap-3">
                 <div className="flex">
                     <span className="underline underline-offset-8">Database</span>
@@ -82,9 +83,10 @@ export default function Development() {
                 <div className="flex">
                     <span className="underline underline-offset-8">Components</span>
                 </div>
-                <div className="flex w-1/2">
-                    <ProgressBar
-                        title="OwlGuide"
+                <div className="flex">
+                    <ZoomImage
+                        src="https://maymont.org/wp-content/uploads/2020/07/banner-great-horned-owl.jpg"
+                        alt="dev-owl"
                     />
                 </div>
                 <div className="flex">

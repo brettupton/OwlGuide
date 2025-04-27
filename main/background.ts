@@ -55,6 +55,9 @@ app.on('window-all-closed', () => {
 // Header Processes
 ipcMain.on('minimize-app', (event) => {
   if (mainWindow) mainWindow.minimize()
+  if (childWindows && childWindows.length > 0) {
+    childWindows.forEach((windowObj) => windowObj.browserWin.minimize())
+  }
 })
 
 ipcMain.on('close-app', (event) => {
@@ -129,9 +132,10 @@ ipcMain.on('main', async (event, { process, method, data }: ProcessArgs) => {
   // Include data for specific processes to log
   const logInfo = [
     ["adoption", "course", "decision", "order"].includes(data.type) ? data["term"] : "",
-    data.type === "book" ? data["isbn"] : "",
+    data.type === "book" ? `${data["reqBook"]["isbn"]} ${data["reqBook"]["title"]}`.trim() : "",
     data.type === "report" ? data["reqReports"].join(",") : "",
-    data.type === "report" ? data["reqTerms"].join(",") : ""
+    data.type === "report" ? data["reqTerms"].join(",") : "",
+    data.type === "enrollment" ? data["term"] ? data["term"]["description"] : "" : ""
   ]
   logger.addNewLog("main", [process, method, ...logInfo])
 

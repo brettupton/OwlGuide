@@ -2,17 +2,6 @@ import { downloadFiles } from "../../electron-utils"
 import { bSQLDB, fileHandler, regex } from "../../utils"
 import Papa from 'papaparse'
 
-// const generateReport = async (termYear: string, reportId: string) => {
-//     try {
-//         const [term, year] = regex.splitFullTerm(termYear)
-//         const report = await bSQLDB.reports[reportId](term, year) as DBRow[]
-
-//         return report
-//     } catch (error) {
-//         throw error
-//     }
-// }
-
 const generateReports = async (event: Electron.IpcMainEvent, reqCSV: boolean, reqReports: string[], reqTerms: string[]) => {
     const parsedFiles: { name: string, extension: string, data: string | Buffer<ArrayBufferLike> }[] = []
 

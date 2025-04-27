@@ -219,11 +219,12 @@ export default function AdoptionTemplate() {
                                                         <input
                                                             type="checkbox"
                                                             id="NoText"
-                                                            className={`${adoption["ISBN"].length > 0 ? "cursor-not-allowed" : ""}`}
                                                             checked={adoption["NoText"]}
-                                                            disabled={adoption["ISBN"].length > 0}
                                                             value={String(!adoption["NoText"])}
-                                                            onChange={(e) => handleCourseUpdate(e, adoption["TempID"])} />
+                                                            disabled={adoption["ISBN"].length > 0}
+                                                            onChange={(e) => handleCourseUpdate(e, adoption["TempID"])}
+                                                            className={`${adoption["ISBN"].length > 0 ? "cursor-not-allowed" : ""} border-gray-400 rounded accent-gray-700 w-2.5 h-2.5 scale-150 transition-transform`}
+                                                        />
                                                         :
                                                         key === "ISBN" ?
                                                             <input

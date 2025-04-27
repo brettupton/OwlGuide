@@ -33,6 +33,7 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
                     EstSales: result["EstSales"],
                     UsedSales: result["UsedSales"],
                     NewSales: result["NewSales"],
+                    TotalSales: result["TotalSales"],
                     Reorders: result["Reorders"]
                 }
             })
@@ -41,22 +42,28 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
     return book
 }
 
-const apiSearch = async (isbn: string): Promise<APIResult | {}> => {
+const apiSearch = async (isbn: string): Promise<APIResult> => {
     try {
-        let result: APIResult | {} = {}
+        const result: APIResult = {
+            ISBN: "",
+            Title: "",
+            Subtitle: "",
+            Publisher: "",
+            Author: "",
+            PrevImg: ""
+        }
 
-        isbn = regex.usedBarcodeToISBN(isbn)
-        const response = await
-            axios.get('https://www.googleapis.com/books/v1/volumes',
-                {
-                    params: {
-                        q: `isbn:${isbn}`
-                    }
-                }
-            )
+        const response = await axios.get('https://www.googleapis.com/books/v1/volumes', {
+            params: {
+                q: `isbn:${isbn}`
+            }
+        }
+
+        )
         if (response.status !== 200) {
             throw response.statusText
         }
+
         if (response.data.totalItems > 0) {
             const volInfo: GVolInfo = response.data.items[0].volumeInfo
 

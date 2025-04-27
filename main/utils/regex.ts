@@ -32,14 +32,45 @@ const splitFullTermDesc = (fullTerm: string): string[] => {
     return [term, year]
 }
 
-const createSearchISBN = (ISBN: string) => {
-    // Removes hyphens, first three digits, and last digit for searching any user inputted ISBN
-    let search = ISBN
-        .replace(/\-/g, '')
-        .replace(/^(978|290)/g, '')
-        .slice(0, -1)
+const usedBarcodeToISBN = (isbn: string | number) => {
+    let newISBN = isbn.toString()
 
-    return search
+    if (/^290/g.test(newISBN)) {
+        newISBN = newISBN.replace(/^290/g, '978')
+        newISBN = newISBN.slice(0, 12) + ((parseInt(newISBN.slice(-1)) + 1) % 10)
+    }
+
+    return newISBN
+}
+
+const formatSearchISBN = (reqISBN: string) => {
+    // Remove all hyphens
+    let formattedISBN = usedBarcodeToISBN(reqISBN.replace(/-/g, ''))
+
+    // Normalize to 12-digit ISBN-13 base (no check digit)
+    if (formattedISBN.length === 10) {
+        // ISBN-10: Remove check digit and prepend '978'
+        formattedISBN = "978" + formattedISBN.slice(0, -1)
+    } else if (formattedISBN.length === 13) {
+        // Assume it's full ISBN-13; strip check digit
+        formattedISBN = formattedISBN.slice(0, -1)
+    } else if (formattedISBN.length === 12) {
+        // Already a 12-digit ISBN-13 base — fine
+    } else {
+        throw new Error("Invalid ISBN format")
+    }
+
+    // Calculate ISBN-13 check digit
+    let checkSum = 0
+    for (let i = 0; i < formattedISBN.length; i++) {
+        const digit = parseInt(formattedISBN[i])
+        const weight = i % 2 === 0 ? 1 : 3
+        checkSum += digit * weight
+    }
+
+    const checkDigit = (10 - (checkSum % 10)) % 10
+
+    return formattedISBN + checkDigit
 }
 
 const toProperCase = (str: string | number) => {
@@ -90,50 +121,6 @@ const decodeHTMLEntities = (html: string) => {
     })
 }
 
-const toISBN10 = (ISBN: string | number) => {
-    const base = ISBN.toString().replace(/-/g, '').slice(3, 12)
-    let checkSum = 0
-
-    for (let i = 10; i >= 2; i--) {
-        const currDigit = Math.abs(i - 10)
-        const prod = i * parseInt(base[currDigit])
-        checkSum += prod
-    }
-
-    const remainder = checkSum % 11
-    const checkDigit = 11 - remainder
-    return base + checkDigit
-}
-
-const toISBN13 = (ISBN: string | number) => {
-    const base = "978" + ISBN.toString().replace(/-/g, '').slice(0, 9)
-    let checkSum = 0
-    let weightAdd = 1
-
-    for (let i = 0; i < base.length; i++) {
-        const currWeight = (i + weightAdd) % 4
-        const prod = parseInt(base[i]) * currWeight
-        checkSum += prod
-        weightAdd += 1
-    }
-
-    const remainder = checkSum % 10
-    const checkDigit = 10 - remainder
-
-    return base + checkDigit
-}
-
-const usedBarcodeToISBN = (isbn: string | number) => {
-    let newISBN = isbn.toString()
-
-    if (/^290/g.test(newISBN)) {
-        newISBN = newISBN.replace(/^290/g, '978')
-        newISBN = newISBN.slice(0, 12) + ((parseInt(newISBN.slice(-1)) + 1) % 10)
-    }
-
-    return newISBN
-}
-
 const db2TimeToLocal = (db2: string) => {
     // Convert IBM Db2 timestamp to ISO (YYYY-MM-DDTHH:mm:ssZ) to convert to Date string
     const iso = db2.substring(0, db2.lastIndexOf('-')) + 'T' + db2.substring(db2.lastIndexOf('-') + 1).slice(0, 8).replace(/[\.]/g, ':') + 'Z'
@@ -157,7 +144,7 @@ export const regex = {
     matchFileTermYear,
     splitFullTerm,
     splitFullTermDesc,
-    createSearchISBN,
+    formatSearchISBN,
     toProperCase,
     decodeHTMLEntities,
     getFacultyLastName,

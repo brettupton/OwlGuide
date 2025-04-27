@@ -1,23 +1,19 @@
 import Image from "next/image"
 import { BookResult } from "../../types/Book"
+import ZoomImage from "./ZoomImage"
 
 export default function BookDisplay({ book }: { book: BookResult }) {
     const newPrice = parseInt(book.Discount) > 25 ? parseFloat(book.UnitPrice) : parseFloat(book.UnitPrice) / (1 - (25 / 100))
     const usedPrice = (newPrice * (1 - (25 / 100))).toFixed(2)
 
     return (
-        <div className="flex flex-col">
+        <div className="flex flex-col mt-3">
             <div className="flex bg-gray-300 rounded-xl border border-white m-4 p-2 text-black h-[calc(50vh-4rem)]">
                 <div className="flex flex-col md:flex-row bg-gray-800 text-white shadow-lg rounded-lg p-3 border border-gray-700 w-full">
-                    <div className="w-32 h-48 flex-shrink-0 relative">
-                        <Image
-                            src={book.Image ?? '/images/placeholder.jpg'}
-                            alt={book.Title}
-                            layout="fill"
-                            objectFit="cover"
-                            className="rounded-md shadow-md"
-                        />
-                    </div>
+                    <ZoomImage
+                        src={book.Image}
+                        alt={"book-cover"}
+                    />
                     <div className="flex flex-col justify-between px-4 w-full">
                         <div>
                             <h2 className="text-lg font-semibold">{book.Title}</h2>

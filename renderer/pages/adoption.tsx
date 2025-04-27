@@ -15,6 +15,7 @@ export default function AdoptionPage() {
             setAdoptions([...noAdoptions])
             setSelectedTerm(term)
             setAsstStatus("All")
+            tableRef.current.scrollIntoView({ behavior: 'auto' })
         })
     }, [])
 

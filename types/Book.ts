@@ -26,6 +26,7 @@ export type APIResult = {
     ISBN: string
     Title: string
     Subtitle: string
+    Publisher: string
     Author: string
     PrevImg: string
 }

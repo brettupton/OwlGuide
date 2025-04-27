@@ -18,7 +18,10 @@ declare global {
     }
 
     type BookRendererData = {
-        isbn: string
+        reqBook: {
+            isbn: string
+            title: string
+        }
     }
 
     type CourseRendererData = {

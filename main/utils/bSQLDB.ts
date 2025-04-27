@@ -290,7 +290,7 @@ const getBookByISBN = (ISBN: string): Promise<{ info: DBRow[], sales: DBRow[] }>
                 FROM Books
                 JOIN Prices ON Books.ID = Prices.BookID
                 LEFT JOIN Inventory ON Books.ID = Inventory.BookID
-                WHERE Books.ISBN LIKE ?
+                WHERE Books.ISBN = ?
                 `)
 
             const salesStmt = db.prepare(`
@@ -301,20 +301,42 @@ const getBookByISBN = (ISBN: string): Promise<{ info: DBRow[], sales: DBRow[] }>
                         Sales.EstSales,
                         Sales.UsedSales,
                         Sales.NewSales,
+                        (Sales.UsedSales + Sales.NewSales) AS TotalSales,
                         Sales.Reorders
                 FROM Books
                 JOIN Sales ON Books.ID = Sales.BookID
-                WHERE Books.ISBN LIKE ?
+                WHERE Books.ISBN = ?
                     AND Sales.Term NOT IN ('I','Q')
                     AND Sales.Unit = '1'
                 ORDER BY Sales.Year DESC,
                         Sales.Term
                 `)
 
-            const infoResult = infoStmt.all('%' + ISBN + '%') as DBRow[]
-            const salesResult = salesStmt.all('%' + ISBN + '%') as DBRow[]
+            const infoResult = infoStmt.all(ISBN) as DBRow[]
+            const salesResult = salesStmt.all(ISBN) as DBRow[]
             db.close()
             resolve({ info: infoResult, sales: salesResult })
+        } catch (error) {
+            db.close()
+            reject(error)
+        }
+    })
+}
+
+const getBooksByTitle = (title: string): Promise<DBRow[]> => {
+    return new Promise((resolve, reject) => {
+        const db = new Database(paths.dbPath)
+
+        try {
+            const queryStmt = db.prepare(`
+                SELECT * FROM Books
+                WHERE Books.Title LIKE ?
+            `)
+
+            const queryResult = queryStmt.all(`%${title}%`) as DBRow[]
+
+            db.close()
+            resolve(queryResult)
         } catch (error) {
             db.close()
             reject(error)
@@ -839,14 +861,14 @@ const getOTBReport = (term: string, year: string): Promise<DBRow[]> => {
             const queryStmt = db.prepare(`
                 WITH InventoryJoin AS
                     (SELECT Inventory.BookID,
-                        SUM(Inventory.OnHand) AS OnHand,
-                        SUM(Inventory.Reserved) AS Reserved,
-                        SUM(Inventory.PendTransIn) AS PendTransIn
+                            SUM(Inventory.OnHand) AS OnHand,
+                            SUM(Inventory.Reserved) AS Reserved,
+                            SUM(Inventory.PendTransIn) AS PendTransIn
                     FROM Inventory
                     GROUP BY Inventory.BookID),
-                        OrderJoin AS
+                    OrderJoin AS
                     (SELECT Order_Book.BookID,
-                        SUM(Order_Book.Ordered) AS Ordered
+                            SUM(Order_Book.Ordered) AS Ordered
                     FROM Order_Book
                     JOIN Orders ON Order_Book.OrderID = Orders.ID
                     WHERE Orders.Term = :term
@@ -856,18 +878,18 @@ const getOTBReport = (term: string, year: string): Promise<DBRow[]> => {
                         Books.Title,
                         Books.Publisher,
                         SUM(Course_Book.EstSales) AS EstSales,
-                        OrderJoin.Ordered,
+                        COALESCE(OrderJoin.Ordered, 0) AS Ordered,
                         InventoryJoin.OnHand,
                         InventoryJoin.Reserved,
-                        (SUM(Course_Book.EstSales) - OrderJoin.Ordered) AS OTB
+                        (SUM(Course_Book.EstSales) - COALESCE(OrderJoin.Ordered, 0) - InventoryJoin.Reserved) AS OTB
                 FROM Books
                 JOIN Course_Book ON Books.ID = Course_Book.BookID
                 JOIN InventoryJoin ON Books.ID = InventoryJoin.BookID
-                JOIN OrderJoin ON Books.ID = OrderJoin.BookID
-                WHERE Course_Book.Unit = '1'
+                LEFT JOIN OrderJoin ON Books.ID = OrderJoin.BookID
+                WHERE Course_Book.EstSales > 0
+                    AND Course_Book.Unit = '1'
                     AND Course_Book.Term = :term
                     AND Course_Book.Year = :year
-                    AND Course_Book.EstSales > 0
                 GROUP BY Books.ID
                 ORDER BY Books.Publisher,
                             Books.Title
@@ -887,7 +909,7 @@ const getOTBReport = (term: string, year: string): Promise<DBRow[]> => {
 export const bSQLDB = {
     all: { createDB, syncDB, buildSelectStmt, getAllTerms, getAllVendors },
     sales: { getPrevSalesByTerm, getPrevSalesByBook },
-    books: { getBooksByCourse, getBookByISBN },
+    books: { getBooksByCourse, getBookByISBN, getBooksByTitle },
     courses: { getCoursesByBook, getCoursesByTerm, getSectionsByTerm },
     orders: { getOrdersByTerm, getOrdersByPOVendor, getOrderByID },
     reports: { libr: getLibraryReport, recon: getReconReport, otb: getOTBReport },

@@ -24,9 +24,24 @@ export function Button({ parentComponent, text, isLoading, icon, title, isDisabl
 
     useEffect(() => {
         const handleEnterPress = (e: KeyboardEvent) => {
+            console.log("Key pressed", e.key, document.activeElement?.tagName)
             if (e.key === "Enter" && !isDisabled && !isLoading) {
+                console.log("Click")
                 e.preventDefault()
+
+                const activeElement = document.activeElement as HTMLElement | null;
+                const activeTag = activeElement?.tagName.toLowerCase();
+
+                if (activeTag === "input" || activeTag === "textarea" || activeTag === "select") {
+                    (document.activeElement as HTMLElement)?.blur(); // blur input
+                }
                 document.getElementById(`${parentComponent}-button`)?.click()
+                // After clicking, refocus the original input
+                if (activeElement && (activeTag === "input" || activeTag === "textarea" || activeTag === "select")) {
+                    setTimeout(() => {
+                        activeElement.focus();
+                    }, 10);
+                }
             }
         }
         document.addEventListener('keydown', handleEnterPress)
@@ -34,13 +49,13 @@ export function Button({ parentComponent, text, isLoading, icon, title, isDisabl
         return () => {
             document.removeEventListener('keydown', handleEnterPress)
         }
-    }, [])
+    }, [isDisabled, isLoading])
 
     return (
         <button type="button" id={`${parentComponent}-button`}
             className={`bg-gray-200 text-gray-800 font-semibold py-1 px-2.5 rounded-sm min-w-10 min-h-6 max-w-32 ${isLoading || isDisabled ? "cursor-not-allowed" : "hover:bg-gray-300 active:scale-95"}`}
             title={title}
-            onClick={() => { !isDisabled && !isLoading && buttonCommand() }}
+            onClick={() => { buttonCommand() }}
         >
             {
                 isLoading ?
