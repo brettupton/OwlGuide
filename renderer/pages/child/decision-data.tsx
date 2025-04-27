@@ -90,12 +90,18 @@ export default function DecisionData() {
                 </div>
                 :
 <<<<<<< HEAD
+<<<<<<< HEAD
                 <Spinner />
 =======
+=======
+>>>>>>> main
                 <Spinner
                     size="md"
                     color="white"
                 />
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
             }
         </div>

@@ -26,7 +26,11 @@ export default function FileForm({ process, label, accept, multiple = false }: F
             }
             setIsLoading(true)
 <<<<<<< HEAD
+<<<<<<< HEAD
             window.ipc.send('main', { process, method: "file-upload", data: fileArr })
+=======
+            window.ipc.send('main', { process, method: "file-upload", data: { type: process, fileArr } })
+>>>>>>> main
 =======
             window.ipc.send('main', { process, method: "file-upload", data: { type: process, fileArr } })
 >>>>>>> main

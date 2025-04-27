@@ -20,6 +20,10 @@ export const initializeApp = (): Promise<void> => {
                             case "configPath":
                                 const config = {}
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
 =======
 
 >>>>>>> main

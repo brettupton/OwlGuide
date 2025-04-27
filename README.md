@@ -20,7 +20,11 @@ A user-friendly application designed to simplify various aspects of managing tex
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - Login with credentials to sync with database
+=======
+- Login with credentials to sync with database.
+>>>>>>> main
 =======
 - Login with credentials to sync with database.
 >>>>>>> main

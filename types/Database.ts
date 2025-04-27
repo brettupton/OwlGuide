@@ -1,12 +1,15 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 export type TableName = "Books" | "Courses" | "Sales" | "Course_Book" | "Prices" | "Inventory"
 
 export type Column = {
     [column: string]: {
         type: string
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
 =======
@@ -18,6 +21,9 @@ export type Column = {
         type: "TEXT" | "INTEGER" | "INTEGER PRIMARY KEY"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -41,7 +47,11 @@ export type TableData = {
     "Indexes": string[]
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     "Timestamp"?: string[]
+=======
+    "Timestamp"?: string
+>>>>>>> main
 =======
     "Timestamp"?: string
 >>>>>>> main

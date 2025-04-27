@@ -1,6 +1,7 @@
 import fs from 'fs'
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import path from 'path'
 import XLSX from '@e965/xlsx'
 import Papa from 'papaparse'
@@ -9,6 +10,11 @@ import { paths } from '.'
 =======
 import XLSX from '@e965/xlsx'
 import Papa from 'papaparse'
+>>>>>>> main
+=======
+import XLSX from '@e965/xlsx'
+import Papa from 'papaparse'
+import path from 'path'
 >>>>>>> main
 =======
 import XLSX from '@e965/xlsx'
@@ -76,6 +82,7 @@ const createXLSX = (data: DBRow[]): Promise<Buffer> => {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const createDir = (dir: string): Promise<void> => {
     return new Promise((resolve, reject) => {
         fs.mkdir(dir, { recursive: true }, (err) => {
@@ -89,20 +96,28 @@ const createDir = (dir: string): Promise<void> => {
 >>>>>>> main
 =======
 >>>>>>> main
+=======
+>>>>>>> main
 const getDirFileNames = (dir: string): Promise<string[]> => {
     return new Promise((resolve, reject) => {
         if (fs.existsSync(dir)) {
             fs.readdir(dir, (err, files) => {
                 if (err) { reject(err) }
 <<<<<<< HEAD
+<<<<<<< HEAD
                 resolve(files)
 =======
+=======
+>>>>>>> main
                 const fullPaths: string[] = []
 
                 files.forEach((file) => {
                     fullPaths.push(path.join(dir, file))
                 })
                 resolve(fullPaths)
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
             })
         } else {
@@ -123,7 +138,11 @@ const deleteFile = (filePath: string): Promise<void> => {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 export const readJSON = (filePath: string): Promise<JSObj> => {
+=======
+export const readJSON = (filePath: string): Promise<any> => {
+>>>>>>> main
 =======
 export const readJSON = (filePath: string): Promise<any> => {
 >>>>>>> main
@@ -133,7 +152,11 @@ export const readJSON = (filePath: string): Promise<any> => {
 
             try {
 <<<<<<< HEAD
+<<<<<<< HEAD
                 const JSONObj: JSObj = JSON.parse(data.toString())
+=======
+                const JSONObj = JSON.parse(data.toString())
+>>>>>>> main
 =======
                 const JSONObj = JSON.parse(data.toString())
 >>>>>>> main
@@ -156,7 +179,10 @@ export const fileHandler = {
     files: {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         create: createDir,
+=======
+>>>>>>> main
 =======
 >>>>>>> main
 =======

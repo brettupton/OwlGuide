@@ -11,9 +11,15 @@ export default function CourseDataPage() {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         window.ipc.on('data', ({ books, course }: { books: DBRow[], course: string }) => {
             setData(books)
             setCourse(course)
+=======
+        window.ipc.on('data', ({ books, course }: { books: DBRow[], course: CourseData }) => {
+            setCourseAdoptions(books)
+            setCourseInfo(course)
+>>>>>>> main
 =======
         window.ipc.on('data', ({ books, course }: { books: DBRow[], course: CourseData }) => {
             setCourseAdoptions(books)
@@ -36,10 +42,13 @@ export default function CourseDataPage() {
                     </div>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                     {data.length > 0 ?
                         <div className="flex w-full">
                             {/* <AdoptionTable adoptions={data} />  */}
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
                     <div className="flex text-sm -mt-1">
@@ -47,7 +56,11 @@ export default function CourseDataPage() {
                     </div>
                     <div className="flex rounded bg-gray-300 mt-2 min-h-[calc(100vh-4.5rem)] max-h-[calc(100vh-4.5rem)]">
 <<<<<<< HEAD
+<<<<<<< HEAD
                         <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-1rem)] m-2 w-full">
+=======
+                        <div className="relative overflow-x-auto max-h-[calc(100vh-1rem)] m-2 w-full">
+>>>>>>> main
 =======
                         <div className="relative overflow-x-auto max-h-[calc(100vh-1rem)] m-2 w-full">
 >>>>>>> main
@@ -84,6 +97,9 @@ export default function CourseDataPage() {
                                 <div className="flex text-black font-semibold">{courseInfo["NoText"] === "Y" ? "No Text Required" : "No Adoptions for Course"}</div>
                             }
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main

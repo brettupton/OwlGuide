@@ -1,11 +1,13 @@
 import Image from "next/image"
 import { BookResult } from "../../types/Book"
+import ZoomImage from "./ZoomImage"
 
 export default function BookDisplay({ book }: { book: BookResult }) {
     const newPrice = parseInt(book.Discount) > 25 ? parseFloat(book.UnitPrice) : parseFloat(book.UnitPrice) / (1 - (25 / 100))
     const usedPrice = (newPrice * (1 - (25 / 100))).toFixed(2)
 
     return (
+<<<<<<< HEAD
         <div className="flex flex-col">
             <div className="flex bg-gray-300 rounded-xl border border-white m-4 p-2 text-black h-[calc(50vh-4rem)]">
                 <div className="flex flex-col md:flex-row bg-gray-800 text-white shadow-lg rounded-lg p-3 border border-gray-700 w-full">
@@ -18,6 +20,15 @@ export default function BookDisplay({ book }: { book: BookResult }) {
                             className="rounded-md shadow-md"
                         />
                     </div>
+=======
+        <div className="flex flex-col mt-3">
+            <div className="flex bg-gray-300 rounded-xl border border-white m-4 p-2 text-black h-[calc(50vh-4rem)]">
+                <div className="flex flex-col md:flex-row bg-gray-800 text-white shadow-lg rounded-lg p-3 border border-gray-700 w-full">
+                    <ZoomImage
+                        src={book.Image}
+                        alt={"book-cover"}
+                    />
+>>>>>>> main
                     <div className="flex flex-col justify-between px-4 w-full">
                         <div>
                             <h2 className="text-lg font-semibold">{book.Title}</h2>
@@ -39,7 +50,11 @@ export default function BookDisplay({ book }: { book: BookResult }) {
                             <div className="grid grid-cols-2 mt-2 text-xs text-gray-400">
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 <p className="font-semibold">Unit Price: <span className="text-gray-200">${book.UnitPrice}</span></p>
+=======
+                                <p className="font-semibold">Unit Price: <span className="text-gray-200">${Number(book.UnitPrice).toFixed(2)}</span></p>
+>>>>>>> main
 =======
                                 <p className="font-semibold">Unit Price: <span className="text-gray-200">${Number(book.UnitPrice).toFixed(2)}</span></p>
 >>>>>>> main
@@ -62,11 +77,14 @@ export default function BookDisplay({ book }: { book: BookResult }) {
                 <div className="flex relative w-full overflow-x-auto">
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                     <table className="w-full text-sm text-left rtl:text-right text-white text-center">
                         <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                             <tr>
                                 {Object.keys(book.Terms[0]).map((header, index) => {
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
                     {book.Terms.length > 0 ?
@@ -85,6 +103,9 @@ export default function BookDisplay({ book }: { book: BookResult }) {
                             <tbody>
                                 {book.Terms.map((term, index) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main

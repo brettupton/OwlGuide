@@ -3,6 +3,10 @@ import { BackArrow, TermSelect } from "../components"
 import { PurchaseOrder } from "../../types/Order"
 import OrdersTable from "../components/tables/OrdersTable"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { Button } from "../components/Button"
+>>>>>>> main
 =======
 import { Button } from "../components/Button"
 >>>>>>> main
@@ -32,7 +36,11 @@ export default function OrderPage() {
     const handleSearchPO = () => {
         if (searchPO.length > 0 || searchVendor.length > 0) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             window.ipc.send('main', { process: 'order', method: 'search-po', data: { searchPO, searchVendor } })
+=======
+            window.ipc.send('main', { process: 'order', method: 'search-po', data: { type: 'order', searchPO, searchVendor } })
+>>>>>>> main
 =======
             window.ipc.send('main', { process: 'order', method: 'search-po', data: { type: 'order', searchPO, searchVendor } })
 >>>>>>> main
@@ -92,6 +100,7 @@ export default function OrderPage() {
                         </div>
                         <div className="flex">
 <<<<<<< HEAD
+<<<<<<< HEAD
                             <button className="bg-white hover:bg-gray-300 text-gray-800 font-semibold px-1 border border-gray-400 rounded shadow text-center active:scale-95 transition-transform duration-75"
                                 onClick={handleSearchPO}
                             >
@@ -100,6 +109,8 @@ export default function OrderPage() {
                                 </svg>
                             </button>
 =======
+=======
+>>>>>>> main
                             <Button
                                 parentComponent="order"
                                 text="Search"
@@ -108,6 +119,9 @@ export default function OrderPage() {
                                 icon="search"
                                 buttonCommand={handleSearchPO}
                             />
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
                         </div>
                     </div>

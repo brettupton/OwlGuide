@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Dropdown } from './Dropdown'
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 interface HeaderProps {
     isHeaderMenuOpen: boolean
     handleMenuToggle: () => void
@@ -13,10 +14,15 @@ interface HeaderProps {
 interface IHeader {
     isChildWindow: boolean
 >>>>>>> main
+=======
+interface IHeader {
+    isChildWindow: boolean
+>>>>>>> main
     routes: { route: string, plural: boolean }[]
     appVer: string
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWindow, isHelpMenuOpen, handleHelpMenuToggle, appVer, HeaderMenuRef }: HeaderProps) {
@@ -28,6 +34,9 @@ export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWind
 >>>>>>> main
 =======
 export default function Header({ isHeaderMenuOpen, handleMenuToggle, isChildWindow, isHelpMenuOpen, handleHelpMenuToggle, routes, appVer, HeaderMenuRef }: HeaderProps) {
+>>>>>>> main
+=======
+export default function Header({ isChildWindow, routes, appVer }: IHeader) {
 >>>>>>> main
 =======
 export default function Header({ isChildWindow, routes, appVer }: IHeader) {
@@ -104,6 +113,7 @@ export default function Header({ isChildWindow, routes, appVer }: IHeader) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                 <div
                     className={`absolute text-black font-medium top-full left-10 mt-2 bg-white border border-gray-300 shadow-lg rounded-md ${isHeaderMenuOpen ? 'block' : 'hidden'}`}
 =======
@@ -170,6 +180,8 @@ export default function Header({ isChildWindow, routes, appVer }: IHeader) {
                         </button>
                     </div>
                 </div>
+=======
+>>>>>>> main
 =======
 >>>>>>> main
             </header>

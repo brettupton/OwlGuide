@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState } from 'react'
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -13,6 +15,24 @@ export default function HomePage() {
   const routes = ["adoption", "course", "book", "decision", "enrollment", "order", "report"]
   const plurals = ["adoption", "course", "decision", "book", "order", "report"]
 >>>>>>> main
+=======
+interface IHomePage {
+  routes: { route: string, plural: boolean }[]
+}
+
+export default function HomePage({ routes }: IHomePage) {
+  const [audioIsPlaying, setAudioIsPlaying] = useState<boolean>(false)
+
+  const handleAudio = () => {
+    const audioHTML = new Audio('/sounds/hoot.mp3')
+    if (audioHTML) {
+      audioHTML.volume = 0.2
+
+      audioIsPlaying ? audioHTML.pause() : audioHTML.play()
+      setAudioIsPlaying(!audioIsPlaying)
+    }
+  }
+>>>>>>> main
 
 =======
 interface IHomePage {
@@ -24,6 +44,7 @@ export default function HomePage({ routes }: IHomePage) {
   return (
     <div className="flex flex-grow items-center justify-center">
       <div className="flex flex-col text-center -mt-16">
+<<<<<<< HEAD
         <Link href="/dev">
 =======
 interface IHomePage {
@@ -35,6 +56,11 @@ export default function HomePage({ routes }: IHomePage) {
     <div className="flex flex-grow items-center justify-center">
       <div className="flex flex-col text-center -mt-16">
         <Link href="/dev" className="hover:cursor-default">
+>>>>>>> main
+=======
+        <Link href="/dev" className="hover:cursor-default"
+          onClick={handleAudio}
+        >
 >>>>>>> main
           <Image
             className="ml-auto mr-auto"
@@ -49,7 +75,11 @@ export default function HomePage({ routes }: IHomePage) {
         <div className="grid grid-cols-2 gap-5 mt-10">
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
           {routes.map((route, index) => (
+=======
+          {routes.map((routeInfo, index) => (
+>>>>>>> main
 =======
           {routes.map((routeInfo, index) => (
 >>>>>>> main

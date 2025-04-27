@@ -1,5 +1,9 @@
 import { useRef, useState, useEffect } from "react"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { Dropdown } from "./Dropdown"
+>>>>>>> main
 =======
 import { Dropdown } from "./Dropdown"
 >>>>>>> main
@@ -44,6 +48,7 @@ export default function MultiSelect({ options, selectedItems, setSelectedItems, 
 
     return (
 <<<<<<< HEAD
+<<<<<<< HEAD
         <div className="flex">
             <div className="flex flex-col relative" ref={selectRef}>
                 <div className="flex">
@@ -71,6 +76,8 @@ export default function MultiSelect({ options, selectedItems, setSelectedItems, 
                 {selectedItems.map((item) => (
                     <span key={item} className="bg-gray-700 text-white text-sm px-3 py-1 rounded-full flex items-center shadow-md">
 =======
+=======
+>>>>>>> main
         <div className="flex w-full px-2">
             <div className="flex flex-col relative" ref={selectRef}>
                 <Dropdown
@@ -93,6 +100,9 @@ export default function MultiSelect({ options, selectedItems, setSelectedItems, 
             <div className="grid grid-flow-col absolute grid-rows-2 gap-2 -top-4 left-16 ml-2">
                 {selectedItems.map((item) => (
                     <span key={item} className="bg-gray-600 text-white text-sm px-3 py-1 rounded-full flex items-center shadow-md">
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
                         {item}
                         <button

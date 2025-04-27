@@ -1,5 +1,9 @@
 import { NoAdoption } from "../types/Adoption"
+<<<<<<< HEAD
 import { IntermCourse } from "../types/Enrollment"
+=======
+import { BannerTerm, IntermCourse } from "../types/Enrollment"
+>>>>>>> main
 
 declare global {
     type DBRow = {
@@ -11,6 +15,7 @@ declare global {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     type JSObj =
         | string
         | number
@@ -18,6 +23,8 @@ declare global {
         | { [key: string]: JSObj }
         | JSObj[]
 =======
+=======
+>>>>>>> main
     type AppRendererData = {}
 
     type AdoptionRendererData = {
@@ -26,7 +33,14 @@ declare global {
     }
 
     type BookRendererData = {
+<<<<<<< HEAD
         isbn: string
+=======
+        reqBook: {
+            isbn: string
+            title: string
+        }
+>>>>>>> main
     }
 
     type CourseRendererData = {
@@ -48,6 +62,10 @@ declare global {
     type EnrollmentRendererData = {
         enrollment: IntermCourse[]
         fileArr: string[]
+<<<<<<< HEAD
+=======
+        term: BannerTerm
+>>>>>>> main
     }
 
     type OrderRendererData = {
@@ -80,6 +98,9 @@ declare global {
         | ({ type: "order" } & OrderRendererData)
         | ({ type: "report" } & ReportRendererData)
         | ({ type: "sql" } & SQLRendererData)
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 
     type ProcessArgs = {
@@ -87,9 +108,14 @@ declare global {
         process?: string
         method: string
 <<<<<<< HEAD
+<<<<<<< HEAD
         data: JSObj
     }
 
+=======
+        data: RendererData
+    }
+>>>>>>> main
 =======
         data: RendererData
     }

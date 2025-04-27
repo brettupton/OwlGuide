@@ -3,15 +3,21 @@ import { BackArrow, Spinner } from "../components"
 import MultiSelect from "../components/MultiSelect"
 import { useRouter } from "next/router"
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 interface IReport {
     id: string
 =======
+=======
+>>>>>>> main
 import { reportMap } from "../../types/ReportType"
 import { Button } from "../components/Button"
 
 interface IReport {
     id: "libr" | "recon" | "otb"
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
     name: string
 }
@@ -19,7 +25,10 @@ interface IReport {
 export default function ReportPage() {
     const reports: IReport[] = [
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
         {
             id: "libr",
             name: "Library Adoptions"
@@ -32,6 +41,9 @@ export default function ReportPage() {
             id: "otb",
             name: "Open To Buy"
         },
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
         // {
         //     id: "crsadp",
@@ -42,10 +54,13 @@ export default function ReportPage() {
         //     name: "Inventory"
         // },
 <<<<<<< HEAD
+<<<<<<< HEAD
         {
             id: "recon",
             name: "Reconciliation"
         },
+=======
+>>>>>>> main
 =======
 >>>>>>> main
         // {
@@ -53,10 +68,13 @@ export default function ReportPage() {
         //     name: "Ordered, Not Received"
         // },
 <<<<<<< HEAD
+<<<<<<< HEAD
         {
             id: "libr",
             name: "Library Adoptions"
         }
+=======
+>>>>>>> main
 =======
 >>>>>>> main
     ]
@@ -66,6 +84,10 @@ export default function ReportPage() {
     const [selectedTerms, setSelectedTerms] = useState<string[]>([])
     const [terms, setTerms] = useState<string[]>([])
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    const [isGenerating, setIsGenerating] = useState<boolean>(false)
+>>>>>>> main
 =======
     const [isGenerating, setIsGenerating] = useState<boolean>(false)
 >>>>>>> main
@@ -73,6 +95,7 @@ export default function ReportPage() {
     const router = useRouter()
 
     useEffect(() => {
+<<<<<<< HEAD
 <<<<<<< HEAD
         if (typeof window !== undefined && window.ipc) {
             window.ipc.send('main', { process: 'sql', method: 'get-terms' })
@@ -86,6 +109,8 @@ export default function ReportPage() {
             })
         }
 =======
+=======
+>>>>>>> main
         window.ipc.send('main', { process: 'sql', method: 'get-terms', data: { type: 'sql' } })
 
         window.ipc.on('term-list', (data: { terms: string[] }) => {
@@ -99,6 +124,9 @@ export default function ReportPage() {
         window.ipc.on('file-canceled', () => {
             setIsGenerating(false)
         })
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
     }, [])
 
@@ -111,7 +139,12 @@ export default function ReportPage() {
     const handleRequestReport = () => {
         if (selectedReports.length > 0 && selectedTerms.length > 0) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             window.ipc.send('main', ({ process: 'report', method: 'request', data: { isCsv: isCSVReport, reqReports: selectedReports, reqTerms: selectedTerms } }))
+=======
+            setIsGenerating(true)
+            window.ipc.send('main', ({ process: 'report', method: 'request', data: { type: 'report', isCsv: isCSVReport, reqReports: selectedReports, reqTerms: selectedTerms } }))
+>>>>>>> main
 =======
             setIsGenerating(true)
             window.ipc.send('main', ({ process: 'report', method: 'request', data: { type: 'report', isCsv: isCSVReport, reqReports: selectedReports, reqTerms: selectedTerms } }))
@@ -125,6 +158,7 @@ export default function ReportPage() {
             <div className="flex flex-col m-4">
                 <div className="flex gap-4">
                     <div className="flex flex-col">
+<<<<<<< HEAD
 <<<<<<< HEAD
                         <div className="flex mb-2">
                             <span className="underline underline-offset-8">Report Type</span>
@@ -159,6 +193,8 @@ export default function ReportPage() {
                 </div>
                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-4rem)]">
 =======
+=======
+>>>>>>> main
                         <div className="flex">
                             <div className="relative border-2 border-white px-2 py-1 w-full rounded-lg">
                                 <div className="absolute -top-3 bg-sky-950 px-1 text-sm">
@@ -202,6 +238,9 @@ export default function ReportPage() {
                     </div>
                 </div>
                 <div className="relative mt-5 overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-4rem)]">
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
                     <table className="w-full text-sm text-left rtl:text-right">
                         <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
@@ -210,6 +249,12 @@ export default function ReportPage() {
                                     Report
                                 </th>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+                                <th scope="col" className="p-2">
+                                    Values
+                                </th>
+>>>>>>> main
 =======
                                 <th scope="col" className="p-2">
                                     Values
@@ -220,6 +265,7 @@ export default function ReportPage() {
                         <tbody>
                             {reports.map((report, index) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 return (
                                     <tr
                                         className="bg-gray-800 text-sm border-b border-gray-700 cursor-pointer active:scale-95 transition-transform duration-85"
@@ -229,6 +275,8 @@ export default function ReportPage() {
                                             {report.name}
                                         </td>
 =======
+=======
+>>>>>>> main
                                 const reportValues = Object.keys(reportMap[report.id]).join(", ")
                                 return (
                                     <tr
@@ -241,6 +289,9 @@ export default function ReportPage() {
                                         <td className="p-2">
                                             {reportValues}
                                         </td>
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
                                     </tr>
                                 )
@@ -250,6 +301,7 @@ export default function ReportPage() {
                 </div>
                 <div className="flex w-full text-sm mt-3">
 <<<<<<< HEAD
+<<<<<<< HEAD
                     <button
                         className={`bg-white text-gray-800 font-semibold w-1/8 py-2 px-4 border border-gray-400 rounded shadow text-center ${selectedReports.length > 0 && selectedTerms.length > 0 ? "hover:bg-gray-300 active:scale-95 transition-transform duration-75" : "cursor-not-allowed"}`}
                         disabled={selectedReports.length <= 0 && selectedTerms.length <= 0}
@@ -257,6 +309,8 @@ export default function ReportPage() {
                         onClick={handleRequestReport}
                     >Download</button>
 =======
+=======
+>>>>>>> main
                     <Button
                         parentComponent="report"
                         text="Download"
@@ -266,6 +320,9 @@ export default function ReportPage() {
                         title={`${selectedReports.length <= 0 || selectedTerms.length <= 0 ? "Select Term(s) & Report(s)" : "Download Report(s)"}`}
                         buttonCommand={handleRequestReport}
                     />
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
                 </div>
             </div>

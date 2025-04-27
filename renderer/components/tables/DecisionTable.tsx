@@ -26,6 +26,7 @@ export default function DecisionTable({ decisions, status, selectedTerm, tableRe
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         <div className="flex flex-col mx-2">
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-10rem)]">
                 <table className="w-full text-sm text-left rtl:text-right text-white" ref={tableRef}>
@@ -33,6 +34,8 @@ export default function DecisionTable({ decisions, status, selectedTerm, tableRe
                         <tr>
                             {fields.map((header, index) => {
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
 =======
@@ -73,6 +76,9 @@ export default function DecisionTable({ decisions, status, selectedTerm, tableRe
                             {filtered.map((decision) => {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main

@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { bSQLDB, regex } from "../../utils"
 
 const generateReport = async (termYear: string, reportId: string) => {
@@ -14,10 +15,13 @@ const generateReport = async (termYear: string, reportId: string) => {
 
 export { generateReport }
 =======
+=======
+>>>>>>> main
 import { downloadFiles } from "../../electron-utils"
 import { bSQLDB, fileHandler, regex } from "../../utils"
 import Papa from 'papaparse'
 
+<<<<<<< HEAD
 // const generateReport = async (termYear: string, reportId: string) => {
 //     try {
 //         const [term, year] = regex.splitFullTerm(termYear)
@@ -29,6 +33,8 @@ import Papa from 'papaparse'
 //     }
 // }
 
+=======
+>>>>>>> main
 const generateReports = async (event: Electron.IpcMainEvent, reqCSV: boolean, reqReports: string[], reqTerms: string[]) => {
     const parsedFiles: { name: string, extension: string, data: string | Buffer<ArrayBufferLike> }[] = []
 
@@ -49,5 +55,9 @@ const generateReports = async (event: Electron.IpcMainEvent, reqCSV: boolean, re
     await downloadFiles(event, "report", parsedFiles)
 }
 
+<<<<<<< HEAD
+export { generateReports }
+>>>>>>> main
+=======
 export { generateReports }
 >>>>>>> main

@@ -1,5 +1,9 @@
 import { ChangeEvent, MutableRefObject } from "react"
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { Button } from "./Button"
+>>>>>>> main
 =======
 import { Button } from "./Button"
 >>>>>>> main
@@ -71,6 +75,7 @@ export default function Login({ isLoginMenuOpen, handleLoginMenuToggle, handleUs
                                 {userInfo["password"] === "" && <p className="text-xs text-red-500 mt-1">Required</p>}
                             </div>
 <<<<<<< HEAD
+<<<<<<< HEAD
                             <div className="flex justify-center">
                                 <div className="w-1/2">
                                     <button
@@ -82,6 +87,8 @@ export default function Login({ isLoginMenuOpen, handleLoginMenuToggle, handleUs
                                     </button>
                                 </div>
 =======
+=======
+>>>>>>> main
                             <div className="flex justify-center pt-2">
                                 <Button
                                     parentComponent="login"
@@ -91,6 +98,9 @@ export default function Login({ isLoginMenuOpen, handleLoginMenuToggle, handleUs
                                     icon="none"
                                     buttonCommand={handleDBUpdate}
                                 />
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
                             </div>
                         </div>

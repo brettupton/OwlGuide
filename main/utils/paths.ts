@@ -15,7 +15,11 @@ export const paths = {
     logPath: app.getPath('logs'),
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     tempPath: path.join(userData, 'tmp'),
+=======
+    tempPath: path.join(userData, 'temp'),
+>>>>>>> main
 =======
     tempPath: path.join(userData, 'temp'),
 >>>>>>> main

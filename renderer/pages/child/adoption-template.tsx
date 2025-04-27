@@ -6,6 +6,10 @@ export default function AdoptionTemplate() {
     const [tempAdoptions, setTempAdoptions] = useState<NoAdoption[]>([])
     const [selectedTerm, setSelectedTerm] = useState<string>("")
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    const [targetTempID, setTargetTempID] = useState<number>(null)
+>>>>>>> main
 =======
     const [targetTempID, setTargetTempID] = useState<number>(null)
 >>>>>>> main
@@ -15,6 +19,11 @@ export default function AdoptionTemplate() {
     const tempIDRef = useRef(0)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    const rowRefs = useRef<{ [key: string]: HTMLTableRowElement }>({})
+
+>>>>>>> main
 =======
     const rowRefs = useRef<{ [key: string]: HTMLTableRowElement }>({})
 
@@ -38,6 +47,7 @@ export default function AdoptionTemplate() {
                         // Initialize keys that are missing from sent courses
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                         course["NoText"] = false
                         course["ISBN"] = ""
 =======
@@ -46,10 +56,15 @@ export default function AdoptionTemplate() {
 >>>>>>> main
                         course["TempID"] = course["TempID"] ?? tempIDRef.current++
 =======
+=======
+>>>>>>> main
                         course["NoText"] = course["NoText"] ?? false
                         course["ISBN"] = course["ISBN"] ?? ""
                         course["TempID"] = course["TempID"] ?? tempIDRef.current++
                         setTargetTempID(course["TempID"])
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 
                         return course
@@ -65,7 +80,10 @@ export default function AdoptionTemplate() {
         })
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
 
@@ -82,10 +100,13 @@ export default function AdoptionTemplate() {
             window.removeEventListener('keydown', (e) => preventReload(e))
         }
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> main
     }, [])
 
 =======
+=======
+>>>>>>> main
     }, [])
 
     useEffect(() => {
@@ -96,6 +117,9 @@ export default function AdoptionTemplate() {
         }
     }, [tempAdoptions, targetTempID])
 
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
     const handleMinimize = () => {
         window.ipc.send('minimize-app')
@@ -153,9 +177,15 @@ export default function AdoptionTemplate() {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     const handleCourseUpdate = (e: ChangeEvent<HTMLInputElement>, courseId: number) => {
         const { id, value } = e.currentTarget
         const courseIndex = tempAdoptions.findIndex((course) => course["ID"] === courseId)
+=======
+    const handleCourseUpdate = (e: ChangeEvent<HTMLInputElement>, courseTempId: number) => {
+        const { id, value } = e.currentTarget
+        const courseIndex = tempAdoptions.findIndex((course) => course["TempID"] === courseTempId)
+>>>>>>> main
 =======
     const handleCourseUpdate = (e: ChangeEvent<HTMLInputElement>, courseTempId: number) => {
         const { id, value } = e.currentTarget
@@ -171,11 +201,16 @@ export default function AdoptionTemplate() {
     const handleDownloadCSV = () => {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (tempAdoptions.length > 0 && (tempAdoptions.some((course) => course["ISBN"].length > 0) || tempAdoptions.some((course) => course["NoText"]))) {
 =======
         if (tempAdoptions.length > 0 && (tempAdoptions.every((course) => course["ISBN"].length > 0 || course["NoText"]))) {
 >>>>>>> main
             window.ipc.send('main', { process: 'adoption', method: 'download-csv', data: { adoptions: tempAdoptions, term: selectedTerm } })
+=======
+        if (tempAdoptions.length > 0 && (tempAdoptions.every((course) => course["ISBN"].length > 0 || course["NoText"]))) {
+            window.ipc.send('main', { process: 'adoption', method: 'download-csv', data: { type: "adoption", adoptions: tempAdoptions, term: selectedTerm } })
+>>>>>>> main
 =======
         if (tempAdoptions.length > 0 && (tempAdoptions.every((course) => course["ISBN"].length > 0 || course["NoText"]))) {
             window.ipc.send('main', { process: 'adoption', method: 'download-csv', data: { type: "adoption", adoptions: tempAdoptions, term: selectedTerm } })
@@ -223,10 +258,14 @@ export default function AdoptionTemplate() {
                                         <th className={`p-2 ${header !== "ISBN" ? "text-center" : ""}`} key={header}>
                                             {header === "NoText" ?
 <<<<<<< HEAD
+<<<<<<< HEAD
                                                 <button
                                                     onClick={handleNoTextAll}
                                                     title="Check All"
                                                 >
+=======
+                                                <button onClick={handleNoTextAll} title="Mark All">
+>>>>>>> main
 =======
                                                 <button onClick={handleNoTextAll} title="Mark All">
 >>>>>>> main
@@ -240,7 +279,11 @@ export default function AdoptionTemplate() {
                                 })}
                                 <th className="px-2 py-1">
 <<<<<<< HEAD
+<<<<<<< HEAD
                                     <button title="Remove All" onClick={() => handleSendAll(false)}>
+=======
+                                    <button title="Remove All" className="hover:text-white" onClick={() => handleSendAll(false)}>
+>>>>>>> main
 =======
                                     <button title="Remove All" className="hover:text-white" onClick={() => handleSendAll(false)}>
 >>>>>>> main
@@ -251,7 +294,11 @@ export default function AdoptionTemplate() {
                                 </th>
                                 <th className="px-2 py-1">
 <<<<<<< HEAD
+<<<<<<< HEAD
                                     <button title="Download CSV" onClick={handleDownloadCSV}>
+=======
+                                    <button title="Download CSV" className="hover:text-white" onClick={handleDownloadCSV}>
+>>>>>>> main
 =======
                                     <button title="Download CSV" className="hover:text-white" onClick={handleDownloadCSV}>
 >>>>>>> main
@@ -268,7 +315,11 @@ export default function AdoptionTemplate() {
                                     <tr
                                         className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={`${adoption["TempID"]}-${adoption["ID"]}`}
 <<<<<<< HEAD
+<<<<<<< HEAD
                                         id={`${adoption["ID"]}`}
+=======
+                                        id={`${adoption["ID"]}`} ref={(ele) => { rowRefs.current[adoption.TempID] = ele }}
+>>>>>>> main
 =======
                                         id={`${adoption["ID"]}`} ref={(ele) => { rowRefs.current[adoption.TempID] = ele }}
 >>>>>>> main
@@ -281,6 +332,7 @@ export default function AdoptionTemplate() {
                                                         <input
                                                             type="checkbox"
                                                             id="NoText"
+<<<<<<< HEAD
                                                             className={`${adoption["ISBN"].length > 0 ? "cursor-not-allowed" : ""}`}
                                                             checked={adoption["NoText"]}
                                                             disabled={adoption["ISBN"].length > 0}
@@ -289,6 +341,14 @@ export default function AdoptionTemplate() {
                                                             onChange={(e) => handleCourseUpdate(e, adoption["ID"])} />
 =======
                                                             onChange={(e) => handleCourseUpdate(e, adoption["TempID"])} />
+>>>>>>> main
+=======
+                                                            checked={adoption["NoText"]}
+                                                            value={String(!adoption["NoText"])}
+                                                            disabled={adoption["ISBN"].length > 0}
+                                                            onChange={(e) => handleCourseUpdate(e, adoption["TempID"])}
+                                                            className={`${adoption["ISBN"].length > 0 ? "cursor-not-allowed" : ""} border-gray-400 rounded accent-gray-700 w-2.5 h-2.5 scale-150 transition-transform`}
+                                                        />
 >>>>>>> main
                                                         :
                                                         key === "ISBN" ?
@@ -300,7 +360,11 @@ export default function AdoptionTemplate() {
                                                                 value={adoption["ISBN"]}
                                                                 maxLength={13}
 <<<<<<< HEAD
+<<<<<<< HEAD
                                                                 onChange={(e) => handleCourseUpdate(e, adoption["ID"])}
+=======
+                                                                onChange={(e) => handleCourseUpdate(e, adoption["TempID"])}
+>>>>>>> main
 =======
                                                                 onChange={(e) => handleCourseUpdate(e, adoption["TempID"])}
 >>>>>>> main

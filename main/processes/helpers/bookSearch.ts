@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<<< HEAD:main/processes/book.ts
 import { regex, bSQLDB } from '../utils'
@@ -27,10 +28,13 @@ export const bookProcess = async ({ event, method, data }: ProcessArgs) => {
 }
 ========
 >>>>>>> main
+=======
+>>>>>>> main
 import { BookResult, GVolInfo, APIResult } from "../../../types/Book"
 import axios from "axios"
 import { regex } from "../../utils"
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -45,6 +49,8 @@ const formatBookSearch = (sqlResults: DBRow[], apiResults: APIResult | {}) => {
 >>>>>>> main
 =======
 >>>>>>> main
+=======
+>>>>>>> main
 const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResults: APIResult | {}) => {
     let book: BookResult | {} = {}
 
@@ -55,6 +61,9 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
         const firstResult = sqlResults.info[0]
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -74,8 +83,11 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             Terms: sqlResults.map((result) => {
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
 =======
@@ -87,6 +99,9 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
             Terms: sqlResults.sales.map((result) => {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -99,6 +114,10 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
                     EstSales: result["EstSales"],
                     UsedSales: result["UsedSales"],
                     NewSales: result["NewSales"],
+<<<<<<< HEAD
+=======
+                    TotalSales: result["TotalSales"],
+>>>>>>> main
                     Reorders: result["Reorders"]
                 }
             })
@@ -107,6 +126,7 @@ const formatBookSearch = (sqlResults: { info: DBRow[], sales: DBRow[] }, apiResu
     return book
 }
 
+<<<<<<< HEAD
 const apiSearch = async (isbn: string): Promise<APIResult | {}> => {
     try {
         let result: APIResult | {} = {}
@@ -123,6 +143,30 @@ const apiSearch = async (isbn: string): Promise<APIResult | {}> => {
         if (response.status !== 200) {
             throw response.statusText
         }
+=======
+const apiSearch = async (isbn: string): Promise<APIResult> => {
+    try {
+        const result: APIResult = {
+            ISBN: "",
+            Title: "",
+            Subtitle: "",
+            Publisher: "",
+            Author: "",
+            PrevImg: ""
+        }
+
+        const response = await axios.get('https://www.googleapis.com/books/v1/volumes', {
+            params: {
+                q: `isbn:${isbn}`
+            }
+        }
+
+        )
+        if (response.status !== 200) {
+            throw response.statusText
+        }
+
+>>>>>>> main
         if (response.data.totalItems > 0) {
             const volInfo: GVolInfo = response.data.items[0].volumeInfo
 
@@ -141,8 +185,12 @@ const apiSearch = async (isbn: string): Promise<APIResult | {}> => {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 export { formatBookSearch, apiSearch }
 =======
 export { formatBookSearch, apiSearch }
 >>>>>>>> main:main/processes/helpers/bookSearch.ts
+>>>>>>> main
+=======
+export { formatBookSearch, apiSearch }
 >>>>>>> main

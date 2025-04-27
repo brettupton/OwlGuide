@@ -26,7 +26,11 @@ export default function CoursesTable({ courses }: CoursesTableProps) {
                                     {fields.map((field) => {
                                         return (
 <<<<<<< HEAD
+<<<<<<< HEAD
                                             <td className={`p-1 ${typeof (row[field]) === "number" ? "text-center" : ""}`}>
+=======
+                                            <td className={`p-1 ${typeof (row[field]) === "number" ? "text-center" : ""}`} key={`${index}-${field}`}>
+>>>>>>> main
 =======
                                             <td className={`p-1 ${typeof (row[field]) === "number" ? "text-center" : ""}`} key={`${index}-${field}`}>
 >>>>>>> main

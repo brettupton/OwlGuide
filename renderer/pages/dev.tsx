@@ -1,6 +1,7 @@
 import React, { ChangeEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 import Spinner from '../components/Spinner'
 import { Button } from '../components/Button'
@@ -20,6 +21,23 @@ export default function Development() {
         window.ipc.on('update-success', () => {
             router.refresh()
         })
+=======
+import { Button } from '../components/Button'
+import Link from 'next/link'
+import Image from 'next/image'
+import ZoomImage from '../components/ZoomImage'
+
+export default function Development() {
+    const router = useRouter()
+    const [barProgress, setBarProgress] = useState<number>(0)
+
+    useEffect(() => {
+        window.ipc.on('update-success', () => {
+            router.refresh()
+        })
+
+        window.ipc.send('dev', { method: "progress-bar" })
+>>>>>>> main
     }, [])
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -31,7 +49,11 @@ export default function Development() {
             }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             window.ipc.send('main', { process: 'sql', method: "update-db-manual", data: { files: newPaths } })
+=======
+            window.ipc.send('main', { process: 'sql', method: "update-db-manual", data: { type: 'sql', files: newPaths } })
+>>>>>>> main
 =======
             window.ipc.send('main', { process: 'sql', method: "update-db-manual", data: { type: 'sql', files: newPaths } })
 >>>>>>> main
@@ -47,7 +69,10 @@ export default function Development() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
 =======
@@ -56,6 +81,7 @@ export default function Development() {
 
     const handleDumpFiles = () => {
         window.ipc.send('dev', { method: 'dump-files' })
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> main
@@ -85,12 +111,19 @@ export default function Development() {
             </div>
 =======
 >>>>>>> main
+=======
+    }
+
+    return (
+        <div className="flex flex-col pl-2 w-full mx-auto">
+>>>>>>> main
             <div className="flex flex-col mt-3 gap-3">
                 <div className="flex">
                     <span className="underline underline-offset-8">Database</span>
                 </div>
                 <div className="flex">
                     <input type="file" id="csv" multiple onChange={handleFileChange} />
+<<<<<<< HEAD
 <<<<<<< HEAD
                 </div>
                 <div className="flex">
@@ -121,6 +154,8 @@ export default function Development() {
                 </div>
 >>>>>>> main
 =======
+=======
+>>>>>>> main
                 </div>
                 <div className="flex">
                     <Button
@@ -156,6 +191,7 @@ export default function Development() {
                     <span className="underline underline-offset-8">Components</span>
                 </div>
                 <div className="flex">
+<<<<<<< HEAD
                     <Spinner
                         size="sm"
                         color="white"
@@ -200,6 +236,19 @@ export default function Development() {
                         isLoading={false}
                         icon="search"
                     />
+                </div>
+>>>>>>> main
+=======
+                    <ZoomImage
+                        src="https://maymont.org/wp-content/uploads/2020/07/banner-great-horned-owl.jpg"
+                        alt="dev-owl"
+                    />
+                </div>
+                <div className="flex">
+                    <span className="underline underline-offset-8">Routes</span>
+                </div>
+                <div className="flex">
+                    <Link href="old-enrollment">Enrollment</Link>
                 </div>
 >>>>>>> main
             </div>

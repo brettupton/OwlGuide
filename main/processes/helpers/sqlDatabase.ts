@@ -1,7 +1,11 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { bSQLDB, paths, fileManager, regex, logger } from "../../utils"
+=======
+import { bSQLDB, paths, config, regex, logger } from "../../utils"
+>>>>>>> main
 =======
 import { bSQLDB, paths, config, regex, logger } from "../../utils"
 >>>>>>> main
@@ -17,6 +21,7 @@ import { spawn } from "child_process"
 import tables from "../../db/tables"
 import { TableData } from "../../../types/Database"
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 export const updateDB = async (files: string[]) => {
@@ -45,11 +50,16 @@ export const syncDB = async (files: string[]) => {
             await config.write([["dbUpdateTime", regex.ISOtoDb2Time(new Date().toISOString())]])
 >>>>>>> main
 =======
+=======
+>>>>>>> main
 export const syncDB = async (files: string[]) => {
     if (files.length === Object.keys(tables).length) {
         try {
             await bSQLDB.all.syncDB(files)
             await config.write([["dbUpdateTime", regex.ISOtoDb2Time(new Date().toISOString())]])
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
         } catch (error) {
             throw error
@@ -58,7 +68,11 @@ export const syncDB = async (files: string[]) => {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         throw "Update requires six files: MRP008, ADP001, ADP006, ADP003, MRP009, MRP012"
+=======
+        throw `Incorrect number of files: Expected ${Object.keys(tables).length}, Received ${files.length}`
+>>>>>>> main
 =======
         throw `Incorrect number of files: Expected ${Object.keys(tables).length}, Received ${files.length}`
 >>>>>>> main
@@ -76,10 +90,14 @@ export const initializeDB = async (): Promise<void> => {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         await fileManager.config.write('dbUpdateTime', "0001-01-01-00.00.00.000000", false)
 =======
         const initializeStart = Date.now()
         await config.write('dbUpdateTime', "0001-01-01-00.00.00.000000", false)
+>>>>>>> main
+=======
+        const initializeStart = Date.now()
 >>>>>>> main
 =======
         const initializeStart = Date.now()
@@ -95,7 +113,11 @@ export const initializeDB = async (): Promise<void> => {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                     await bSQLDB.all.createDB()
+=======
+                    await bSQLDB.all.createDB(initializeStart)
+>>>>>>> main
 =======
                     await bSQLDB.all.createDB(initializeStart)
 >>>>>>> main
@@ -115,7 +137,11 @@ export const initializeDB = async (): Promise<void> => {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                 await bSQLDB.all.createDB()
+=======
+                await bSQLDB.all.createDB(initializeStart)
+>>>>>>> main
 =======
                 await bSQLDB.all.createDB(initializeStart)
 >>>>>>> main
@@ -143,6 +169,10 @@ export const getIBMTables = async (userId: string, password: string) => {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
 =======
 
 >>>>>>> main
@@ -186,6 +216,7 @@ export const getIBMTables = async (userId: string, password: string) => {
             acsProcess.on('close', (code) => {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                 if (code !== 0) {
                     reject(`Failed to download ${tableName}, exit code: ${code}`)
                 }
@@ -194,6 +225,9 @@ export const getIBMTables = async (userId: string, password: string) => {
 =======
                 const timeEnd = Date.now()
                 logger.addNewLog("acs", [tableName, `Completed in ${(timeEnd - timeStart) / 1000}s`, `Exit Code: ${code}`])
+>>>>>>> main
+=======
+                logger.addNewLog("acs", [tableName, `Completed in ${(Date.now() - timeStart) / 1000}s`, `Exit Code: ${code}`])
 >>>>>>> main
 =======
                 logger.addNewLog("acs", [tableName, `Completed in ${(Date.now() - timeStart) / 1000}s`, `Exit Code: ${code}`])

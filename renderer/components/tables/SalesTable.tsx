@@ -31,7 +31,11 @@ export default function SalesTable({ sales }: SalesTableProps) {
                                     {fields.map((field) => {
                                         return (
 <<<<<<< HEAD
+<<<<<<< HEAD
                                             <td className="p-1 text-center">
+=======
+                                            <td className="p-1 text-center" key={`${index * 20}-${field}`}>
+>>>>>>> main
 =======
                                             <td className="p-1 text-center" key={`${index * 20}-${field}`}>
 >>>>>>> main
@@ -44,9 +48,15 @@ export default function SalesTable({ sales }: SalesTableProps) {
                         })}
                         <tr className="bg-gray-500 border border-gray-700 sticky bottom-0">
 <<<<<<< HEAD
+<<<<<<< HEAD
                             {fields.map((field) => {
                                 return (
                                     <td className="p-1 text-center">
+=======
+                            {fields.map((field, index) => {
+                                return (
+                                    <td className="p-1 text-center" key={`${field}-${index}`}>
+>>>>>>> main
 =======
                             {fields.map((field, index) => {
                                 return (

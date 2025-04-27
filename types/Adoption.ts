@@ -31,8 +31,13 @@ export type PrevAdoption = {
     NoText: "Y" | "N"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     Book: string | null
     ISBN: string | null
+=======
+    Title: string | null | (string | null)[]
+    ISBN: string | null | (string | null)[]
+>>>>>>> main
 =======
     Title: string | null | (string | null)[]
     ISBN: string | null | (string | null)[]

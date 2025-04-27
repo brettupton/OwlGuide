@@ -26,9 +26,13 @@ export default function PageTable({ pageData, totalRows, pageNum, limit, updateP
         <div className="w-full">
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-12.5rem)]">
 =======
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-13.9rem)]">
+>>>>>>> main
+=======
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-15rem)]">
 >>>>>>> main
 =======
             <div className="relative overflow-x-auto shadow-md sm:rounded-lg max-h-[calc(100vh-15rem)]">
@@ -51,7 +55,11 @@ export default function PageTable({ pageData, totalRows, pageNum, limit, updateP
                             return (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row['ID'] as number)}>
+=======
+                                <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row)}>
+>>>>>>> main
 =======
                                 <tr className="bg-gray-800 border-b border-gray-700 hover:bg-gray-600" key={row['ID']} onClick={() => handleRowClick(row)}>
 >>>>>>> main

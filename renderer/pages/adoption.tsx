@@ -1,6 +1,10 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { useState, ChangeEvent, useEffect, useRef } from "react"
+=======
+import { useState, ChangeEvent, useEffect, useRef, MutableRefObject } from "react"
+>>>>>>> main
 =======
 import { useState, ChangeEvent, useEffect, useRef, MutableRefObject } from "react"
 >>>>>>> main
@@ -18,7 +22,11 @@ export default function AdoptionPage() {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     const tableRef = useRef(null)
+=======
+    const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
+>>>>>>> main
 =======
     const tableRef: MutableRefObject<HTMLTableElement> = useRef(null)
 >>>>>>> main
@@ -30,6 +38,7 @@ export default function AdoptionPage() {
         window.ipc.on('adoption-data', ({ noAdoptions, term }: { noAdoptions: NoAdoption[], term: string }) => {
             setAdoptions([...noAdoptions])
             setSelectedTerm(term)
+<<<<<<< HEAD
 <<<<<<< HEAD
         })
 
@@ -58,11 +67,21 @@ export default function AdoptionPage() {
     const handleAsstStatusChange = (status: "All" | "NoText" | "Prev") => {
         tableRef.current.scrollIntoView({ behavior: 'auto' })
 >>>>>>> main
+=======
+            setAsstStatus("All")
+            tableRef.current.scrollIntoView({ behavior: 'auto' })
+        })
+    }, [])
+
+    const handleAsstStatusChange = (status: "All" | "NoText" | "Prev") => {
+        tableRef.current.scrollIntoView({ behavior: 'auto' })
+>>>>>>> main
         setAsstStatus(status)
     }
 
     const handleSend = (course: NoAdoption) => {
         window.ipc.send('window-sync', { fromWindow: 'main', process: 'adoption', data: { course, term: selectedTerm } })
+<<<<<<< HEAD
 <<<<<<< HEAD
         // Filter sent course from array
         // setAdoptions((prev) => {
@@ -71,15 +90,20 @@ export default function AdoptionPage() {
         // })
 =======
 >>>>>>> main
+=======
+>>>>>>> main
     }
 
     const handleSendAll = (courses: NoAdoption[]) => {
         window.ipc.send('window-sync', { fromWindow: 'main', process: 'adoption', data: { course: courses, term: selectedTerm } })
 <<<<<<< HEAD
+<<<<<<< HEAD
         // setAdoptions((prev) => {
         //     return [...prev]
         //         .filter(course => !courses.includes(course))
         // })
+=======
+>>>>>>> main
 =======
 >>>>>>> main
     }

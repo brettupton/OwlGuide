@@ -7,8 +7,12 @@ export default function TermSelect({ process, latest }: { process: string, lates
 
     useEffect(() => {
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (typeof window !== undefined && window.ipc) {
             window.ipc.send('main', { process: 'sql', method: 'get-terms' })
+=======
+        window.ipc.send('main', { process: 'sql', method: 'get-terms', data: { type: 'sql' } })
+>>>>>>> main
 =======
         window.ipc.send('main', { process: 'sql', method: 'get-terms', data: { type: 'sql' } })
 >>>>>>> main
@@ -40,6 +44,7 @@ export default function TermSelect({ process, latest }: { process: string, lates
             const term = e.currentTarget.value
             const method = `get-term-${process}`
 <<<<<<< HEAD
+<<<<<<< HEAD
 
             window.ipc.send('main', { process, method, data: { term, limit: 30, isForward: true, isSearch: false, pivotCourse: { Dept: "", Course: "", Section: "" } } })
 <<<<<<< HEAD
@@ -48,6 +53,12 @@ export default function TermSelect({ process, latest }: { process: string, lates
             setSelectedTerm(term)
 >>>>>>> main
 =======
+            setSelectedTerm(term)
+>>>>>>> main
+=======
+            const courseData = process === 'course' ? { limit: 30, isForward: true, isSearch: false, pivotCourse: { Dept: "", Course: "", Section: "" } } : {}
+
+            window.ipc.send('main', { process, method, data: { type: process, term, ...courseData } })
             setSelectedTerm(term)
 >>>>>>> main
 =======
@@ -71,7 +82,11 @@ export default function TermSelect({ process, latest }: { process: string, lates
                 :
                 <select
 <<<<<<< HEAD
+<<<<<<< HEAD
                     className={`border text-sm rounded-lg block p-1 bg-gray-700 border-gray-600 text-white ${selectedTerm ? "ring-2 ring-white" : ""}`}
+=======
+                    className={`border text-sm rounded-lg block px-1 py-2 bg-gray-700 border-gray-600 text-white ${selectedTerm ? "ring-2 ring-white" : ""}`}
+>>>>>>> main
 =======
                     className={`border text-sm rounded-lg block px-1 py-2 bg-gray-700 border-gray-600 text-white ${selectedTerm ? "ring-2 ring-white" : ""}`}
 >>>>>>> main

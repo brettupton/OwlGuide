@@ -23,6 +23,7 @@ export default function BuyingDecision() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
       window.ipc.on('decision-data', (data: any) => {
         // const sorted = data.decisions.sort((a, b) => a["Title"].localeCompare(b["Title"]))
         setDecision(data.decisions)
@@ -42,10 +43,16 @@ export default function BuyingDecision() {
         setDecisions(decisions)
         setSelectedTerm(term)
 >>>>>>> main
+=======
+      window.ipc.on('decision-data', ({ decisions, term }: { decisions: Decision[], term: string }) => {
+        setDecisions(decisions)
+        setSelectedTerm(term)
+>>>>>>> main
       })
     }
   }, [])
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -70,6 +77,11 @@ export default function BuyingDecision() {
     setActiveBookId(row["ID"])
     window.ipc.send('child', { process: 'decision', data: { term: selectedTerm, bookId: row["ID"], ISBN: row["ISBN"], Title: row["Title"] } })
 >>>>>>> main
+=======
+  const handleRowClick = (row: Decision) => {
+    setActiveBookId(row["ID"])
+    window.ipc.send('child', { process: 'decision', data: { term: selectedTerm, bookId: row["ID"], ISBN: row["ISBN"], Title: row["Title"] } })
+>>>>>>> main
   }
 
   const handleTabClick = (tab: TableTab) => {
@@ -77,6 +89,7 @@ export default function BuyingDecision() {
     tableRef.current.scrollIntoView({ behavior: "auto" })
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -162,6 +175,23 @@ export default function BuyingDecision() {
 
   return (
 >>>>>>> main
+=======
+  const handleSortDecisions = (key: string) => {
+    setDecisions((prev) => {
+      setIsSorted(!isSorted)
+      return [...prev]
+        .sort((a, b) => {
+          if (isSorted) {
+            return a[key].localeCompare(b[key])
+          } else {
+            return b[key].localeCompare(a[key])
+          }
+        })
+    })
+  }
+
+  return (
+>>>>>>> main
     <div className="flex flex-col">
       <BackArrow />
       <div className="flex flex-col m-4">
@@ -170,6 +200,9 @@ export default function BuyingDecision() {
             <TermSelect process="decision" latest={true} />
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main

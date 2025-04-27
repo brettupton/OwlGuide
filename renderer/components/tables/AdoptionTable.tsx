@@ -15,6 +15,7 @@ interface AdoptionTableProps {
 export default function AdoptionTable({ adoptions, status, selectedTerm, tableRef, activeRow, setActiveRow, addCourse, addCourses }: AdoptionTableProps) {
     const noTextDept = ["APPL", "ARTF", "BIOS", "BRND", "CHEB", "COAR", "FRLG", "GDES", "HEMS", "HGEN", "INNO", "PAPR", "PATC", "PCEU", "PESC", "PHAR", "REAL", "SBHD", "SCPT", "SCTS", "SPCH", "SPTL", "SSOR", "STUA", "SYSM"]
 <<<<<<< HEAD
+<<<<<<< HEAD
     const noTextTitle = ["ASSISTANTSHIP", "CANDIDACY", "CAP SEM", "CAPSTONE", "DIRECTED", "DISSERTATION", "DOCTORAL", "EXPERIENCE", "EXTERNS", "EXTERNSHIP", "FIELD", "GRADUATE", "GUIDED", "INDEPDNT", "INDEPENDENT", "INDIVIDUAL", "INTERNS", "INTERNSH", "INTERNSHIP", "INTRNSHP", "PORTFOLIO", "PRAC", "PRACTICE", "PRACTICUM", "PRECEPTOR", "PRECEPTORSHIP", "RESEARCH", "RSCH", "RSRCH", "SEMINAR", "SR SEM", "STUDIO", "THESIS", "UNDERGRADUATE", "WORKSHOP"]
 
     const filtered = adoptions
@@ -27,6 +28,8 @@ export default function AdoptionTable({ adoptions, status, selectedTerm, tableRe
                 return adoption["HasPrev"].toString() === "1"
             }
 =======
+=======
+>>>>>>> main
     const noTextTitle = ["ASSISTANTSHIP", "CANDIDACY", "CAP SEM", "CAPSTONE", "DIRECTED", "DISSERTATION", "DOCTORAL", "EXPERIENCE", "EXTERNS", "EXTERNSHIP", "FIELD", "GRADUATE", "GUIDED", "INDEPDNT", "INDEPENDENT", "INDIVIDUAL", "INTERNS", "INTERNSH", "INTERNSHIP", "INTRNSHP", "PORTFOLIO", "PRACTICUM", "PRECEPTOR", "PRECEPTORSHIP", "RESEARCH", "RSCH", "RSRCH", "SEMINAR", "SR SEM", "STUDIO", "THESIS", "UNDERGRADUATE", "WORKSHOP"]
 
     const filtered = adoptions
@@ -39,6 +42,9 @@ export default function AdoptionTable({ adoptions, status, selectedTerm, tableRe
             if (status === "NoText") return possibleNoText
             if (status === "Prev") return adoption["HasPrev"].toString() === "1" && !possibleNoText
 
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
             return true
         })
@@ -57,7 +63,11 @@ export default function AdoptionTable({ adoptions, status, selectedTerm, tableRe
                 {adoptions.length > 0 &&
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                     <table className="w-full text-sm text-left rtl:text-right text-white" ref={tableRef}>
+=======
+                    <table className="w-full text-sm text-left rtl:text-right text-white table-auto" ref={tableRef}>
+>>>>>>> main
 =======
                     <table className="w-full text-sm text-left rtl:text-right text-white table-auto" ref={tableRef}>
 >>>>>>> main
@@ -74,7 +84,11 @@ export default function AdoptionTable({ adoptions, status, selectedTerm, tableRe
                                 })}
                                 <th className="px-2 py-1">
 <<<<<<< HEAD
+<<<<<<< HEAD
                                     <button title="Add All" onClick={() => addCourses(filtered)}>
+=======
+                                    <button title="Add All" className="hover:text-white" onClick={() => addCourses(filtered)}>
+>>>>>>> main
 =======
                                     <button title="Add All" className="hover:text-white" onClick={() => addCourses(filtered)}>
 >>>>>>> main
@@ -97,7 +111,11 @@ export default function AdoptionTable({ adoptions, status, selectedTerm, tableRe
                                                 <td
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                                                     className={`p-2 ${typeof adoption[key] === "number" ? "text-center" : ""}`} key={`${adoption["ID"]}-${index}`}
+=======
+                                                    className={`p-2 w-auto ${typeof adoption[key] === "number" ? "text-center" : ""} ${key === "Prof" ? "max-w-28 truncate" : key === "Title" ? "max-w-60 truncate" : ""}`} key={`${adoption["ID"]}-${index}`}
+>>>>>>> main
 =======
                                                     className={`p-2 w-auto ${typeof adoption[key] === "number" ? "text-center" : ""} ${key === "Prof" ? "max-w-28 truncate" : key === "Title" ? "max-w-60 truncate" : ""}`} key={`${adoption["ID"]}-${index}`}
 >>>>>>> main
@@ -112,7 +130,11 @@ export default function AdoptionTable({ adoptions, status, selectedTerm, tableRe
                                             )
                                         })}
 <<<<<<< HEAD
+<<<<<<< HEAD
                                         <td className="px-2 hover:cursor-pointer z-50" onClick={() => addCourse(adoption)}>
+=======
+                                        <td className="px-2 hover:cursor-pointer z-50 active:scale-95" onClick={() => addCourse(adoption)}>
+>>>>>>> main
 =======
                                         <td className="px-2 hover:cursor-pointer z-50 active:scale-95" onClick={() => addCourse(adoption)}>
 >>>>>>> main

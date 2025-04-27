@@ -5,7 +5,11 @@ export default function Footer({ syncDB, dbUpdateTime, isDBUpdating, isChildWind
                 <div className="flex px-2 py-1 gap-1">
                     <div className="flex">
 <<<<<<< HEAD
+<<<<<<< HEAD
                         <button onClick={syncDB}>
+=======
+                        <button onClick={syncDB} className="hover:animate-spin hover:text-gray-400">
+>>>>>>> main
 =======
                         <button onClick={syncDB} className="hover:animate-spin hover:text-gray-400">
 >>>>>>> main

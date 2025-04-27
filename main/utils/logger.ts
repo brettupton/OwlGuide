@@ -7,12 +7,15 @@ type LogType = "main" | "sql" | "acs" | "error"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const addNewLog = (logType: LogType, details: string[]) => {
     const timeStamp = new Date().toLocaleString().toUpperCase()
     const logFilePath = path.join(paths.logPath, `owlguide-${logType}.log`)
     // Filter 'truthy' values from array before join
     const newDetails = details.map((detail) => { return detail.toUpperCase() }).filter(Boolean)
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
 =======
@@ -31,6 +34,9 @@ const addNewLog = (logType: LogType, details: any[]) => {
         }).filter(Boolean)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main

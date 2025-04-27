@@ -1,5 +1,6 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { AdoptionCSV, NoAdoption } from "../../../types/Adoption"
 import Papa from 'papaparse'
 import { regex } from "../../utils"
@@ -8,12 +9,17 @@ const formatToCSV = (courses: NoAdoption[], fullTerm: string) => {
 =======
 =======
 >>>>>>> main
+=======
+>>>>>>> main
 import { AdoptionCSV, NoAdoption, PrevAdoption } from "../../../types/Adoption"
 import Papa from 'papaparse'
 import { regex } from "../../utils"
 
 const formatToCSV = (courses: NoAdoption[], fullTerm: string): string[] => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -39,7 +45,10 @@ const formatToCSV = (courses: NoAdoption[], fullTerm: string): string[] => {
             }
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
         } else {
@@ -55,6 +64,9 @@ const formatToCSV = (courses: NoAdoption[], fullTerm: string): string[] => {
                 'NoMaterials ( Non-First Day Sections Only "Y/N")': null
             }
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> main
+=======
 >>>>>>> main
 =======
 >>>>>>> main
@@ -93,7 +105,11 @@ const findRejectCourse = (course: NoAdoption): string => {
         const currCondition = rejectConditions[i]
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (currCondition.condition) {
+=======
+        if (currCondition.condition()) {
+>>>>>>> main
 =======
         if (currCondition.condition()) {
 >>>>>>> main
@@ -107,8 +123,11 @@ const findRejectCourse = (course: NoAdoption): string => {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 export { formatToCSV }
 =======
+=======
+>>>>>>> main
 =======
 >>>>>>> main
 const formatPrevAdoptions = (prevAdoptions: PrevAdoption[]) => {
@@ -138,6 +157,10 @@ const formatPrevAdoptions = (prevAdoptions: PrevAdoption[]) => {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+export { formatToCSV, formatPrevAdoptions }
+>>>>>>> main
+=======
 export { formatToCSV, formatPrevAdoptions }
 >>>>>>> main
 =======
